@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import ENDPOINTS from "../config";
-import { ClipboardList, FolderClosed, Image, Users } from 'lucide-react';
+import { ClipboardList, Image, Users } from 'lucide-react';
 
 
 type Assignee = {
