@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { ClipboardList, Image, Users } from 'lucide-react';
+import { Image } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -160,7 +160,7 @@ export default function Others_Shot() {
 
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    const projectName = projectData?.projectName;
+    // const projectName = projectData?.projectName;
 
 
     // ++++++++++++++++++++++++++++++++++++++++ right

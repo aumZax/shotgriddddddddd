@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, Download, MessageSquare, Check, X, Reply, Info } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, Download, MessageSquare, X, Reply, Info } from 'lucide-react';
 
 export default function VideoReviewSystem() {
     const [isPlaying, setIsPlaying] = useState(false);
@@ -163,16 +163,16 @@ type Comment = {
         }
     };
 
-    const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const pos = (e.clientX - rect.left) / rect.width;
-        const newTime = pos * duration;
+    // const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    //     const rect = e.currentTarget.getBoundingClientRect();
+    //     const pos = (e.clientX - rect.left) / rect.width;
+    //     const newTime = pos * duration;
 
-        if (videoRef.current) {
-            videoRef.current.currentTime = newTime;
-            setCurrentTime(newTime);
-        }
-    };
+    //     if (videoRef.current) {
+    //         videoRef.current.currentTime = newTime;
+    //         setCurrentTime(newTime);
+    //     }
+    // };
 
     const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsScrubbing(true);
@@ -358,15 +358,15 @@ type Comment = {
         }
     };
 
-    const toggleComplete = (id: number) => {
-        setComments(prev =>
-            prev.map(comment =>
-                comment.id === id
-                    ? { ...comment, completed: !comment.completed }
-                    : comment
-            )
-        );
-    };
+    // const toggleComplete = (id: number) => {
+    //     setComments(prev =>
+    //         prev.map(comment =>
+    //             comment.id === id
+    //                 ? { ...comment, completed: !comment.completed }
+    //                 : comment
+    //         )
+    //     );
+    // };
 
     const jumpToTimestamp = (seconds: number) => {
         if (videoRef.current) {

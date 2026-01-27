@@ -233,7 +233,7 @@ export default function Others_Asset() {
 
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    const projectName = projectData?.projectName;
+    // const projectName = projectData?.projectName;
 
 
     // ++++++++++++++++++++++++++++++++++++++++ right
