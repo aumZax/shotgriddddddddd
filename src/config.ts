@@ -1,6 +1,6 @@
 // endpoints.ts
-// const BASE_URL = "http://100.112.212.19:3000"; 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://100.112.212.19:3000"; 
+// const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -72,6 +72,20 @@ const ENDPOINTS = {
   GET_SHOT_NULL: `${BASE_URL}/get-shot-null`,              // ดึง shots ที่ sequence_id = NULL
   ADD_SHOT_TO_SEQUENCE: `${BASE_URL}/add-shot-to-sequence`, // เชื่อม shot เข้า sequence
   REMOVE_SHOT_FROM_SEQUENCE: `${BASE_URL}/remove-shot-from-sequence`,
+  ADD_SEQUENCE_TO_SHOT: `${BASE_URL}/add-sequence-to-shot`,
+  REMOVE_SEQUENCE_FROM_SHOT: `${BASE_URL}/remove-sequence-from-shot`,
+  
+  ADD_ASSET_TO_SHOT: `${BASE_URL}/add-asset-to-shot`,
+  REMOVE_ASSET_FROM_SHOT: `${BASE_URL}/remove-asset-from-shot`,
+  GET_ASSET_SHOT: `${BASE_URL}/get-asset-shot`,
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ new
+  SHOT_TASK: `${BASE_URL}/shot-task`,
+  SEQUENCE_TASK: `${BASE_URL}/sequence-task`,
+  ASSET_TASK: `${BASE_URL}/asset-task`,
+  GET_ASSET_SEQUENCES_JOIN: `${BASE_URL}/get-asset-sequences-join`,
+  GET_ASSET_SHOTS_JOIN: `${BASE_URL}/get-asset-shots-join`,
+
+
 
 
 

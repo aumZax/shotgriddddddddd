@@ -22,6 +22,14 @@ interface Shot {
     status: string;
 }
 
+interface Asset {
+    id: number;
+    asset_name: string;
+    status: string;
+    description: string;
+    created_at: string;
+    asset_shot_id?: number; // ⭐ เพิ่ม field นี้สำหรับลบ
+}
 
 interface ShotCategory {
     category: string;
@@ -46,9 +54,7 @@ interface Sequence {
     description?: string;
     order_index?: number;
 }
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// ⭐ เพิ่ม Interface เหล่านี้
 interface AssetDetail {
     id: number;
     asset_name: string;
@@ -75,8 +81,6 @@ interface ShotDetail {
     sequence: SequenceDetail | null;
     assets: AssetDetail[];
 }
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 export default function ProjectShot() {
     const navigate = useNavigate();
@@ -102,6 +106,42 @@ export default function ProjectShot() {
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const [showSequenceDropdown, setShowSequenceDropdown] = useState(false);
 
+    // States สำหรับ Assets Management
+    const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
+    const [shotAssets, setShotAssets] = useState<AssetDetail[]>([]);
+    const [shotAssetSearchText, setShotAssetSearchText] = useState('');
+    const [showShotAssetDropdown, setShowShotAssetDropdown] = useState(false);
+
+    // ⭐ NEW STATES - เพิ่มใหม่
+    const [sequenceSearchInput, setSequenceSearchInput] = useState('');
+    const [showSequenceSearchDropdown, setShowSequenceSearchDropdown] = useState(false);
+
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        shot: Shot;
+    } | null>(null);
+
+    const [expandedShotId, setExpandedShotId] = useState<string | null>(null);
+    const [showExpandedPanel, setShowExpandedPanel] = useState(false);
+    const [expandedItem, setExpandedItem] = useState<{
+        type: "asset" | "sequence";
+        id: number;
+    } | null>(null);
+
+    const [shotDetail, setShotDetail] = useState<ShotDetail | null>(null);
+    const [isLoadingShotDetail, setIsLoadingShotDetail] = useState(false);
+
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        shotId: number;
+        shot_name: string;
+    } | null>(null);
+
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+
     const taskTemplates = [
         "Animation - Shot",
         "Film VFX - Comp Only Shot",
@@ -119,6 +159,130 @@ export default function ProjectShot() {
             return null;
         }
     };
+    // 1. ดึงข้อมูล Assets ทั้งหมด
+    const fetchAllProjectAssets = async () => {
+        try {
+            const projectData = getProjectData();
+            if (!projectData?.projectId) return;
+
+            const response = await axios.post(ENDPOINTS.GET_PROJECT_ASSETS, {
+                projectId: projectData.projectId
+            });
+
+            console.log("fetchAllProjectAssets response:", response.data);
+
+            const data = response.data;
+            let assets = [];
+            if (Array.isArray(data)) {
+                assets = data;
+            } else if (data && Array.isArray(data.data)) {
+                assets = data.data;
+            } else if (data && Array.isArray(data.assets)) {
+                assets = data.assets;
+            }
+            setAllProjectAssets(assets);
+        } catch (err) {
+            console.error("Error fetching all assets:", err);
+        }
+    };
+
+    const fetchShotAssets = async (shotId: number) => {
+        try {
+            const res = await fetch(ENDPOINTS.GET_ASSET_SHOT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shotId })
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch assets");
+
+            const result = await res.json();
+
+            if (result.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const assets: Asset[] = result.data.map((item: any) => ({
+                    id: item.asset_id,
+                    asset_name: item.asset_name,
+                    status: item.status,
+                    description: item.description || "",
+                    created_at: item.asset_created_at,
+                    asset_shot_id: item.asset_shot_id // ⭐ เก็บไว้สำหรับลบ
+                }));
+
+                setShotAssets(assets);
+            }
+        } catch (err) {
+            console.error("Fetch sequence assets error:", err);
+            setShotAssets([]);
+        }
+    };
+
+    // 2. เพิ่ม Asset เข้า Shot
+    const handleAddAssetToShot = async (assetId: number) => {
+        if (!expandedShotId) return;
+
+        try {
+            const linkRes = await fetch(ENDPOINTS.ADD_ASSET_TO_SHOT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    shotId: expandedShotId,
+                    assetId: assetId // ⭐ ส่ง assetId ที่เลือก
+                })
+            });
+
+            if (!linkRes.ok) {
+                const error = await linkRes.json();
+                throw new Error(error.message || "Failed to link asset");
+            }
+
+            // Refresh รายการ Assets ที่เชื่อมกับ Sequence นี้
+            await fetchShotAssets(Number(expandedShotId));
+
+            // ปิด dropdown และ reset
+            setShowShotAssetDropdown(false);
+            setShotAssetSearchText("");
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+            console.error("Add asset error:", err);
+            alert(err.message || "Failed to add asset");
+        }
+    };
+
+    const handleRemoveAssetFromShot = async (assetShotId: number) => {
+        if (!confirm("Remove this asset from shot?")) return;
+        try {
+            const response = await fetch(
+                ENDPOINTS.REMOVE_ASSET_FROM_SHOT,
+                {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ assetShotId }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Remove failed");
+            }
+
+            if (result.success && shotDetail) {
+                await fetchShotAssets(shotDetail.shot_id);
+            }
+        } catch (err) {
+            console.error("Error removing asset from shot:", err);
+            alert("Failed to remove asset");
+        }
+    };
+
+    // 4. กรอง Assets ที่ยังไม่ได้เพิ่ม
+    const availableAssetsToAddToShot = allProjectAssets.filter(asset => {
+        const alreadyAdded = shotAssets.some(sa => sa.id === asset.id);
+        const matchesSearch = asset.asset_name.toLowerCase().includes(shotAssetSearchText.toLowerCase());
+        return !alreadyAdded && matchesSearch;
+    });
 
     const fetchShots = async () => {
         setIsLoadingShots(true);
@@ -135,7 +299,6 @@ export default function ProjectShot() {
                 projectId: projectData.projectId
             });
 
-            // 🔥 MAP file_url → thumbnail
             const mappedData = data.map((category: ShotCategory) => ({
                 ...category,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,9 +309,7 @@ export default function ProjectShot() {
             }));
 
             setShotData(mappedData);
-            setExpandedCategories(mappedData.length > 0 ? [mappedData[0].category] : []); // เปิดแค่ตัวแรก
-
-            // 🔥 sync selectedShot thumbnail ทุกครั้ง
+            setExpandedCategories(mappedData.length > 0 ? [mappedData[0].category] : []);
             syncSelectedShotThumbnail(mappedData);
 
         } catch (err) {
@@ -183,7 +344,6 @@ export default function ProjectShot() {
             console.error("Failed to sync selectedShot thumbnail", err);
         }
     };
-
 
     const updateShot = async (
         categoryIndex: number,
@@ -240,12 +400,137 @@ export default function ProjectShot() {
         }
     };
 
+    const fetchShotDetail = async (shotId: string) => {
+        setIsLoadingShotDetail(true);
 
+        try {
+            const res = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, {
+                shotId: Number(shotId)
+            });
+
+            const rawData = res.data;
+
+            if (rawData.length === 0) {
+                setShotDetail(null);
+                return;
+            }
+
+            const firstRow = rawData[0];
+
+            const sequence: SequenceDetail | null = firstRow.sequence_id ? {
+                id: firstRow.sequence_id,
+                sequence_name: firstRow.sequence_name,
+                status: firstRow.sequence_status,
+                description: firstRow.sequence_description || "",
+                created_at: firstRow.sequence_created_at
+            } : null;
+
+            const assets: AssetDetail[] = rawData
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                .filter((row: any) => row.asset_id)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                .map((row: any) => ({
+                    id: row.asset_id,
+                    asset_name: row.asset_name,
+                    status: row.asset_status,
+                    description: row.asset_description || "",
+                    created_at: row.asset_created_at
+                }));
+
+            const detail: ShotDetail = {
+                shot_id: firstRow.shot_id,
+                shot_name: firstRow.shot_name,
+                shot_description: firstRow.shot_description || "",
+                shot_status: firstRow.shot_status,
+                shot_created_at: firstRow.shot_created_at,
+                shot_thumbnail: firstRow.shot_thumbnail || "",
+                sequence,
+                assets
+            };
+
+            setShotDetail(detail);
+
+        } catch (err) {
+            console.error("Fetch shot detail error:", err);
+            setShotDetail(null);
+        } finally {
+            setIsLoadingShotDetail(false);
+        }
+    };
+
+    // ⭐ NEW FUNCTION 1 - เพิ่มใหม่
+    const handleAddSequenceToShot = async (sequenceId: number) => {
+        if (!shotDetail) return;
+
+        try {
+            const response = await axios.put(ENDPOINTS.ADD_SEQUENCE_TO_SHOT, {
+                shotId: shotDetail.shot_id,
+                sequenceId: sequenceId
+            });
+
+            if (response.data.success) {
+                // Refresh ข้อมูล shot detail
+                await fetchShotDetail(String(shotDetail.shot_id));
+
+                // รีเซ็ต input และปิด dropdown
+                setSequenceSearchInput('');
+                setShowSequenceSearchDropdown(false);
+
+                fetchShots();
+                fetchSequences();
+            }
+
+        } catch (err) {
+            console.error("Error adding sequence to shot:", err);
+            alert("Failed to add sequence to shot"); // แสดง error ให้ user เห็น
+        }
+    };
+
+    const handleRemoveSequenceFromShot = async () => {
+
+        if (!shotDetail?.sequence) return;
+        if (!confirm("Remove this sequence?")) return;
+        try {
+            console.log("🚀 Removing sequence from shot:", shotDetail.shot_id);
+            console.log("📡 Endpoint:", ENDPOINTS.REMOVE_SEQUENCE_FROM_SHOT);
+
+            const response = await axios.put(ENDPOINTS.REMOVE_SEQUENCE_FROM_SHOT, {
+                shotId: shotDetail.shot_id
+            });
+
+            console.log("✅ Response:", response.data);
+
+            if (response.data.success) {
+                await fetchShotDetail(String(shotDetail.shot_id));
+                fetchShots();
+                fetchSequences();
+            }
+
+
+
+        } catch (err) {
+            console.error("❌ Error removing sequence from shot:", err);
+            const error = err as { response?: { data?: { error?: string } }; message?: string };
+            console.error("❌ Error response:", error.response?.data);
+            console.error("❌ Request config:", error);
+            alert("Failed to remove sequence: " + (error.response?.data?.error || error.message || "Unknown error"));
+        }
+    };
 
     useEffect(() => {
         fetchShots();
         fetchSequences();
-    }, []);
+        fetchAllProjectAssets(); // ← เพิ่มบรรทัดนี้
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Sync shotAssets เมื่อ shotDetail เปลี่ยน
+    useEffect(() => {
+        if (shotDetail?.assets) {
+            setShotAssets(shotDetail.assets);
+        } else {
+            setShotAssets([]);
+        }
+    }, [shotDetail]);
 
     const toggleCategory = (category: string) => {
         setExpandedCategories(prev =>
@@ -274,8 +559,6 @@ export default function ProjectShot() {
 
         setSelectedShot({ categoryIndex, shotIndex });
     };
-
-
 
     const handleFieldClick = (field: string, categoryIndex: number, shotIndex: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -369,7 +652,7 @@ export default function ProjectShot() {
     );
 
     const handleCreateShot = async () => {
-        if (!shotName.trim() || !description.trim() || !taskTemplate || !selectedSequence) {
+        if (!shotName.trim() || !description.trim() || !taskTemplate) {
             setError("Please fill in all required fields");
             return;
         }
@@ -385,13 +668,11 @@ export default function ProjectShot() {
             }
 
             const payload = {
-                projectId: Number(projectData.projectId), // ✅ แก้ตรงนี้
-                sequenceId: Number(selectedSequence.id),  // ✅ cast ชัด
+                projectId: Number(projectData.projectId),
+                sequenceId: selectedSequence ? Number(selectedSequence.id) : null,
                 shotName: shotName.trim(),
                 description: description.trim(),
             };
-
-            console.log("Creating shot with payload:", payload);
 
             await axios.post(ENDPOINTS.CREATESHOT, payload);
             setShowCreateShot(false);
@@ -409,7 +690,6 @@ export default function ProjectShot() {
         }
     };
 
-
     const handleTemplateSelect = (template: string) => {
         setTaskTemplate(template);
         setShowTemplateDropdown(false);
@@ -418,15 +698,6 @@ export default function ProjectShot() {
     const filteredTemplates = taskTemplates.filter(template =>
         template.toLowerCase().includes(taskTemplate.toLowerCase())
     );
-
-
-    // เมนูคลิกขวา ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    const [contextMenu, setContextMenu] = useState<{
-        visible: boolean;
-        x: number;
-        y: number;
-        shot: Shot;
-    } | null>(null);
 
     const handleContextMenu = (
         e: React.MouseEvent,
@@ -442,79 +713,14 @@ export default function ProjectShot() {
             shot
         });
     };
-    // จัดการการขยายรายละเอียดของ Shot
-    const [expandedShotId, setExpandedShotId] = useState<string | null>(null);
-    const [showExpandedPanel, setShowExpandedPanel] = useState(false);
-    const [expandedItem, setExpandedItem] = useState<{
-        type: "asset" | "sequence";
-        id: number;
-    } | null>(null);
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // ⭐ เพิ่มแทนที่
-    const [shotDetail, setShotDetail] = useState<ShotDetail | null>(null);
-    const [isLoadingShotDetail, setIsLoadingShotDetail] = useState(false);
 
-    // ⭐ ฟังก์ชันดึงข้อมูล shot detail
-    const fetchShotDetail = async (shotId: string) => {
-        setIsLoadingShotDetail(true);
-
-        try {
-            const res = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, {
-                shotId: Number(shotId)
-            });
-
-            const rawData = res.data;
-
-            if (rawData.length === 0) {
-                setShotDetail(null);
-                return;
-            }
-
-            const firstRow = rawData[0];
-
-            // ดึงข้อมูล sequence (ถ้ามี)
-            const sequence: SequenceDetail | null = firstRow.sequence_id ? {
-                id: firstRow.sequence_id,
-                sequence_name: firstRow.sequence_name,
-                status: firstRow.sequence_status,
-                description: firstRow.sequence_description || "",
-                created_at: firstRow.sequence_created_at
-            } : null;
-
-            // รวบรวม assets
-            const assets: AssetDetail[] = rawData
-                .filter((row: any) => row.asset_id)
-                .map((row: any) => ({
-                    id: row.asset_id,
-                    asset_name: row.asset_name,
-                    status: row.asset_status,
-                    description: row.asset_description || "",
-                    created_at: row.asset_created_at
-                }));
-
-            const detail: ShotDetail = {
-                shot_id: firstRow.shot_id,
-                shot_name: firstRow.shot_name,
-                shot_description: firstRow.shot_description || "",
-                shot_status: firstRow.shot_status,
-                shot_created_at: firstRow.shot_created_at,
-                shot_thumbnail: firstRow.shot_thumbnail || "",
-                sequence,
-                assets
-            };
-
-            setShotDetail(detail);
-
-        } catch (err) {
-            console.error("Fetch shot detail error:", err);
-            setShotDetail(null);
-        } finally {
-            setIsLoadingShotDetail(false);
+    useEffect(() => {
+        if (expandedShotId) {
+            fetchShotAssets(Number(expandedShotId));
+            fetchAllProjectAssets(); // ⭐ ดึง assets ทั้งหมด
+            fetchShots(); // ⭐ เพิ่มบรรทัดนี้
         }
-    };
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+    }, [expandedShotId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const closeMenu = () => setContextMenu(null);
@@ -529,22 +735,12 @@ export default function ProjectShot() {
         .flatMap(cat => cat.shots)
         .find(shot => shot.id === expandedShotId);
 
-
-    // ยืนยันการลบ sequence ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    const [deleteConfirm, setDeleteConfirm] = useState<{
-        shotId: number;
-        shot_name: string;
-    } | null>(null);
-
     const handleDeleteShot = async (shotId: number) => {
         try {
             await axios.delete(ENDPOINTS.DELETE_SHOT, {
                 data: { shotId },
             });
 
-            console.log("✅ Shot deleted:", shotId);
-
-            // ⭐ ลบ shot ออกจาก shotData (ตัวที่ UI ใช้จริง)
             setShotData(prev =>
                 prev
                     .map(category => ({
@@ -559,22 +755,15 @@ export default function ProjectShot() {
                     .filter(category => category.shots.length > 0)
             );
 
-            // reset panel / modal
             setDeleteConfirm(null);
             setExpandedShotId(null);
             setShowExpandedPanel(false);
             setExpandedItem(null);
 
         } catch (err) {
-            console.error("❌ Delete shot failed:", err);
+            console.error("Delete shot failed:", err);
         }
     };
-
-       // ++++++++++++++++++++++++++++++++ ขยับ create  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStart = useRef({ x: 0, y: 0 });
 
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
@@ -606,11 +795,8 @@ export default function ProjectShot() {
         };
     }, [isDragging]);
 
-
     const handleModalClose = () => {
         setShowCreateShot(false);
-
-        // reset form
         setShotName('');
         setDescription('');
         setTaskTemplate('');
@@ -619,12 +805,8 @@ export default function ProjectShot() {
         setError('');
         setShowTemplateDropdown(false);
         setShowSequenceDropdown(false);
-
-        // ⭐ reset ตำแหน่ง modal
         setModalPosition({ x: 0, y: 0 });
     };
-
-
 
     return (
         <div className="h-screen flex flex-col">
@@ -689,7 +871,6 @@ export default function ProjectShot() {
                             </p>
                         </div>
                     </div>
-
                 )}
 
                 {!isLoadingShots && !shotsError && shotData.length > 0 && (
@@ -698,7 +879,7 @@ export default function ProjectShot() {
                             <div key={category.category} className="bg-gray-800 rounded-xl border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
                                 <button
                                     onClick={() => toggleCategory(category.category)}
-                                    className="w-full flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
+                                    className="w-full rounded-xl flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
                                 >
                                     {expandedCategories.includes(category.category) ? (
                                         <ChevronDown className="w-4 h-4" />
@@ -713,10 +894,9 @@ export default function ProjectShot() {
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4 bg-gray-850">
                                         {category.shots.map((shot, shotIndex) => (
                                             <div
-                                                key={`${category.category}-${shot.id}-${shotIndex}`}  // ✅ รวม category + id + index
+                                                key={`${category.category}-${shot.id}-${shotIndex}`}
                                                 onClick={() => handleShotClick(categoryIndex, shotIndex)}
                                                 onContextMenu={(e) => handleContextMenu(e, shot)}
-
                                                 className={`group cursor-pointer rounded-xl p-3 transition-all duration-300 border-2 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-blue-400 ${isSelected(categoryIndex, shotIndex)
                                                     ? 'border-blue-500 bg-gray-750'
                                                     : 'border-gray-400 hover:border-gray-600 hover:bg-gray-750'
@@ -730,8 +910,7 @@ export default function ProjectShot() {
                                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2
-                        bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
                                                             <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
                                                                 <Image className="w-6 h-6 text-gray-500" />
                                                             </div>
@@ -869,20 +1048,25 @@ export default function ProjectShot() {
                 ></div>
             )}
 
+            {/* ⭐ NEW BACKDROP - เพิ่มใหม่ */}
+            {showSequenceSearchDropdown && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowSequenceSearchDropdown(false)}
+                ></div>
+            )}
+
             {showCreateShot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 top-20">
-                    {/* Backdrop with blur effect */}
                     <div
                         className="absolute inset-0 bg-black/60"
                         onClick={handleModalClose}
                     />
 
-                    {/* Modal Container */}
                     <div style={{
                         transform: `translate(${modalPosition.x}px, ${modalPosition.y}px)`
                     }} className="relative w-full max-w-2xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
 
-                        {/* Header */}
                         <div onMouseDown={handleMouseDown} className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -902,9 +1086,7 @@ export default function ProjectShot() {
                             </div>
                         </div>
 
-                        {/* Body */}
                         <div className="px-6 py-6 space-y-5">
-                            {/* Error Message */}
                             {error && (
                                 <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm flex items-start gap-3">
                                     <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -914,7 +1096,6 @@ export default function ProjectShot() {
                                 </div>
                             )}
 
-                            {/* Shot Name */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Shot Name
@@ -929,7 +1110,6 @@ export default function ProjectShot() {
                                 />
                             </div>
 
-                            {/* Description */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Description
@@ -944,7 +1124,6 @@ export default function ProjectShot() {
                                 />
                             </div>
 
-                            {/* Task Template */}
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Task Template
@@ -977,7 +1156,6 @@ export default function ProjectShot() {
                                 )}
                             </div>
 
-                            {/* Sequence */}
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Sequence
@@ -1016,7 +1194,6 @@ export default function ProjectShot() {
                                 )}
                             </div>
 
-                            {/* Project */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Project
@@ -1033,7 +1210,6 @@ export default function ProjectShot() {
                                 </div>
                             </div>
 
-                            {/* More fields button */}
                             <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
                                 <span>Show more fields</span>
                                 <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,7 +1218,6 @@ export default function ProjectShot() {
                             </button>
                         </div>
 
-                        {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
                             <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1071,8 +1246,6 @@ export default function ProjectShot() {
                 </div>
             )}
 
-
-            {/* right click menu */}
             {contextMenu && (
                 <div
                     className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
@@ -1082,20 +1255,17 @@ export default function ProjectShot() {
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-
                     <button
                         onClick={() => {
                             setExpandedShotId(contextMenu.shot.id)
-                            fetchShotDetail(contextMenu.shot.id); // ⭐ เพิ่มบรรทัดนี้
-                            setShowExpandedPanel(true);  // เพิ่มบรรทัดนี้
+                            fetchShotDetail(contextMenu.shot.id);
+                            setShowExpandedPanel(true);
                             setContextMenu(null);
                         }}
                         className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2 text-sm"
                     >
                         👁️ See more
                     </button>
-
-
 
                     <button
                         onClick={() => {
@@ -1109,34 +1279,27 @@ export default function ProjectShot() {
                     >
                         🗑️ Delete Sequence
                     </button>
-
-
                 </div>
             )}
 
-            {/* Slide-in Panel from Right */}
             {showExpandedPanel && expandedShot && (
                 <>
-                    {/* Backdrop */}
                     <div
                         className="fixed inset-0 bg-black/50 z-40 transition-opacity"
                         onClick={() => {
                             setShowExpandedPanel(false);
                             setExpandedShotId(null);
                             setExpandedItem(null);
-                            setShotDetail(null); // ⭐ เพิ่มบรรทัดนี้
+                            setShotDetail(null);
                         }}
                     />
 
-                    {/* Slide Panel */}
                     <div
                         className="fixed right-0 top-25 bottom-0 w-full max-w-2xl bg-gray-900 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 rounded-3xl m-6 border border-gray-700"
                     >
-                        {/* Header */}
                         <div className="px-6 py-5 border-b border-gray-700 bg-gradient-to-r from-gray-800 via-gray-800 to-gray-700 rounded-t-3xl">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                    {/* Sequence Name */}
                                     <div className="flex items-center gap-3 mb-2">
                                         <FolderClosed className="w-5 h-5 text-blue-400" />
                                         <h3 className="text-xl font-semibold text-white">
@@ -1145,13 +1308,12 @@ export default function ProjectShot() {
                                     </div>
                                 </div>
 
-                                {/* Close Button */}
                                 <button
                                     onClick={() => {
                                         setShowExpandedPanel(false);
                                         setExpandedShotId(null);
                                         setExpandedItem(null);
-                                        setShotDetail(null); // ⭐ เพิ่มบรรทัดนี้
+                                        setShotDetail(null);
                                     }}
                                     className="w-9 h-9 rounded-lg bg-gray-700/80 hover:bg-red-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group"
                                 >
@@ -1160,30 +1322,67 @@ export default function ProjectShot() {
                             </div>
                         </div>
 
-                        {/* Content */}
-                        {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {isLoadingShotDetail ? (
-                                // Loading State
                                 <div className="flex items-center justify-center h-64">
                                     <div className="text-gray-400">Loading...</div>
                                 </div>
                             ) : !shotDetail ? (
-                                // Error State
                                 <div className="flex items-center justify-center h-64">
                                     <div className="text-gray-400">Failed to load shot details</div>
                                 </div>
                             ) : (
                                 <>
-                                    {/* Shot Info */}
                                     <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
                                         <h4 className="text-sm font-medium text-gray-300 mb-2">Description</h4>
-                                        <p className="text-sm text-gray-400">
-                                            {shotDetail.shot_description || "No description"}
-                                        </p>
+                                        {editingField?.field === 'shot_detail_description' && Number(expandedShotId) === shotDetail?.shot_id ? (
+                                            <textarea
+                                                value={shotDetail.shot_description}
+                                                onChange={e => setShotDetail(sd => sd ? { ...sd, shot_description: e.target.value } : sd)}
+                                                onBlur={async () => {
+                                                    const catIdx = shotData.findIndex(cat =>
+                                                        cat.shots.some(s => Number(s.id) === shotDetail.shot_id)
+                                                    );
+                                                    const shotIdx = catIdx !== -1
+                                                        ? shotData[catIdx].shots.findIndex(s => Number(s.id) === shotDetail.shot_id)
+                                                        : -1;
+                                                    if (catIdx !== -1 && shotIdx !== -1) {
+                                                        await updateShot(catIdx, shotIdx, 'description', shotDetail.shot_description);
+                                                    }
+                                                    setEditingField(null);
+                                                }}
+                                                onKeyDown={async e => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        const catIdx = shotData.findIndex(cat =>
+                                                            cat.shots.some(s => s.id === String(shotDetail.shot_id))
+                                                        );
+                                                        const shotIdx = catIdx !== -1
+                                                            ? shotData[catIdx].shots.findIndex(s => s.id === String(shotDetail.shot_id))
+                                                            : -1;
+                                                        if (catIdx !== -1 && shotIdx !== -1) {
+                                                            await updateShot(catIdx, shotIdx, 'description', shotDetail.shot_description);
+                                                        }
+                                                        setEditingField(null);
+                                                    } else if (e.key === 'Escape') {
+                                                        setEditingField(null);
+                                                    }
+                                                }}
+                                                autoFocus
+                                                rows={4}
+                                                className="w-full text-sm text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                            />
+                                        ) : (
+                                            <p
+                                                className="text-sm text-gray-400 whitespace-pre-line cursor-pointer hover:bg-gray-700 px-2 py-1 rounded"
+                                                onClick={() => setEditingField({ field: 'shot_detail_description', categoryIndex: -1, shotIndex: -1 })}
+                                            >
+                                                {shotDetail.shot_description || "No description"}
+                                            </p>
+                                        )}
                                     </div>
 
-                                    {/* Sequence Section */}
+                                    {/* ⭐ UPDATED SEQUENCE SECTION - แก้ไขส่วนนี้ */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-medium text-gray-300">
@@ -1191,22 +1390,57 @@ export default function ProjectShot() {
                                             </h4>
                                         </div>
 
-                                        {/* Add Sequence Input - TODO: เชื่อม API ในอนาคต */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Type sequence name..."
-                                                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
-                                                disabled
-                                            />
-                                            <button
-                                                className="px-4 py-2 bg-green-600/50 rounded-lg text-sm text-white cursor-not-allowed"
-                                                disabled
-                                                title="Feature coming soon"
-                                            >
-                                                + Add
-                                            </button>
-                                        </div>
+                                        {/* แสดงฟอร์มเฉพาะตอนไม่มี sequence */}
+                                        {!shotDetail.sequence && (
+                                            <div className="relative">
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={sequenceSearchInput}
+                                                        onChange={(e) => {
+                                                            setSequenceSearchInput(e.target.value);
+                                                            setShowSequenceSearchDropdown(true);
+                                                        }}
+                                                        onFocus={() => setShowSequenceSearchDropdown(true)}
+                                                        placeholder="Type sequence name..."
+                                                        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
+                                                    />
+                                                </div>
+
+                                                {/* Dropdown */}
+                                                {showSequenceSearchDropdown && (
+                                                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto">
+                                                        {sequences
+                                                            .filter(seq =>
+                                                                seq.sequence_name.toLowerCase().includes(sequenceSearchInput.toLowerCase())
+                                                            )
+                                                            .map((seq) => (
+                                                                <div
+                                                                    key={seq.id}
+                                                                    onClick={() => handleAddSequenceToShot(seq.id)}
+                                                                    className="px-4 py-2.5 hover:bg-gray-700 cursor-pointer transition-colors text-gray-200 text-sm border-b border-gray-700 last:border-b-0"
+                                                                >
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="font-medium">{seq.sequence_name}</span>
+                                                                        {seq.description && (
+                                                                            <span className="text-gray-400 text-xs ml-2 truncate max-w-[150px]">
+                                                                                {seq.description}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        {sequences.filter(seq =>
+                                                            seq.sequence_name.toLowerCase().includes(sequenceSearchInput.toLowerCase())
+                                                        ).length === 0 && (
+                                                                <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                                                                    No sequences found
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Sequence Tag */}
                                         <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
@@ -1214,6 +1448,7 @@ export default function ProjectShot() {
                                                 <p className="text-xs text-gray-500 italic">No sequence assigned</p>
                                             ) : (
                                                 <div
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     onClick={() => setExpandedItem({ type: "sequence" as any, id: shotDetail.sequence!.id })}
                                                     className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "sequence" && expandedItem?.id === shotDetail.sequence.id
                                                         ? "bg-purple-500/80 text-white border-purple-400 shadow-lg shadow-purple-500/50"
@@ -1229,11 +1464,10 @@ export default function ProjectShot() {
                                                             shotDetail.sequence.status === 'ip' ? 'In Progress' :
                                                                 'Waiting'}
                                                     </span>
-                                                    {/* TODO: เชื่อม API ลบ sequence assignment ในอนาคต */}
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            console.log("TODO: Remove sequence assignment");
+                                                            handleRemoveSequenceFromShot();
                                                         }}
                                                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === shotDetail.sequence!.id
                                                             ? "hover:bg-green-600 hover:rotate-90"
@@ -1251,60 +1485,156 @@ export default function ProjectShot() {
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-medium text-gray-300">
-                                                Assets ({shotDetail.assets.length})
+                                                Assets ({shotAssets.length})
                                             </h4>
                                         </div>
 
-                                        {/* Add Asset Input - TODO: เชื่อม API ในอนาคต */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Type asset name..."
-                                                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                                                disabled
-                                            />
-                                            <button
-                                                className="px-4 py-2 bg-blue-600/50 rounded-lg text-sm text-white cursor-not-allowed"
-                                                disabled
-                                                title="Feature coming soon"
-                                            >
-                                                + Add
-                                            </button>
+                                        {/* Add Asset Dropdown */}
+                                        <div className="relative">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search and select asset..."
+                                                    value={shotAssetSearchText}
+                                                    onChange={(e) => {
+                                                        setShotAssetSearchText(e.target.value);
+                                                        setShowShotAssetDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowShotAssetDropdown(true)}
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                                />
+                                                <button
+                                                    onClick={() => setShowShotAssetDropdown(!showShotAssetDropdown)}
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                >
+                                                    <span>+ Add</span>
+                                                    <span className="text-xs">▼</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Dropdown */}
+                                            {showShotAssetDropdown && (
+                                                <>
+                                                    {/* Backdrop */}
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => {
+                                                            setShowShotAssetDropdown(false);
+                                                            setShotAssetSearchText("");
+                                                        }}
+                                                    />
+
+                                                    <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-20">
+                                                        {availableAssetsToAddToShot.length === 0 ? (
+                                                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                                                {shotAssetSearchText
+                                                                    ? "No matching assets found"
+                                                                    : allProjectAssets.length === 0
+                                                                        ? "No assets in this project"
+                                                                        : "All assets already added"}
+                                                            </div>
+                                                        ) : (
+                                                            availableAssetsToAddToShot.map(asset => (
+                                                                <button
+                                                                    key={asset.id}
+                                                                    onClick={() => handleAddAssetToShot(asset.id)}
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
+                                                                            <span className="text-xs text-gray-400">#{asset.id}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-sm text-gray-200 block">
+                                                                                {asset.asset_name}
+                                                                            </span>
+                                                                            {asset.description && (
+                                                                                <span className="text-xs text-gray-500">
+                                                                                    {asset.description}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span
+                                                                            className={`text-xs px-2 py-0.5 rounded ${asset.status === "fin"
+                                                                                    ? "bg-green-500/20 text-green-400"
+                                                                                    : asset.status === "ip"
+                                                                                        ? "bg-yellow-500/20 text-yellow-400"
+                                                                                        : "bg-gray-500/20 text-gray-400"
+                                                                                }`}
+                                                                        >
+                                                                            {asset.status === "fin"
+                                                                                ? "Final"
+                                                                                : asset.status === "ip"
+                                                                                    ? "In Progress"
+                                                                                    : "Waiting"}
+                                                                        </span>
+                                                                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-medium">
+                                                                            + Add
+                                                                        </span>
+                                                                    </div>
+                                                                </button>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         {/* Asset Tags */}
-                                        <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                                            {shotDetail.assets.length === 0 ? (
-                                                <p className="text-xs text-gray-500 italic">No assets yet</p>
+                                        <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 min-h-[60px]">
+                                            {shotAssets.length === 0 ? (
+                                                <p className="text-xs text-gray-500 italic w-full text-center py-2">
+                                                    No assets linked yet
+                                                </p>
                                             ) : (
-                                                shotDetail.assets.map(asset => (
+                                                shotAssets.map(asset => (
                                                     <div
                                                         key={asset.id}
-                                                        onClick={() => setExpandedItem({ type: "asset", id: asset.id })}
-                                                        className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "asset" && expandedItem?.id === asset.id
-                                                            ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
-                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
+                                                        onClick={() =>
+                                                            setExpandedItem({ type: "asset", id: asset.id })
+                                                        }
+                                                        className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "asset" &&
+                                                                expandedItem?.id === asset.id
+                                                                ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
+                                                                : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
                                                             }`}
                                                     >
-                                                        <span className="text-sm font-medium">{asset.asset_name}</span>
-                                                        <span className={`text-xs px-2 py-0.5 rounded ${asset.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                                            asset.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                'bg-white/20 text-white/80'
-                                                            }`}>
-                                                            {asset.status === 'fin' ? 'Final' :
-                                                                asset.status === 'ip' ? 'In Progress' :
-                                                                    'Waiting'}
+                                                        <span className="text-sm font-medium">
+                                                            {asset.asset_name}
                                                         </span>
-                                                        {/* TODO: เชื่อม API ลบ asset ในอนาคต */}
+
+                                                        <span
+                                                            className={`text-xs px-2 py-0.5 rounded ${asset.status === "fin"
+                                                                    ? "bg-green-500/20 text-green-400"
+                                                                    : asset.status === "ip"
+                                                                        ? "bg-yellow-500/20 text-yellow-400"
+                                                                        : "bg-white/20 text-white/80"
+                                                                }`}
+                                                        >
+                                                            {asset.status === "fin"
+                                                                ? "Final"
+                                                                : asset.status === "ip"
+                                                                    ? "In Progress"
+                                                                    : "Waiting"}
+                                                        </span>
+
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                console.log("TODO: Delete asset ID:", asset.id);
+                                                                handleRemoveAssetFromShot(
+                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                                    (asset as any).asset_shot_id
+                                                                );
                                                             }}
-                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" && expandedItem?.id === asset.id
-                                                                ? "hover:bg-blue-600 hover:rotate-90"
-                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" &&
+                                                                    expandedItem?.id === asset.id
+                                                                    ? "hover:bg-blue-600 hover:rotate-90"
+                                                                    : "hover:bg-red-500/80 hover:rotate-90"
                                                                 }`}
+                                                            title="Remove from shot"
                                                         >
                                                             <span className="text-sm font-bold">×</span>
                                                         </button>
@@ -1314,7 +1644,7 @@ export default function ProjectShot() {
                                         </div>
                                     </div>
 
-                                    {/* Editor Section */}
+
                                     {expandedItem && (
                                         <div className="sticky bottom-0 pt-4 border-t border-gray-700 bg-gray-900">
                                             <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
@@ -1328,7 +1658,6 @@ export default function ProjectShot() {
                                                 <p className="text-xs text-gray-400">
                                                     ID: {expandedItem.id}
                                                 </p>
-                                                {/* TODO: เพิ่ม form แก้ไขข้อมูลในอนาคต */}
                                             </div>
                                         </div>
                                     )}
@@ -1338,8 +1667,6 @@ export default function ProjectShot() {
                     </div>
                 </>
             )}
-
-
 
             {deleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">

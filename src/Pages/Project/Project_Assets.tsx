@@ -26,12 +26,13 @@ const getProjectData = () => {
 };
 
 interface Asset {
-    id: number;
+    id: string;
     asset_name: string;
     description: string;
     status: StatusType;
     file_url: string;  // ✅ ใช้แค่ file_url
 }
+
 
 interface AssetCategory {
     category: string;
@@ -67,8 +68,11 @@ interface Shot {
     id: number;
     shot_name: string;
     description?: string;
-    sequence_id: number;
+    sequence_id?: number;
+    status?: string;
+    file_url?: string;
 }
+
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -79,6 +83,7 @@ interface SequenceDetailForAsset {
     status: string;
     description: string;
     created_at: string;
+    linked_at?: string;
 }
 
 interface ShotDetailForAsset {
@@ -89,8 +94,19 @@ interface ShotDetailForAsset {
     created_at: string;
 }
 
+interface AssetSequence {
+    id: number; // ID of the asset-sequence link
+    sequence_id: number;
+    sequence_name: string;
+    sequence_description: string;
+    sequence_status: string;
+    sequence_created_at: string;
+    sequence_file_url: string;
+    linked_at: string;
+}
+
 interface AssetDetail {
-    asset_id: number;
+    asset_id: string;
     asset_name: string;
     asset_description: string;
     asset_status: string;
@@ -100,6 +116,17 @@ interface AssetDetail {
     shot: ShotDetailForAsset | null;
 }
 
+
+interface AssetShot {
+    id: number; // ID ของ asset_shots link
+    shot_id: number;
+    shot_name: string;
+    shot_description: string;
+    shot_status: string;
+    shot_created_at: string;
+    shot_file_url: string;
+    linked_at: string;
+}
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -121,6 +148,9 @@ export default function Project_Assets() {
     const [selectedShot, setSelectedShot] = useState<Shot | null>(null);
     const [isLoadingShots, setIsLoadingShots] = useState(false);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+    const [showAssetTypeDropdown, setShowAssetTypeDropdown] = useState(false);
+    const [assetType, setAssetType] = useState('');
+    const [newAssetType, setNewAssetType] = useState('');
 
     // Form states for creating new asset
     const [newAssetName, setNewAssetName] = useState('');
@@ -132,6 +162,21 @@ export default function Project_Assets() {
     const [sequenceInput, setSequenceInput] = useState('');
     const [shotInput, setShotInput] = useState('');
 
+    // Asset detail panel states
+    const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
+    const [isLoadingAssetDetail, setIsLoadingAssetDetail] = useState(false);
+    const [assetSequences, setAssetSequences] = useState<AssetSequence[]>([]);
+    const [showAddSequenceDropdown, setShowAddSequenceDropdown] = useState(false);
+    const [addSequenceInput, setAddSequenceInput] = useState('');
+
+
+
+const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]);
+const [assetShots, setAssetShots] = useState<AssetShot[]>([]);
+const [showAddShotDropdown, setShowAddShotDropdown] = useState(false);
+const [addShotInput, setAddShotInput] = useState('');
+
+
     const taskTemplates = [
         "Automotive - Concept",
         "Automotive - Part",
@@ -141,28 +186,48 @@ export default function Project_Assets() {
         "Games - Large Prop",
         "Games - Medium Prop",
         "Games - Small Prop",
-
     ];
 
-    // const taskTemplates = [
-    //     "Character",
-    //     "Environment",
-    //     "Prop",
-    //     "FX",
-    //     "Graphic",
-    //     "Matte Painting",
-    //     "Vehicle",
-    //     "Weapon",
-    //     "Model",
-    //     "Theme",
-    //     "Zone",
-    //     "Part"
-    // ];
+    const type_assets = [
+        "Character",
+        "Environment",
+        "Prop",
+        "FX",
+        "Graphic",
+        "Matte Painting",
+        "Vehicle",
+        "Weapon",
+        "Model",
+        "Theme",
+        "Zone",
+        "Part"
+    ];
 
-    useEffect(() => {
-        fetchAssets();
-        fetchSequences();
-    }, []);
+    // 1. เพิ่ม useEffect สำหรับดึง shots เมื่อมี sequences
+useEffect(() => {
+    if (sequences.length > 0) {
+        fetchAllProjectShots();
+    }
+}, [sequences]); // ⭐ เพิ่ม dependency
+
+// 2. แก้ไข useEffect สำหรับโหลด shots ตอน mount
+useEffect(() => {
+    fetchAssets();
+    fetchSequences();
+}, []);
+
+
+
+
+// Close dropdown when clicking outside
+useEffect(() => {
+    const closeDropdown = () => setShowAddShotDropdown(false);
+
+    if (showAddShotDropdown) {
+        document.addEventListener("click", closeDropdown);
+        return () => document.removeEventListener("click", closeDropdown);
+    }
+}, [showAddShotDropdown]);
 
     const fetchAssets = async () => {
         const projectId = localStorage.getItem('projectId');
@@ -201,6 +266,144 @@ export default function Project_Assets() {
             setIsLoading(false);
         }
     };
+
+
+// frontend: Project_Assets.tsx
+const fetchAllProjectShots = async () => {
+  try {
+    const projectData = getProjectData();
+    
+    if (!projectData?.projectId) {
+      console.log("❌ No projectId found");
+      setAllProjectShots([]);
+      return;
+    }
+
+    console.log(`📤 Calling GET_ALL_PROJECT_SHOTS for projectId: ${projectData.projectId}`);
+    
+    // เรียก API เพื่อดึง shots ทั้งหมดจาก project_shots table
+    const { data } = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
+      projectId: projectData.projectId
+    });
+
+    console.log('📊 API Response from GET_ALL_PROJECT_SHOTS:', data);
+    
+    if (Array.isArray(data)) {
+      console.log(`✅ Loaded ${data.length} shots from database`);
+      setAllProjectShots(data);
+    } else {
+      console.error('❌ API response is not an array:', data);
+      setAllProjectShots([]);
+    }
+    
+  } catch (error: unknown) {
+    console.error('❌ Error in fetchAllProjectShots:');
+    
+    if (axios.isAxiosError(error)) {
+      console.error('Axios Error:', error.message);
+      console.error('Response:', error.response?.data);
+    }
+    
+    setAllProjectShots([]);
+  }
+};
+// ใช้ console.log ดูโครงสร้างข้อมูล
+const fetchAssetShots = async (assetId: string) => {
+    try {
+        console.log('🟡 Fetching asset shots for assetId:', assetId);
+        const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId });
+        
+        console.log('📊 Raw API Response:', res.data);
+        console.log('📊 Data type:', typeof res.data);
+        console.log('📊 Is Array?', Array.isArray(res.data));
+        console.log('📊 Length:', Array.isArray(res.data) ? res.data.length : 'N/A');
+        
+        if (Array.isArray(res.data)) {
+            console.log('✅ First item structure:', res.data[0]);
+            setAssetShots(res.data);
+        } else if (res.data && Array.isArray(res.data.data)) {
+            // กรณี API ส่งกลับเป็น { data: [...] }
+            console.log('✅ Data is nested in data property');
+            setAssetShots(res.data.data);
+        } else if (res.data && res.data.shots) {
+            // กรณี API ส่งกลับเป็น { shots: [...] }
+            console.log('✅ Data is nested in shots property');
+            setAssetShots(res.data.shots);
+        } else {
+            console.warn('⚠️ Invalid shots data format:', res.data);
+            setAssetShots([]);
+        }
+    } catch (error) {
+        console.error('❌ Error fetching asset shots:', error);
+        console.error('❌ Error details:');
+        setAssetShots([]);
+    }
+};
+
+// ⭐ เพิ่ม shot ให้ asset
+const handleAddShotToAsset = async (shotId: number) => {
+    if (!selectedAssetForDetail) return;
+
+    try {
+        const linkRes = await fetch(ENDPOINTS.ADD_ASSET_TO_SHOT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                shotId: shotId,
+                assetId: selectedAssetForDetail.id
+            })
+        });
+
+        if (linkRes.ok) {
+            console.log('✅ Shot added to asset successfully');
+            // รีเฟรช shots
+            fetchAssetShots(selectedAssetForDetail.id);
+            setAddShotInput('');
+            setShowAddShotDropdown(false);
+        } else {
+            console.error('❌ Failed to add shot to asset');
+        }
+    } catch (err) {
+        console.error('Error adding shot to asset:', err);
+    }
+};
+
+
+// ⭐ ลบ shot จาก asset
+const handleRemoveShotFromAsset = async (assetShotId: number) => {
+    if (!selectedAssetForDetail) return;
+
+    console.log('🗑️ Attempting to remove shot with assetShotId:', assetShotId);
+
+    try {
+        const res = await fetch(ENDPOINTS.REMOVE_ASSET_FROM_SHOT, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assetShotId })
+        });
+
+        console.log('Response status:', res.status);
+        const responseData = await res.json();
+        console.log('Response data:', responseData);
+
+        if (res.ok) {
+            console.log('✅ Shot removed from asset successfully');
+            // รีเฟรช shots
+            fetchAssetShots(selectedAssetForDetail.id);
+        } else {
+            console.error('❌ Failed to remove shot from asset');
+        }
+    } catch (err) {
+        console.error('Error removing shot from asset:', err);
+    }
+};
+
+// ⭐ กรอง shots ที่ยังไม่ได้เพิ่ม
+const filteredAddShots = allProjectShots.filter(shot =>
+    shot.shot_name.toLowerCase().includes(addShotInput.toLowerCase()) &&
+    !assetShots.some((assetShot: AssetShot) => assetShot.shot_id === shot.id)
+);
+
     const fetchSequences = async () => {
         setIsLoadingSequences(true);
         try {
@@ -271,7 +474,7 @@ export default function Project_Assets() {
                 asset_name: asset.asset_name,
                 description: asset.description,
                 status: asset.status,
-                file_url: asset.file_url || "", // ✅ เปลี่ยนจาก thumbnail เป็น file_url
+                file_url: asset.file_url || "", 
                 sequence: assetData[categoryIndex].category
             };
 
@@ -318,6 +521,20 @@ export default function Project_Assets() {
     const filteredShots = shots.filter(shot =>
         shot.shot_name.toLowerCase().includes(shotInput.toLowerCase())
     );
+    const filteredAssetTypes = type_assets.filter(type =>
+        type.toLowerCase().includes(assetType.toLowerCase())
+    );
+
+    const filteredAddSequences = sequences.filter(seq =>
+        seq.sequence_name.toLowerCase().includes(addSequenceInput.toLowerCase()) &&
+        !assetSequences.some((assetSeq: AssetSequence) => assetSeq.sequence_id === seq.id)
+    );
+
+    const handleAssetTypeSelect = (type: string) => {
+        setAssetType(type);
+        setNewAssetType(type);
+        setShowAssetTypeDropdown(false);
+    };
 
     const handleFieldBlur = async (categoryIndex: number, assetIndex: number, field: string) => {
         setEditingField(null);
@@ -330,6 +547,31 @@ export default function Project_Assets() {
                 field: field,
                 value: asset[field as keyof Asset]
             });
+
+            console.log(`✅ Updated ${field} for asset ${asset.id}`);
+        } catch (error) {
+            console.error(`❌ Error updating ${field}:`, error);
+            alert(`Failed to update ${field}`);
+            fetchAssets();
+        }
+    };
+
+    const updateAsset = async (categoryIndex: number, assetIndex: number, field: string, value: string) => {
+        try {
+            const asset = assetData[categoryIndex].assets[assetIndex];
+
+            await axios.post(ENDPOINTS.UPDATEASSET, {
+                assetId: asset.id,
+                field: field,
+                value: value
+            });
+
+            // Update local state
+            const newData = [...assetData];
+            if (field === 'description') {
+                newData[categoryIndex].assets[assetIndex].description = value;
+            }
+            setAssetData(newData);
 
             console.log(`✅ Updated ${field} for asset ${asset.id}`);
         } catch (error) {
@@ -422,31 +664,49 @@ export default function Project_Assets() {
             return;
         }
 
-
-
         try {
             const projectData = getProjectData();
 
-            await axios.post(ENDPOINTS.CREATEASSETS, {
+            const {data} = await axios.post(ENDPOINTS.CREATEASSETS, {
                 projectId: projectData?.projectId,
                 assetName: newAssetName,
                 description: newAssetDescription,
                 taskTemplate: newAssetTaskTemplate || null,
+                type: newAssetType || null,
                 sequenceId: selectedSequence?.id,
                 shotId: selectedShot?.id,
 
             });
 
-            if(newAssetTaskTemplate !== null){
-                console.log("Task IS NULL VALUE")
-                // await axios.post(ENDPOINTS.CREATE_TASK_ASSET, {
-                // projectId: projectData?.projectId,
-                // entity_type: "asset",
-                
-                // });
-            }
+            console.log('✅ Asset created successfully',data);
 
-            console.log('✅ Asset created successfully');
+            if (newAssetTaskTemplate && newAssetTaskTemplate.trim() !== '') {
+
+            console.log("Not A");
+
+            let typeNum: number | null = null;
+
+            if (newAssetTaskTemplate === "Automotive - Concept") typeNum = 0;
+            else if (newAssetTaskTemplate === "Automotive - Part") typeNum = 1;
+            else if (newAssetTaskTemplate === "Automotive - Theme") typeNum = 2;
+            else if (newAssetTaskTemplate === "Film VFX - Character Asset") typeNum = 3;
+            else if (newAssetTaskTemplate === "Film VFX - General Asset") typeNum = 4;
+            else if (newAssetTaskTemplate === "Games - Large Prop") typeNum = 5;
+            else if (newAssetTaskTemplate === "Games - Medium Prop") typeNum = 6;
+            else if (newAssetTaskTemplate === "Games - Small Prop") typeNum = 7;
+
+            if (typeNum !== null) {
+                await axios.post(ENDPOINTS.CREATE_TASK_ASSET, {
+                projectId: projectData?.projectId,
+                entity_type: "asset",
+                entity_id: data.assetId,
+                typeNum: typeNum,
+                });
+            } else {
+                console.warn("Unknown template:", newAssetTaskTemplate);
+            }
+            
+            }
 
             setNewAssetName('');
             setNewAssetDescription('');
@@ -455,8 +715,11 @@ export default function Project_Assets() {
             setSelectedShot(null);
             setSequenceInput('');
             setShotInput('');
+            setTaskTemplate('');
+            setAssetType('');
             setShots([]);
             setShowCreateAsset(false);
+            
 
             fetchAssets();
         } catch (error) {
@@ -478,7 +741,7 @@ export default function Project_Assets() {
                 if (found) {
                     const updatedSelected = {
                         ...selected,
-                        file_url: found.file_url || "" // ✅ เปลี่ยนจาก thumbnail เป็น file_url
+                        file_url: found.file_url || "" 
                     };
 
                     localStorage.setItem(
@@ -528,11 +791,9 @@ export default function Project_Assets() {
     } | null>(null);
 
     // ⭐ เพิ่มแทนที่
-    const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
-    const [isLoadingAssetDetail, setIsLoadingAssetDetail] = useState(false);
 
     // ⭐ ฟังก์ชันดึงข้อมูล asset detail
-    const fetchAssetDetail = async (assetId: number) => {
+    const fetchAssetDetail = async (assetId: string) => {
         setIsLoadingAssetDetail(true);
 
         try {
@@ -588,6 +849,78 @@ export default function Project_Assets() {
         }
     };
 
+    // ⭐ ฟังก์ชันดึง sequences ที่เชื่อมกับ asset
+    const fetchAssetSequences = async (assetId: string) => {
+        try {
+            const res = await axios.post(ENDPOINTS.GET_ASSET_SEQUENCES_JOIN, { assetId });
+            console.log('📋 Asset sequences data:', res.data);
+            setAssetSequences(res.data);
+        } catch (err) {
+            console.error('Error fetching asset sequences:', err);
+            setAssetSequences([]);
+        }
+    };
+
+    // ⭐ ฟังก์ชันเพิ่ม sequence ให้ asset
+    const handleAddSequenceToAsset = async (sequenceId: number) => {
+        if (!selectedAssetForDetail) return;
+
+        try {
+            const linkRes = await fetch(ENDPOINTS.ADD_ASSET_TO_SEQUENCE, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sequenceId: sequenceId,
+                    assetId: selectedAssetForDetail.id
+                })
+            });
+
+            if (linkRes.ok) {
+                console.log('✅ Sequence added to asset successfully');
+                // รีเฟรช sequences
+                fetchAssetSequences(selectedAssetForDetail.id);
+                setAddSequenceInput('');
+                setShowAddSequenceDropdown(false);
+            } else {
+                console.error('❌ Failed to add sequence to asset');
+            }
+        } catch (err) {
+            console.error('Error adding sequence to asset:', err);
+        }
+    };
+
+    // ⭐ ฟังก์ชันลบ sequence จาก asset
+    const handleRemoveSequenceFromAsset = async (assetSequenceId: number) => {
+        if (!selectedAssetForDetail) return;
+
+        console.log('🗑️ Attempting to remove sequence with assetSequenceId:', assetSequenceId);
+        const requestBody = { assetSequenceId };
+        console.log('📤 Sending request body:', requestBody);
+        console.log('📤 JSON stringified:', JSON.stringify(requestBody));
+
+        try {
+            const res = await fetch(ENDPOINTS.REMOVE_ASSET_FROM_SEQUENCE, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log('Response status:', res.status);
+            const responseData = await res.json();
+            console.log('Response data:', responseData);
+
+            if (res.ok) {
+                console.log('✅ Sequence removed from asset successfully');
+                // รีเฟรช sequences
+                fetchAssetSequences(selectedAssetForDetail.id);
+            } else {
+                console.error('❌ Failed to remove sequence from asset');
+            }
+        } catch (err) {
+            console.error('Error removing sequence from asset:', err);
+        }
+    };
+
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -600,16 +933,26 @@ export default function Project_Assets() {
         }
     }, [contextMenu]);
 
+    // Close add sequence dropdown when clicking outside
+    useEffect(() => {
+        const closeDropdown = () => setShowAddSequenceDropdown(false);
+
+        if (showAddSequenceDropdown) {
+            document.addEventListener("click", closeDropdown);
+            return () => document.removeEventListener("click", closeDropdown);
+        }
+    }, [showAddSequenceDropdown]);
+
 
 
 
     // ยืนยันการลบ sequence ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const [deleteConfirm, setDeleteConfirm] = useState<{
-        assetId: number;
+        assetId: string;
         asset_name: string;
     } | null>(null);
 
-    const handleDeleteAsset = async (assetId: number) => {
+    const handleDeleteAsset = async (assetId: string) => {
         try {
             await axios.delete(ENDPOINTS.DELETE_ASSET, {
                 data: { assetId },
@@ -694,12 +1037,15 @@ export default function Project_Assets() {
         setNewAssetDescription('');
         setNewAssetTaskTemplate('');
         setTaskTemplate('');
+        setAssetType('');
+        setNewAssetType('');
         setSelectedSequence(null);
         setSelectedShot(null);
         setSequenceInput('');
         setShotInput('');
         setShots([]);
         setShowTemplateDropdown(false);
+        setShowAssetTypeDropdown(false);
         setShowSequenceDropdown(false);
         setShowShotDropdown(false);
     };
@@ -770,7 +1116,7 @@ export default function Project_Assets() {
                             <div key={category.category} className="bg-gray-800 rounded-xl border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
                                 <button
                                     onClick={() => toggleCategory(category.category)}
-                                    className="w-full flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
+                                    className="w-full rounded-xl flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
                                 >
                                     {expandedCategories.includes(category.category) ? (
                                         <ChevronDown className="w-4 h-4" />
@@ -959,6 +1305,12 @@ export default function Project_Assets() {
                     onClick={() => setShowTemplateDropdown(false)}
                 ></div>
             )}
+            {showAssetTypeDropdown && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowAssetTypeDropdown(false)}
+                ></div>
+            )}
 
             {showCreateAsset && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 top-20">
@@ -1049,6 +1401,37 @@ export default function Project_Assets() {
                                                 className="px-4 py-2.5 hover:bg-blue-500/20 hover:text-white cursor-pointer transition-colors first:rounded-t-lg last:rounded-b-lg text-gray-300 text-sm"
                                             >
                                                 {template}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Asset Type */}
+                            <div className="space-y-2 relative">
+                                <label className="block text-sm font-medium text-gray-300">
+                                    Asset Type
+                                </label>
+                                <input
+                                    type="text"
+                                    value={assetType}
+                                    onChange={(e) => {
+                                        setAssetType(e.target.value);
+                                        setShowAssetTypeDropdown(true);
+                                    }}
+                                    onFocus={() => setShowAssetTypeDropdown(true)}
+                                    placeholder="Type to search asset types..."
+                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                />
+
+                                {showAssetTypeDropdown && filteredAssetTypes.length > 0 && (
+                                    <div className="absolute z-10 w-full mt-1 bg-[#1a1a1a] border border-gray-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto">
+                                        {filteredAssetTypes.map((type) => (
+                                            <div
+                                                key={type}
+                                                onClick={() => handleAssetTypeSelect(type)}
+                                                className="px-4 py-2.5 hover:bg-blue-500/20 hover:text-white cursor-pointer transition-colors first:rounded-t-lg last:rounded-b-lg text-gray-300 text-sm"
+                                            >
+                                                {type}
                                             </div>
                                         ))}
                                     </div>
@@ -1210,6 +1593,8 @@ export default function Project_Assets() {
                         onClick={() => {
                             setSelectedAssetForDetail(contextMenu.asset); // ✅ ใช้ asset จาก API ตรง ๆ
                             fetchAssetDetail(contextMenu.asset.id); // ⭐ เพิ่มบรรทัดนี้
+                            fetchAssetSequences(contextMenu.asset.id); // ⭐ เพิ่มบรรทัดนี้
+                            fetchAssetShots(contextMenu.asset.id); 
                             setShowAssetDetailPanel(true);
                             setContextMenu(null);
                         }}
@@ -1246,6 +1631,7 @@ export default function Project_Assets() {
                             setSelectedAssetForDetail(null);
                             setExpandedItem(null);
                             setAssetDetail(null); // ⭐ เพิ่มบรรทัดนี้
+                            setAssetSequences([]); // ⭐ เพิ่มบรรทัดนี้
                         }}
                     />
 
@@ -1273,6 +1659,7 @@ export default function Project_Assets() {
                                         setSelectedAssetForDetail(null);
                                         setExpandedItem(null);
                                         setAssetDetail(null); // ⭐ เพิ่มบรรทัดนี้
+                                        setAssetSequences([]); // ⭐ เพิ่มบรรทัดนี้
                                     }}
                                     className="w-9 h-9 rounded-lg bg-gray-700/80 hover:bg-red-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group"
                                 >
@@ -1298,136 +1685,289 @@ export default function Project_Assets() {
                                     {/* Asset Info */}
                                     <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
                                         <h4 className="text-sm font-medium text-gray-300 mb-2">Description</h4>
-                                        <p className="text-sm text-gray-400">
-                                            {assetDetail.asset_description || "No description"}
-                                        </p>
+                                        {editingField?.field === 'shot_detail_description' ? (
+                                            <textarea
+                                                value={assetDetail.asset_description}
+                                                onChange={e => setAssetDetail(sd => sd ? { ...sd, asset_description: e.target.value } : sd)}
+                                                onBlur={async () => {
+                                                    const catIdx = assetData.findIndex(cat =>
+                                                        cat.assets.some(s => s.id === assetDetail.asset_id)
+                                                    );
+                                                    const assetIdx = catIdx !== -1
+                                                        ? assetData[catIdx].assets.findIndex(s => s.id === assetDetail.asset_id)
+                                                        : -1;
+                                                    if (catIdx !== -1 && assetIdx !== -1) {
+                                                        await updateAsset(catIdx, assetIdx, 'description', assetDetail.asset_description);
+                                                    }
+                                                    setEditingField(null);
+                                                }}
+                                                onKeyDown={async e => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        const catIdx = assetData.findIndex(cat =>
+                                                            cat.assets.some(s => s.id === assetDetail.asset_id)
+                                                        );
+                                                        const assetIdx = catIdx !== -1
+                                                            ? assetData[catIdx].assets.findIndex(s => s.id === assetDetail.asset_id)
+                                                            : -1;
+                                                        if (catIdx !== -1 && assetIdx !== -1) {
+                                                            await updateAsset(catIdx, assetIdx, 'description', assetDetail.asset_description);
+                                                        }
+                                                        setEditingField(null);
+                                                    } else if (e.key === 'Escape') {
+                                                        setEditingField(null);
+                                                    }
+                                                }}
+                                                autoFocus
+                                                rows={4}
+                                                className="w-full text-sm text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                            />
+                                        ) : (
+                                            <p
+                                                className="text-sm text-gray-400 whitespace-pre-line cursor-pointer hover:bg-gray-700 px-2 py-1 rounded"
+                                                onClick={() => setEditingField({ field: 'shot_detail_description', categoryIndex: -1, assetIndex: -1 })}
+                                            >
+                                                {assetDetail.asset_description || "No description"}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Sequence Section */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-medium text-gray-300">
-                                                Sequence {assetDetail.sequence ? "(1)" : "(0)"}
+                                                Sequence ({assetSequences.length})
                                             </h4>
                                         </div>
 
-                                        {/* Add Sequence Input - TODO: เชื่อม API ในอนาคต */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Type sequence name..."
-                                                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                                                disabled
-                                            />
-                                            <button
-                                                className="px-4 py-2 bg-purple-600/50 rounded-lg text-sm text-white cursor-not-allowed"
-                                                disabled
-                                                title="Feature coming soon"
-                                            >
-                                                + Add
-                                            </button>
+                                        {/* Add Sequence Input */}
+                                        <div className="relative">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={addSequenceInput}
+                                                    onChange={(e) => {
+                                                        setAddSequenceInput(e.target.value);
+                                                        setShowAddSequenceDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowAddSequenceDropdown(true)}
+                                                    placeholder="Type sequence name..."
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        if (addSequenceInput.trim()) {
+                                                            // Find the sequence by name and add it
+                                                            const sequence = sequences.find(seq => 
+                                                                seq.sequence_name.toLowerCase() === addSequenceInput.toLowerCase().trim()
+                                                            );
+                                                            if (sequence) {
+                                                                handleAddSequenceToAsset(sequence.id);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm text-white transition-colors"
+                                                >
+                                                    + Add
+                                                </button>
+                                            </div>
+
+                                            {showAddSequenceDropdown && filteredAddSequences.length > 0 && (
+                                                <div 
+                                                    className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {filteredAddSequences.map((seq) => (
+                                                        <div
+                                                            key={seq.id}
+                                                            onClick={() => handleAddSequenceToAsset(seq.id)}
+                                                            className="px-4 py-2.5 hover:bg-purple-500/20 hover:text-white cursor-pointer transition-colors first:rounded-t-lg last:rounded-b-lg text-gray-300 text-sm flex justify-between items-center"
+                                                        >
+                                                            <span>{seq.sequence_name}</span>
+                                                            {seq.description && <span className="text-gray-400 text-xs ml-2">{seq.description}</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Sequence Tag */}
                                         <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                                            {!assetDetail.sequence ? (
+                                            {assetSequences.length === 0 ? (
                                                 <p className="text-xs text-gray-500 italic">No sequence assigned</p>
                                             ) : (
-                                                <div
-                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                    onClick={() => setExpandedItem({ type: "sequence" as any, id: assetDetail.sequence!.id })}
-                                                    className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "sequence" && expandedItem?.id === assetDetail.sequence.id
-                                                        ? "bg-purple-500/80 text-white border-purple-400 shadow-lg shadow-purple-500/50"
-                                                        : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
-                                                        }`}
-                                                >
-                                                    <span className="text-sm font-medium">{assetDetail.sequence.sequence_name}</span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded ${assetDetail.sequence.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                                        assetDetail.sequence.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            'bg-white/20 text-white/80'
-                                                        }`}>
-                                                        {assetDetail.sequence.status === 'fin' ? 'Final' :
-                                                            assetDetail.sequence.status === 'ip' ? 'In Progress' :
-                                                                'Waiting'}
-                                                    </span>
-                                                    {/* TODO: เชื่อม API ลบ sequence assignment ในอนาคต */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            console.log("TODO: Remove sequence assignment");
-                                                        }}
-                                                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === assetDetail.sequence!.id
-                                                            ? "hover:bg-purple-600 hover:rotate-90"
-                                                            : "hover:bg-red-500/80 hover:rotate-90"
+                                                assetSequences.map((seq) => (
+                                                    <div
+                                                        key={seq.sequence_id}
+                                                        onClick={() => setExpandedItem({ type: "sequence", id: seq.sequence_id })}
+                                                        className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "sequence" && expandedItem?.id === seq.sequence_id
+                                                            ? "bg-purple-500/80 text-white border-purple-400 shadow-lg shadow-purple-500/50"
+                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
                                                             }`}
                                                     >
-                                                        <span className="text-sm font-bold">×</span>
-                                                    </button>
-                                                </div>
+                                                        <span className="text-sm font-medium">{seq.sequence_name}</span>
+                                                        <span className={`text-xs px-2 py-0.5 rounded ${seq.sequence_status === 'fin' ? 'bg-green-500/20 text-green-400' :
+                                                            seq.sequence_status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                'bg-white/20 text-white/80'
+                                                            }`}>
+                                                            {seq.sequence_status === 'fin' ? 'Final' :
+                                                                seq.sequence_status === 'ip' ? 'In Progress' :
+                                                                    'Waiting'}
+                                                        </span>
+                                                        {/* TODO: เชื่อม API ลบ sequence assignment ในอนาคต */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                console.log('🖱️ Clicked remove button for sequence:', seq);
+                                                                console.log('Sequence id:', seq.id);
+                                                                handleRemoveSequenceFromAsset(seq.id);
+                                                            }}
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === seq.sequence_id
+                                                                ? "hover:bg-purple-600 hover:rotate-90"
+                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                                }`}
+                                                        >
+                                                            <span className="text-sm font-bold">×</span>
+                                                        </button>
+                                                    </div>
+                                                ))
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Shot Section */}
+                             {/* Shots Section - แสดงเฉพาะ Shots ไม่มี Assets ข้างใน */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-medium text-gray-300">
-                                                Shot {assetDetail.shot ? "(1)" : "(0)"}
+                                                Shots ({assetShots.length})
                                             </h4>
                                         </div>
 
-                                        {/* Add Shot Input - TODO: เชื่อม API ในอนาคต */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Type shot name..."
-                                                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
-                                                disabled
-                                            />
-                                            <button
-                                                className="px-4 py-2 bg-green-600/50 rounded-lg text-sm text-white cursor-not-allowed"
-                                                disabled
-                                                title="Feature coming soon"
-                                            >
-                                                + Add
-                                            </button>
+                                        {/* Add Shot Dropdown */}
+                                        <div className="relative">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search and select shot..."
+                                                    value={addShotInput}
+                                                    onChange={(e) => {
+                                                        setAddShotInput(e.target.value);
+                                                        setShowAddShotDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowAddShotDropdown(true)}
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
+                                                />
+                                                <button
+                                                    onClick={() => setShowAddShotDropdown(!showAddShotDropdown)}
+                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                >
+                                                    <span>+ Add</span>
+                                                    <span className="text-xs">▼</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Dropdown List */}
+                                            {showAddShotDropdown && (
+                                                <>
+                                                    {/* Backdrop */}
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => {
+                                                            setShowAddShotDropdown(false);
+                                                            setAddShotInput("");
+                                                        }}
+                                                    />
+
+                                                    {/* Dropdown */}
+                                                    <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-20">
+                                                        {filteredAddShots.length === 0 ? (
+                                                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                                                {addShotInput
+                                                                    ? "No matching shots found"
+                                                                    : allProjectShots.length === 0
+                                                                        ? "No available shots in this project"
+                                                                        : "All shots already added"}
+                                                            </div>
+                                                        ) : (
+                                                            filteredAddShots.map(shot => (
+                                                                <button
+                                                                    key={shot.id}
+                                                                    onClick={() => handleAddShotToAsset(shot.id)}
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
+                                                                            <span className="text-xs text-gray-400">#{shot.id}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-sm text-gray-200 block">{shot.shot_name}</span>
+                                                                            {shot.description && (
+                                                                                <span className="text-xs text-gray-500">{shot.description}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`text-xs px-2 py-0.5 rounded ${shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
+                                                                            shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                                'bg-gray-500/20 text-gray-400'
+                                                                            }`}>
+                                                                            {shot.status === 'fin' ? 'Final' :
+                                                                                shot.status === 'ip' ? 'In Progress' :
+                                                                                    'Waiting'}
+                                                                        </span>
+                                                                        <span className="text-xs text-gray-500 group-hover:text-green-400 font-medium">+ Add</span>
+                                                                    </div>
+                                                                </button>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
-                                        {/* Shot Tag */}
-                                        <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                                            {!assetDetail.shot ? (
-                                                <p className="text-xs text-gray-500 italic">No shot assigned</p>
+                                        {/* Shot Tags - แสดงเฉพาะ Shot ไม่แสดง Assets */}
+                                        <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 min-h-[60px]">
+                                            {assetShots.length === 0 ? (
+                                                <p className="text-xs text-gray-500 italic w-full text-center py-2">No shots linked yet</p>
                                             ) : (
-                                                <div
-                                                    onClick={() => setExpandedItem({ type: "shot", id: assetDetail.shot!.id })}
-                                                    className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "shot" && expandedItem?.id === assetDetail.shot.id
-                                                        ? "bg-blue-500/80 text-white border-blue-400 shadow-lg shadow-blue-500/50"
-                                                        : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
-                                                        }`}
-                                                >
-                                                    <span className="text-sm font-medium">{assetDetail.shot.shot_name}</span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded ${assetDetail.shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                                        assetDetail.shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            'bg-white/20 text-white/80'
-                                                        }`}>
-                                                        {assetDetail.shot.status === 'fin' ? 'Final' :
-                                                            assetDetail.shot.status === 'ip' ? 'In Progress' :
-                                                                'Waiting'}
-                                                    </span>
-                                                    {/* TODO: เชื่อม API ลบ shot assignment ในอนาคต */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            console.log("TODO: Remove shot assignment");
-                                                        }}
-                                                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === assetDetail.shot!.id
-                                                            ? "hover:bg-green-600 hover:rotate-90"
-                                                            : "hover:bg-red-500/80 hover:rotate-90"
+                                                assetShots.map(shot => (
+                                                    <div
+                                                        key={shot.shot_id}
+                                                        onClick={() => setExpandedItem({ type: "shot", id: shot.shot_id })}
+                                                        className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "shot" && expandedItem?.id === shot.shot_id
+                                                            ? "bg-blue-500/80 text-white border-blue-400 shadow-lg shadow-blue-500/50"
+                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
                                                             }`}
                                                     >
-                                                        <span className="text-sm font-bold">×</span>
-                                                    </button>
-                                                </div>
+                                                        <span className="text-sm font-medium">{shot.shot_name}</span>
+
+                                                        {/* ⭐ Status Badge */}
+                                                        <span className={`text-xs px-2 py-0.5 rounded ${shot.shot_status === 'fin' ? 'bg-green-500/20 text-green-400' :
+                                                            shot.shot_status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                'bg-white/20 text-white/80'
+                                                            }`}>
+                                                            {shot.shot_status === 'fin' ? 'Final' :
+                                                                shot.shot_status === 'ip' ? 'In Progress' :
+                                                                    'Waiting'}
+                                                        </span>
+
+                                                        {/* ⭐ ปุ่มลบ shot */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveShotFromAsset(shot.id);
+                                                            }}
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.shot_id
+                                                                ? "hover:bg-green-600 hover:rotate-90"
+                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                                }`}
+                                                            title="Remove from asset"
+                                                        >
+                                                            <span className="text-sm font-bold">×</span>
+                                                        </button>
+                                                    </div>
+                                                ))
                                             )}
                                         </div>
                                     </div>

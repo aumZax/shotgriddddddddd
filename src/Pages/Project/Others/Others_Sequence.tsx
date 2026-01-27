@@ -3,13 +3,15 @@ import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
 import { Image } from 'lucide-react';
+import TaskTab from "../../../components/TaskTab";
+import axios from 'axios';
 
 
 // Status configuration
 const statusConfig = {
     wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'In Progress', color: 'bg-green-500', icon: 'dot' },
-    fin: { label: 'Final', color: 'bg-gray-500', icon: 'dot' }
+    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
 };
 
 type StatusType = keyof typeof statusConfig;
@@ -21,6 +23,28 @@ interface Activity {
     action: string;
     timestamp: Date;
 }
+
+
+type Task = {
+    id: number;
+    project_id: number;
+    entity_type: string;
+    entity_id: number;
+    task_name: string;
+    status: string;
+    start_date: string;
+    due_date: string;
+    created_at: string;
+    description: string;
+    file_url: string;
+    assignees: TaskAssignee[]; // ⭐ สำคัญ
+};
+
+type TaskAssignee = {
+    id: number;
+    username: string;
+};
+
 
 
 // Initial activities
@@ -82,6 +106,44 @@ export default function Others_Sequence() {
     const [commentText, setCommentText] = useState('');
     const [currentUser] = useState('Current User');
 
+
+
+    // ++++++++++++++++++++++++++++++++++++++ storage +++++++++++++++++++++++++++++++
+
+    const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
+    const sequenceId = stored.sequenceId;
+    console.log(sequenceId)
+
+
+    const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
+    const projectId = projectData?.projectId;
+    const projectName = projectData?.projectName;
+
+
+    // ++++++++++++++++++++++++++++++++++++++++ right
+    const [rightPanelTab, setRightPanelTab] = useState('notes'); // ← เพิ่มบรรทัดนี้
+
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isResizing, setIsResizing] = useState(false);
+
+    const [rightPanelWidth, setRightPanelWidth] = useState(600);
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        setIsResizing(true);
+        e.preventDefault();
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isResizing) {
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth >= 400 && newWidth <= 1000) {
+                setRightPanelWidth(newWidth);
+            }
+        }
+    };
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         setShowStatusMenu(!showStatusMenu);
@@ -126,7 +188,7 @@ export default function Others_Sequence() {
         // await fetch('/api/comments', {
         //     method: 'POST',
         //     body: JSON.stringify({
-        //         shotId: shotData.id,
+        //         sequenceId: shotData.id,
         //         userId: currentUser,
         //         text: commentText
         //     })
@@ -139,6 +201,62 @@ export default function Others_Sequence() {
             handleSubmitComment();
         }
     };
+
+
+
+    // +++++++++++++++++++++++++++++ sequence task +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const [tasks, setTasks] = useState<Task[]>([]);
+
+
+    useEffect(() => {
+        console.log("🔍 sequenceId:", sequenceId);
+        console.log("🔍 projectId:", projectId);
+        console.log("🔍 stored data:", stored);
+
+        if (!sequenceId || !projectId) {
+            console.warn("⚠️ Missing sequenceId or projectId");
+            return;
+        }
+
+        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
+            project_id: projectId,
+            entity_type: "sequence",
+            entity_id: sequenceId
+        })
+            .then(res => {
+                console.log("✅ Tasks received:", res.data);
+                setTasks(res.data);
+            })
+            .catch(err => {
+                console.error("❌ โหลด task ไม่สำเร็จ", err);
+            });
+    }, [sequenceId, projectId]); // เพิ่ม dependency
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Date  ++++++++++++++++++++++++++++++++++++++++++
+    const formatDateThai = (dateString: string) => {
+        if (!dateString) return '-';
+
+        const date = new Date(dateString);
+        const options: Intl.DateTimeFormatOptions = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        };
+
+        return date.toLocaleDateString('th-TH', options);
+    };
+
+
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    useEffect(() => {
+        if (selectedTask) {
+            setIsPanelOpen(false);
+            const t = setTimeout(() => setIsPanelOpen(true), 10);
+            return () => clearTimeout(t);
+        }
+    }, [selectedTask]);
 
 
 
@@ -228,10 +346,10 @@ export default function Others_Sequence() {
 
             case 'Tasks':
                 return (
-                    <div className="space-y-3">
-                        <TaskItem title="Block animation" assignee="John" status="In Progress" />
-                        <TaskItem title="Lighting pass" assignee="Jane" status="Waiting" />
-                    </div>
+                    <TaskTab
+                        tasks={tasks}
+                        onTaskClick={(task: Task) => setSelectedTask(task)}
+                    />
                 );
 
 
@@ -329,7 +447,10 @@ export default function Others_Sequence() {
 
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-900" onClick={handleClickOutside}>
+        <div className="min-h-screen flex flex-col bg-gray-900" onClick={handleClickOutside}
+            onMouseMove={handleMouseMove}  // ← เพิ่มตรงนี้
+            onMouseUp={() => setIsResizing(false)}  // ← เพิ่มตรงนี้ด้วย
+        >
             <div className="pt-14">
                 <Navbar_Project activeTab="other" />
             </div>
@@ -545,9 +666,9 @@ export default function Others_Sequence() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`pb-2 transition-all ${activeTab === tab
+                                    className={`pb-2 rounded-xl bg-gray-700 transition-all ${activeTab === tab
                                         ? 'text-white border-b-2 border-blue-500 font-medium bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-600 hover:shadow-blue-500/50 hover:scale-105'
-                                        : 'text-gray-400 hover:text-white'
+                                        : 'text-white-400 hover:text-white bg-gradient-to-r hover:from-gray-700 hover:to-gray-700 hover:scale-105'
                                         }`}
                                 >
                                     {tab}
@@ -785,6 +906,191 @@ export default function Others_Sequence() {
                 </div>
             )}
 
+
+
+            {/* Right Panel - Floating Card */}
+            {selectedTask && (
+                <div
+                    className={`
+            fixed right-0 top-26 bottom-0
+            bg-[#2a2d35] shadow-2xl flex z-40
+            transform transition-transform duration-300 ease-out
+            ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+                    style={{ width: `${rightPanelWidth}px` }}
+                >
+
+                    {/* Resize Handle */}
+                    <div
+                        className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
+                        onMouseDown={handleMouseDown}
+                    />
+
+                    {/* Panel Content */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-[#1a1d24] border-b border-gray-700">
+                            <div className="flex items-center justify-between px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                    <img src={selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
+                                    <div>
+                                        <div className="text-sm text-gray-400">
+                                            Napo (Animation demo) › C005 › {selectedTask.task_name.split('/')[0].trim()}
+                                        </div>
+                                        <h2 className="text-xl text-white font-normal mt-1">
+                                            {selectedTask?.task_name.split('/').pop()?.trim()}
+                                        </h2>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setIsPanelOpen(false);
+                                        setTimeout(() => setSelectedTask(null), 300); // ตรงกับ duration
+                                    }}
+
+                                    className="text-gray-400 hover:text-white text-2xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Status bar */}
+                            <div className="flex items-center gap-4 px-4 py-3">
+                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
+                                    ? 'text-gray-400 bg-gray-500/20'
+                                    : selectedTask.status === 'ip'
+                                        ? 'text-blue-400 bg-blue-500/20'
+                                        : 'text-green-400 bg-green-500/20'
+                                    }`}>
+                                    {selectedTask.status}
+                                </span>
+                                <div className="flex items-center gap-2 text-sm text-gray-400">
+                                    <span>📅</span>
+                                    <span>ครบกำหนด {formatDateThai(selectedTask.due_date)}</span>
+                                </div>
+                            </div>
+
+                            {/* Tabs */}
+                            <div className="flex border-t border-gray-700">
+                                <button
+                                    onClick={() => setRightPanelTab('notes')}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
+                                        ? 'text-white border-b-2 border-blue-500'
+                                        : 'text-gray-400 hover:text-white'
+                                        }`}
+                                >
+                                    <span>📝</span>
+                                    <span>NOTES</span>
+                                </button>
+                                <button
+                                    onClick={() => setRightPanelTab('versions')}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'versions'
+                                        ? 'text-white border-b-2 border-blue-500'
+                                        : 'text-gray-400 hover:text-white'
+                                        }`}
+                                >
+                                    <span>💎</span>
+                                    <span>VERSIONS</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="flex-1 overflow-auto p-4">
+                            {rightPanelTab === 'notes' && (
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="Write a note..."
+                                        className="w-full px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500 mb-4"
+                                    />
+                                    <div className="flex gap-2 mb-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Type to filter"
+                                            className="flex-1 px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500"
+                                        />
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any label</option>
+                                        </select>
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any time</option>
+                                        </select>
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any note</option>
+                                        </select>
+                                    </div>
+                                    <div className="text-center text-gray-500 py-12">
+                                        No notes
+                                    </div>
+                                </div>
+                            )}
+
+                            {rightPanelTab === 'versions' && (
+                                <div>
+                                    <div className="flex gap-2 mb-4 flex-wrap">
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any type</option>
+                                        </select>
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any asset type</option>
+                                        </select>
+                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
+                                            <option>Any status</option>
+                                        </select>
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm">
+                                            <input type="checkbox" id="latestVersion" />
+                                            <label htmlFor="latestVersion">Latest version</label>
+                                        </div>
+                                        <div className="flex-1"></div>
+                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">
+                                            ⊞
+                                        </button>
+                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">
+                                            ☰
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {[1, 2, 3, 4].map((v) => (
+                                            <div key={v} className="bg-[#1a1d24] rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors">
+                                                <div className="relative aspect-video bg-gray-800">
+                                                    <img
+                                                        src={selectedTask.file_url}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                                                        v{v}
+                                                    </div>
+                                                </div>
+                                                <div className="p-3">
+                                                    <div className="text-sm text-white mb-1">Animation v{v}</div>
+                                                    <div className="text-xs text-gray-400 mb-2">{selectedTask.task_name.split('/')[0].trim()}</div>
+                                                    <div className="text-xs text-gray-500 mb-2">Napo (Animation demo) / C...</div>
+                                                    <div className="text-xs text-gray-400">Animation</div>
+                                                    <div className={`mt-2 h-1 rounded ${v === 3 ? 'bg-emerald-500' : v === 2 ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-4 border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                                        <div className="text-4xl text-gray-600 mb-2">☁️</div>
+                                        <div className="text-sm text-gray-400">Drag and drop your files here, or browse</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+
+
+
+
         </div>
     );
 }
@@ -798,19 +1104,3 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
     </div>
 );
 
-const TaskItem = ({
-    title,
-    assignee,
-    status
-}: {
-    title: string;
-    assignee: string;
-    status: string;
-}) => (
-    <div className="bg-gray-700/40 p-3 rounded-lg flex justify-between text-gray-300">
-        <span>{title}</span>
-        <span className="text-sm text-gray-400">
-            {assignee} · {status}
-        </span>
-    </div>
-);
