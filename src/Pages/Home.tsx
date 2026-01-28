@@ -693,10 +693,10 @@ export default function Home() {
 
                 <div
                     onClick={() => handleProjectClick(project)}
-                    className="p-4 cursor-pointer hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 transition-all duration-300"
+                    className="p-4 cursor-pointer hover:bg-gradient-to-br hover:from-gray-100 hover:to-blue-50 transition-all duration-300 hover:text-gray-800"
                 >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-gray-800 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
+                        <h3 className="text-white-800 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
                             {project.name}
                         </h3>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -716,7 +716,7 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2 leading-relaxed">
+                    <p className="text-white-600 text-sm mb-2 line-clamp-2 leading-relaxed">
                         {project.description}
                     </p>
 
@@ -792,12 +792,12 @@ export default function Home() {
                             />
 
                             <div className="flex gap-4 border-b border-gray-700 mb-6">
-                                <button className="px-4 py-2 text-white border-b-2 border-blue-500 font-medium">
+                                <button className="px-4 py-2 text-white border-b-2 border-blue-500 font-medium  bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg">
                                     Templates
                                 </button>
-                                <button className="px-4 py-2 text-gray-400 hover:text-white">
+                                {/* <button className="px-4 py-2 text-gray-400 hover:text-white">
                                     Projects
-                                </button>
+                                </button> */}
                             </div>
 
                             <p className="text-gray-400 mb-6">
@@ -823,10 +823,8 @@ export default function Home() {
                             </div>
                         </div>
 
-                        <div className="border-t border-gray-700 p-6 flex justify-between items-center">
-                            <button className="text-gray-400 hover:text-white transition-colors">
-                                Use the advanced form...
-                            </button>
+                        <div className="border-t border-gray-700 p-6 flex items-center justify-end">
+                            
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => {
@@ -835,14 +833,14 @@ export default function Home() {
                                         setSelectedTemplate('');
                                         setError('');
                                     }}
-                                    className="px-4 py-2 bg-red-700 hover:bg-gray-600 text-white rounded transition-colors"
+                                    className="px-4 py-2  bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 text-white rounded transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCreateProject}
                                     disabled={loading || !selectedTemplate}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="px-4 py-2  bg-gradient-to-r from-green-800 to-green-600 hover:from-green-700 hover:to-green-500 text-white rounded transition-colors"
                                 >
                                     {loading ? "Creating..." : "Create Project"}
                                 </button>

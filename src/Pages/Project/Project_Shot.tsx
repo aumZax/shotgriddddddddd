@@ -1087,10 +1087,10 @@ export default function ProjectShot() {
                                                         </div>
 
                                                         {/* Status */}
-                                                        <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                        <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4 ">
                                                             <button
                                                                 onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-700/40 transition-colors"
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors  bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                             >
                                                                 {statusConfig[shot.status as StatusType].icon === '-' ? (
                                                                     <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -1113,7 +1113,7 @@ export default function ProjectShot() {
                                                                                     e.stopPropagation();
                                                                                     handleStatusChange(categoryIndex, shotIndex, key);
                                                                                 }}
-                                                                                className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
+                                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors  bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                                             >
                                                                                 {config.icon === '-' ? (
                                                                                     <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
@@ -1220,7 +1220,7 @@ export default function ProjectShot() {
                                                                                         fetchShotDetail(shot.id);
                                                                                         setShowExpandedPanel(true);
                                                                                     }}
-                                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
+                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-500 to-gray-800 hover:from-gray-700 hover:to-gray-500 border border-gray-600/30 rounded-lg"
                                                                                     title="View all assets"
                                                                                 >
                                                                                     <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
