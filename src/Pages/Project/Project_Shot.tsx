@@ -227,15 +227,15 @@ export default function ProjectShot() {
     };
 
     // เพิ่มฟังก์ชันนี้เพื่อ refresh assets ของทุก shot ที่แสดงอยู่
-    const refreshAllVisibleShotAssets = async () => {
-        const visibleShotIds = shotData.flatMap(cat =>
-            cat.shots.map(shot => Number(shot.id))
-        );
+    // const refreshAllVisibleShotAssets = async () => {
+    //     const visibleShotIds = shotData.flatMap(cat =>
+    //         cat.shots.map(shot => Number(shot.id))
+    //     );
 
-        for (const shotId of visibleShotIds) {
-            await fetchShotAssets(shotId);
-        }
-    };
+    //     for (const shotId of visibleShotIds) {
+    //         await fetchShotAssets(shotId);
+    //     }
+    // };
 
     // 2. เพิ่ม Asset เข้า Shot
     const handleAddAssetToShot = async (assetId: number) => {
