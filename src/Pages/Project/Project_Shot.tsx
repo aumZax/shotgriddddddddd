@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -1033,10 +1033,7 @@ export default function ProjectShot() {
                                                                 {/* Hover Overlay */}
                                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
                                                                     <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                                        </svg>
+                                                                      <Eye className="w-3.5 h-3.5 text-white"/>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1090,7 +1087,7 @@ export default function ProjectShot() {
                                                         <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4 ">
                                                             <button
                                                                 onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors  bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg"
+                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md transition-colors  bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                             >
                                                                 {statusConfig[shot.status as StatusType].icon === '-' ? (
                                                                     <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -1220,20 +1217,15 @@ export default function ProjectShot() {
                                                                                         fetchShotDetail(shot.id);
                                                                                         setShowExpandedPanel(true);
                                                                                     }}
-                                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
+                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600/50 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
+
                                                                                     title="View all assets"
                                                                                 >
                                                                                     <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
                                                                                         View
                                                                                     </span>
-                                                                                    <svg
-                                                                                        className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 transition-all"
-                                                                                        fill="none"
-                                                                                        stroke="currentColor"
-                                                                                        viewBox="0 0 24 24"
-                                                                                    >
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                                    </svg>
+                                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all"/>
+                                                                                     
                                                                                 </button>
                                                                             </>
                                                                         )}

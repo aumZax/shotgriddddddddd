@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, FolderClosed, Image, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, FolderClosed, Image, Lock } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";
@@ -70,7 +70,7 @@ export default function Project_Sequence() {
     const [sequences, setSequences] = useState<SequenceItem[]>([]);
     const [isLoadingSequences, setIsLoadingSequences] = useState(true);
 
-     const [selectedSequence, setSelectedSequence] = useState<number | null>(null);
+    const [selectedSequence, setSelectedSequence] = useState<number | null>(null);
     const [editingField, setEditingField] = useState<EditingField | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'bottom' | 'top'>('bottom');
@@ -148,7 +148,7 @@ export default function Project_Sequence() {
         }
     }, [expandedSequenceId]);
 
-   const handleSequenceClick = (index: number) => {
+    const handleSequenceClick = (index: number) => {
         if (!editingField && !showStatusMenu) {
             setSelectedSequence(index);
         }
@@ -161,7 +161,7 @@ export default function Project_Sequence() {
         return null;
     }
 
- 
+
     // ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
     const fetchAllProjectShots = async () => {
         try {
@@ -451,7 +451,7 @@ export default function Project_Sequence() {
         if (!projectId) return;
 
         setIsLoadingSequences(true);
-        
+
         fetch(ENDPOINTS.PROJECT_SEQUENCES, {
             method: "POST",
             headers: {
@@ -475,7 +475,7 @@ export default function Project_Sequence() {
                 }));
 
                 setSequences(mapped);
-                
+
                 // ⭐ ดึงข้อมูล shots สำหรับแต่ละ sequence
                 mapped.forEach((seq: SequenceItem) => {
                     fetchSequenceShots(seq.dbId);
@@ -890,7 +890,7 @@ export default function Project_Sequence() {
                                 {filteredSequences.map((sequence, index) => (
                                     <div
                                         key={sequence.dbId}
-                                         onClick={() => handleSequenceClick(index)}
+                                        onClick={() => handleSequenceClick(index)}
                                         onContextMenu={(e) => handleContextMenu(e, sequence)}
                                         className={`group cursor-pointer rounded-md transition-all duration-150 border ${selectedSequence === index
                                             ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
@@ -959,7 +959,7 @@ export default function Project_Sequence() {
                                             <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
                                                 <button
                                                     onClick={(e) => handleFieldClick('status', index, e)}
-                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-700/40 transition-colors"
+                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md   bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg transition-colors"
                                                 >
                                                     {statusConfig[sequence.status as StatusType].icon === '-' ? (
                                                         <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -981,7 +981,7 @@ export default function Project_Sequence() {
                                                                     e.stopPropagation();
                                                                     handleStatusChange(index, key);
                                                                 }}
-                                                                className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
+                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                             >
                                                                 {config.icon === '-' ? (
                                                                     <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
@@ -1089,20 +1089,15 @@ export default function Project_Sequence() {
                                                                         fetchSequenceDetail(sequence.dbId);
                                                                         setShowExpandedPanel(true);
                                                                     }}
-                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-blue-600/20 border border-gray-600/30 hover:border-blue-500/40 rounded-md transition-all group flex items-center gap-1.5"
-                                                                    title="View all shots"
+                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600/50 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
+
+                                                                    title="View all assets"
                                                                 >
-                                                                    <span className="text-xs text-gray-400 group-hover:text-blue-400 font-medium transition-colors">
+                                                                    <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
                                                                         View
                                                                     </span>
-                                                                    <svg
-                                                                        className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all"
-                                                                        fill="none"
-                                                                        stroke="currentColor"
-                                                                        viewBox="0 0 24 24"
-                                                                    >
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                    </svg>
+                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all" />
+
                                                                 </button>
                                                             </>
                                                         )}
@@ -1110,20 +1105,20 @@ export default function Project_Sequence() {
                                                 ) : (
                                                     /* กรณีไม่มี shots */
                                                     <button
-                                                                    onClick={(e) => {
-                                                                       e.stopPropagation();
-                                                                setExpandedSequenceId(sequence.dbId);
-                                                                fetchSequenceDetail(sequence.dbId);
-                                                                setShowExpandedPanel(true);
-                                                                    }}
-                                                                    className=" bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1"
-                                                                    title="Add assets"
-                                                                >
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setExpandedSequenceId(sequence.dbId);
+                                                            fetchSequenceDetail(sequence.dbId);
+                                                            setShowExpandedPanel(true);
+                                                        }}
+                                                        className=" bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1"
+                                                        title="Add assets"
+                                                    >
 
-                                                                    <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
-                                                                        No assets Click for Add
-                                                                    </span>
-                                                                </button>
+                                                        <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                            No assets Click for Add
+                                                        </span>
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>

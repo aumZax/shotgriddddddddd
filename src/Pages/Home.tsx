@@ -737,7 +737,7 @@ export default function Home() {
 
     return (
         <div className="pt-14 h-screen flex flex-col bg-gray-900">
-            <header className="w-full h-22 px-4 flex items-center justify-between fixed z-[50] bg-gray-900 z-40 bg-gradient-to-r from-gray-00 via-gray-800 to-gray-900 border-b border-gray-700/50 backdrop-blur-sm shadow-lg">
+            <header className="w-full h-22 px-4 flex items-center justify-between fixed z-[50] z-40 bg-gradient-to-r from-gray-00 via-gray-800 to-gray-900 border-b border-gray-700/50 backdrop-blur-sm shadow-lg">
                 <div className="flex flex-col">
                     <h2 className="text-3xl font-semibold text-gray-200 flex items-center gap-3">
                         Projects
