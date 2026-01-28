@@ -883,7 +883,7 @@ export default function ProjectShot() {
     };
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="h-screen flex flex-col bg-gray-900">
             <div className="pt-14">
                 <Navbar_Project activeTab="Shots" />
             </div>

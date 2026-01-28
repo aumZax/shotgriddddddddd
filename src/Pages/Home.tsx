@@ -605,7 +605,7 @@ export default function Home() {
 
                 key={project.id}
                 onContextMenu={(e) => handleContextMenu(e, project.id)}
-                className={`rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] border-2 ${isMember ? 'border-purple-300' : 'border-blue-300'
+                className={`bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] border-2 ${isMember ? 'border-purple-300' : 'border-blue-300'
                     }`}
             >
                 <input
