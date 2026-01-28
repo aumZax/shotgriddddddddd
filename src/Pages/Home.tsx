@@ -696,7 +696,10 @@ export default function Home() {
                     className="p-4 cursor-pointer hover:bg-gradient-to-br hover:from-gray-100 hover:to-blue-50 transition-all duration-300 hover:text-gray-800"
                 >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-zinc-100 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
+                        {/* <h3 className="text-zinc-100 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
+                         */}
+                        <h3 className="text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
+
                             {project.name}
                         </h3>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
