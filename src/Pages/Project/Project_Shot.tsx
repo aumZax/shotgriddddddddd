@@ -1220,7 +1220,7 @@ export default function ProjectShot() {
                                                                                         fetchShotDetail(shot.id);
                                                                                         setShowExpandedPanel(true);
                                                                                     }}
-                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-500 to-gray-800 hover:from-gray-700 hover:to-gray-500 border border-gray-600/30 rounded-lg"
+                                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
                                                                                     title="View all assets"
                                                                                 >
                                                                                     <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
