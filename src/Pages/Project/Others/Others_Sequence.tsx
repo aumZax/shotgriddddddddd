@@ -47,6 +47,9 @@ type TaskAssignee = {
 
 
 
+
+
+
 // Initial activities
 const initialActivities: Activity[] = [
     {
@@ -353,11 +356,17 @@ export default function Others_Sequence() {
                 );
 
 
-            case 'Sub Sequences':
+            case 'Shots':
                 return (
                     <div className="space-y-2 text-gray-300">
-                        <p>🎥 CameraRig_v3.fbx</p>
-                        <p>🌲 Forest_Set.fbx</p>
+                        <p>Shots</p>
+                    </div>
+                );
+
+            case 'Assets':
+                return (
+                    <div className="space-y-2 text-gray-300">
+                        <p>Assets</p>
                     </div>
                 );
 

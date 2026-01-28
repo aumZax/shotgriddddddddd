@@ -68,7 +68,7 @@ export default function Project_Sequence() {
     }
 
     const [sequences, setSequences] = useState<SequenceItem[]>([]);
-
+    const [isLoadingSequences, setIsLoadingSequences] = useState(true);
 
     const [selectedSequence, setSelectedSequence] = useState<number | null>(null);
     const [editingField, setEditingField] = useState<EditingField | null>(null);
@@ -98,9 +98,9 @@ export default function Project_Sequence() {
     const [assetSearchText, setAssetSearchText] = useState("");
 
     // ⭐ เพิ่มใหม่ทั้งหมด 3 บรรทัด
-const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]); // Shots ทั้งหมดในโปรเจค
-const [showShotDropdown, setShowShotDropdown] = useState(false);
-const [shotSearchText, setShotSearchText] = useState("");
+    const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]); // Shots ทั้งหมดในโปรเจค
+    const [showShotDropdown, setShowShotDropdown] = useState(false);
+    const [shotSearchText, setShotSearchText] = useState("");
 
     const [expandedItem, setExpandedItem] = useState<{
         type: "asset" | "shot";
@@ -141,12 +141,12 @@ const [shotSearchText, setShotSearchText] = useState("");
     }, [contextMenu]);
 
     useEffect(() => {
-    if (expandedSequenceId) {
-        fetchSequenceAssets(expandedSequenceId);
-        fetchAllProjectAssets(); // ⭐ ดึง assets ทั้งหมด
-        fetchAllProjectShots(); // ⭐ เพิ่มบรรทัดนี้
-    }
-}, [expandedSequenceId]);
+        if (expandedSequenceId) {
+            fetchSequenceAssets(expandedSequenceId);
+            fetchAllProjectAssets(); // ⭐ ดึง assets ทั้งหมด
+            fetchAllProjectShots(); // ⭐ เพิ่มบรรทัดนี้
+        }
+    }, [expandedSequenceId]);
 
 
 
@@ -157,88 +157,84 @@ const [shotSearchText, setShotSearchText] = useState("");
         return null;
     }
 
-    const handleSequenceClick = (index: number) => {
-        if (!editingField && !showStatusMenu) {
-            setSelectedSequence(index);
+ 
+    // ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
+    const fetchAllProjectShots = async () => {
+        try {
+            const res = await fetch(ENDPOINTS.GET_SHOT_NULL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ projectId })
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch project shots");
+
+            const result = await res.json();
+            setAllProjectShots(result.data || []);
+        } catch (err) {
+            console.error("Fetch project shots error:", err);
+            setAllProjectShots([]);
         }
     };
+
     // ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
-const fetchAllProjectShots = async () => {
-    try {
-        const res = await fetch(ENDPOINTS.GET_SHOT_NULL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ projectId })
-        });
+    const handleAddShotToSequence = async (shotId: number) => {
+        if (!expandedSequenceId) return;
 
-        if (!res.ok) throw new Error("Failed to fetch project shots");
+        try {
+            const linkRes = await fetch(ENDPOINTS.ADD_SHOT_TO_SEQUENCE, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sequenceId: expandedSequenceId,
+                    shotId: shotId
+                })
+            });
 
-        const result = await res.json();
-        setAllProjectShots(result.data || []);
-    } catch (err) {
-        console.error("Fetch project shots error:", err);
-        setAllProjectShots([]);
-    }
-};
+            if (!linkRes.ok) {
+                const error = await linkRes.json();
+                throw new Error(error.message || "Failed to link shot");
+            }
 
-// ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
-const handleAddShotToSequence = async (shotId: number) => {
-    if (!expandedSequenceId) return;
-
-    try {
-        const linkRes = await fetch(ENDPOINTS.ADD_SHOT_TO_SEQUENCE, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                sequenceId: expandedSequenceId,
-                shotId: shotId
-            })
-        });
-
-        if (!linkRes.ok) {
-            const error = await linkRes.json();
-            throw new Error(error.message || "Failed to link shot");
-        }
-
-        // Refresh รายการ Shots
-        await fetchSequenceDetail(expandedSequenceId);
-        await fetchAllProjectShots();
-
-        // ปิด dropdown และ reset
-        setShowShotDropdown(false);
-        setShotSearchText("");
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-        console.error("Add shot error:", err);
-        alert(err.message || "Failed to add shot");
-    }
-};
-
-// ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
-const handleRemoveShotFromSequence = async (shotId: number) => {
-    if (!confirm("Remove this shot from sequence?")) return;
-
-    try {
-        const res = await fetch(ENDPOINTS.REMOVE_SHOT_FROM_SEQUENCE, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ shotId })
-        });
-
-        if (!res.ok) throw new Error("Failed to remove shot");
-
-        // Refresh รายการ
-        if (expandedSequenceId) {
+            // Refresh รายการ Shots
             await fetchSequenceDetail(expandedSequenceId);
             await fetchAllProjectShots();
-        }
 
-    } catch (err) {
-        console.error("Remove shot error:", err);
-        alert("Failed to remove shot");
-    }
-};
+            // ปิด dropdown และ reset
+            setShowShotDropdown(false);
+            setShotSearchText("");
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+            console.error("Add shot error:", err);
+            alert(err.message || "Failed to add shot");
+        }
+    };
+
+    // ⭐ เพิ่มฟังก์ชันใหม่ทั้งหมด
+    const handleRemoveShotFromSequence = async (shotId: number) => {
+        if (!confirm("Remove this shot from sequence?")) return;
+
+        try {
+            const res = await fetch(ENDPOINTS.REMOVE_SHOT_FROM_SEQUENCE, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shotId })
+            });
+
+            if (!res.ok) throw new Error("Failed to remove shot");
+
+            // Refresh รายการ
+            if (expandedSequenceId) {
+                await fetchSequenceDetail(expandedSequenceId);
+                await fetchAllProjectShots();
+            }
+
+        } catch (err) {
+            console.error("Remove shot error:", err);
+            alert("Failed to remove shot");
+        }
+    };
 
 
     // ⭐ แก้ไขฟังก์ชันนี้
@@ -305,15 +301,15 @@ const handleRemoveShotFromSequence = async (shotId: number) => {
     });
 
     // ⭐ เพิ่มการ filter ใหม่ทั้งหมด
-const availableShotsToAdd = allProjectShots.filter(shot => {
-    // กรองเฉพาะที่ยังไม่มีใน sequenceDetail.shots
-    const isAlreadyAdded = sequenceDetail?.shots.some(s => s.id === shot.id);
+    const availableShotsToAdd = allProjectShots.filter(shot => {
+        // กรองเฉพาะที่ยังไม่มีใน sequenceDetail.shots
+        const isAlreadyAdded = sequenceDetail?.shots.some(s => s.id === shot.id);
 
-    // กรองตาม search text
-    const matchSearch = shot.shot_name.toLowerCase().includes(shotSearchText.toLowerCase());
+        // กรองตาม search text
+        const matchSearch = shot.shot_name.toLowerCase().includes(shotSearchText.toLowerCase());
 
-    return !isAlreadyAdded && matchSearch;
-});
+        return !isAlreadyAdded && matchSearch;
+    });
 
     const handleFieldClick = (field: string, index: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -450,6 +446,8 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
     useEffect(() => {
         if (!projectId) return;
 
+        setIsLoadingSequences(true);
+        
         fetch(ENDPOINTS.PROJECT_SEQUENCES, {
             method: "POST",
             headers: {
@@ -473,8 +471,16 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
                 }));
 
                 setSequences(mapped);
+                
+                // ⭐ ดึงข้อมูล shots สำหรับแต่ละ sequence
+                mapped.forEach((seq: SequenceItem) => {
+                    fetchSequenceShots(seq.dbId);
+                });
             })
-            .catch(err => console.error("Sequence fetch error:", err));
+            .catch(err => console.error("Sequence fetch error:", err))
+            .finally(() => {
+                setIsLoadingSequences(false);
+            });
     }, [projectId]);
 
 
@@ -714,7 +720,7 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
             console.error("❌ Delete sequence failed:", err);
         }
     };
-    // ++++++++++++++++++++++++++++++++ ขยับ create  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // +++++++++++++++++++++++++++++ ขยับ create  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -743,6 +749,42 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
         setPosition({ x: 0, y: 0 }); // ⭐ reset ตำแหน่ง
     };
 
+    const [sequenceShots, setSequenceShots] = useState<{ [key: number]: Shot[] }>({});
+    const fetchSequenceShots = async (sequenceId: number) => {
+        try {
+            const res = await fetch(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sequenceId })
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch shots");
+
+            const rawData = await res.json();
+
+            // รวบรวม shots ที่ไม่ซ้ำ
+            const shotsMap = new Map<number, Shot>();
+            rawData.forEach((row: any) => {
+                if (row.shot_id && !shotsMap.has(row.shot_id)) {
+                    shotsMap.set(row.shot_id, {
+                        id: row.shot_id,
+                        shot_name: row.shot_name,
+                        status: row.shot_status,
+                        description: row.shot_description || "",
+                        created_at: row.shot_created_at,
+                        assets: []
+                    });
+                }
+            });
+
+            setSequenceShots(prev => ({
+                ...prev,
+                [sequenceId]: Array.from(shotsMap.values())
+            }));
+        } catch (err) {
+            console.error("Fetch shots error:", err);
+        }
+    };
 
     return (
         <div className="h-screen flex flex-col bg-gray-900">
@@ -792,8 +834,14 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
 
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto p-6">
-                {sequences.length === 0 ? (
+            <main className="flex-1 overflow-y-auto">
+                {isLoadingSequences ? (
+                    /* Loading State */
+                    <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <p className="text-gray-400 text-sm">Loading sequences...</p>
+                    </div>
+                ) : sequences.length === 0 ? (
                     /* Empty State */
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="text-center space-y-4">
@@ -802,161 +850,282 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
                             <p className="text-gray-500 max-w-md">
                                 Get started by creating your first sequence. Click the "Add Sequence" button above to begin.
                             </p>
-
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                        {filteredSequences.map((sequence, index) => (
-                            <div
-                                key={sequence.dbId}
-                                onClick={() => handleSequenceClick(index)}
-                                onContextMenu={(e) => handleContextMenu(e, sequence)}
-                                className={`group cursor-pointer rounded-xl p-3 transition-all duration-300 border-2 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-blue-400 ${selectedSequence === index
-                                    ? 'border-blue-500 bg-gray-800'
-                                    : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800'
-                                    }`}
-                            >
-                                {/* Thumbnail */}
-                                <div className="relative aspect-video bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl overflow-hidden mb-3 shadow-inner"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenSequence(sequence);
-                                    }}
-                                >
-                                    {sequence.thumbnail ? (
-                                        <img
-                                            src={sequence.thumbnail}
-                                            alt={`${sequence.id}`}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2
-                    bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                            <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                                <Image className="w-6 h-6 text-gray-500" />
-                                            </div>
-                                            <p className="text-gray-500 text-xs font-medium">
-                                                No Thumbnail
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                    {/* Hover Overlay */}
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </div>
-                                    </div>
+                    <div className="max-w-full mx-auto">
+                        {/* Table Header */}
+                        <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 mb-2">
+                            <div className="flex items-center gap-6 px-5 py-3">
+                                <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</span>
                                 </div>
-
-                                {/* Sequence Info */}
-                                <div className="space-y-2">
-                                    {/* ID Field */}
-                                    <div
-                                        onClick={(e) => handleFieldClick('id', index, e)}
-                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                    >
-                                        {editingField?.index === index && editingField?.field === 'id' ? (
-                                            <input
-                                                type="text"
-                                                value={sequence.id}
-                                                onChange={(e) => handleFieldChange(index, 'id', e.target.value)}
-                                                onBlur={handleFieldBlur}
-                                                onKeyDown={handleKeyDown}
-                                                autoFocus
-                                                className="w-full text-sm font-medium text-gray-200 bg-gray-600 border border-blue-500 rounded px-1 outline-none"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <h3 className="text-sm font-medium text-gray-200">
-                                                {sequence.id}
-                                            </h3>
-                                        )}
-                                    </div>
-
-                                    {/* Description Field */}
-                                    <div
-                                        onClick={(e) => handleFieldClick('description', index, e)}
-                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                    >
-                                        {editingField?.index === index && editingField?.field === 'description' ? (
-                                            <textarea
-                                                value={sequence.description}
-                                                onChange={(e) =>
-                                                    handleFieldChange(index, 'description', e.target.value)
-                                                }
-                                                onBlur={handleFieldBlur}
-                                                onKeyDown={handleKeyDown}
-                                                autoFocus
-                                                rows={4}
-                                                className="
-                                                w-full
-                                                text-xs
-                                                text-gray-200
-                                                bg-gray-600
-                                                border border-blue-500
-                                                rounded
-                                                px-2 py-1
-                                                outline-none
-                                                resize-none
-                                                overflow-y-auto
-                                            "
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <p className="text-xs text-gray-400 truncate min-h-[16px]">
-                                                {sequence.description || '\u00A0'}
-                                            </p>
-                                        )}
-                                    </div>
-
-
-                                    {/* Status Field */}
-                                    <div className="px-2 relative">
-                                        <button
-                                            onClick={(e) => handleFieldClick('status', index, e)}
-                                            className="flex items-center gap-2 w-full py-1 px-2 rounded hover:bg-gray-700"
-                                        >
-                                            {statusConfig[sequence.status as StatusType].icon === '-' ? (
-                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                            ) : (
-                                                <div className={`w-2 h-2 rounded-full ${statusConfig[sequence.status as StatusType].color}`}></div>
-                                            )}
-                                            <span className="text-xs text-gray-300">{statusConfig[sequence.status as StatusType].label}</span>
-                                        </button>
-
-                                        {/* Status Dropdown */}
-                                        {showStatusMenu === index && (
-                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] border border-gray-600`}>
-                                                {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                    <button
-                                                        key={key}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleStatusChange(index, key);
-                                                        }}
-                                                        className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg text-left"
-                                                    >
-                                                        {config.icon === '-' ? (
-                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                        ) : (
-                                                            <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-                                                        )}
-                                                        <span className="text-xs text-gray-200">{config.label}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence Name</span>
+                                </div>
+                                <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
+                                </div>
+                                <div className="flex-1 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shots</span>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* No Search Results */}
+                        {filteredSequences.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                                <p className="text-gray-400 text-sm">No sequences found matching "{searchText}"</p>
+                            </div>
+                        ) : (
+                            /* Table Body */
+                            <div className="space-y-1">
+                                {filteredSequences.map((sequence, index) => (
+                                    <div
+                                        key={sequence.dbId}
+                                        onContextMenu={(e) => handleContextMenu(e, sequence)}
+                                        className={`group cursor-pointer rounded-md transition-all duration-150 border ${selectedSequence === index
+                                            ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                            : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-6 px-4 py-2.5">
+                                            {/* Thumbnail */}
+                                            <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                                <div
+                                                    className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenSequence(sequence);
+                                                    }}
+                                                >
+                                                    {sequence.thumbnail ? (
+                                                        <img
+                                                            src={sequence.thumbnail}
+                                                            alt={`${sequence.id}`}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                            <Image className="w-4 h-4 text-gray-500" />
+                                                            <p className="text-gray-500 text-[9px]">No Image</p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Hover Overlay */}
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                        <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Sequence Name */}
+                                            <div
+                                                onClick={(e) => handleFieldClick('id', index, e)}
+                                                className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                            >
+                                                {editingField?.index === index && editingField?.field === 'id' ? (
+                                                    <input
+                                                        type="text"
+                                                        value={sequence.id}
+                                                        onChange={(e) => handleFieldChange(index, 'id', e.target.value)}
+                                                        onBlur={handleFieldBlur}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                        {sequence.id}
+                                                    </h3>
+                                                )}
+                                            </div>
+
+                                            {/* Status */}
+                                            <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                <button
+                                                    onClick={(e) => handleFieldClick('status', index, e)}
+                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-700/40 transition-colors"
+                                                >
+                                                    {statusConfig[sequence.status as StatusType].icon === '-' ? (
+                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                    ) : (
+                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[sequence.status as StatusType].color} shadow-sm`}></div>
+                                                    )}
+                                                    <span className="text-xs text-gray-300 font-medium truncate">
+                                                        {statusConfig[sequence.status as StatusType].label}
+                                                    </span>
+                                                </button>
+
+                                                {/* Status Dropdown */}
+                                                {showStatusMenu === index && (
+                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[140px] border border-gray-600`}>
+                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                            <button
+                                                                key={key}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleStatusChange(index, key);
+                                                                }}
+                                                                className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
+                                                            >
+                                                                {config.icon === '-' ? (
+                                                                    <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                ) : (
+                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                )}
+                                                                <span className="text-xs text-gray-200">{config.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Description */}
+                                            <div
+                                                onClick={(e) => handleFieldClick('description', index, e)}
+                                                className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                            >
+                                                {editingField?.index === index && editingField?.field === 'description' ? (
+                                                    <textarea
+                                                        value={sequence.description}
+                                                        onChange={(e) =>
+                                                            handleFieldChange(index, 'description', e.target.value)
+                                                        }
+                                                        onBlur={handleFieldBlur}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        rows={1}
+                                                        className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={sequence.description}>
+                                                        {sequence.description || '\u00A0'}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Shots */}
+                                            <div className="flex-1 min-w-0 px-2 py-1">
+                                                {sequenceShots[sequence.dbId]?.length > 0 ? (
+                                                    <div className="flex items-center gap-2">
+                                                        {/* แสดง shots ถ้าไม่เกิน 2 ตัว */}
+                                                        {sequenceShots[sequence.dbId].length <= 2 ? (
+                                                            <div className="flex-1 flex items-center gap-1.5">
+                                                                {sequenceShots[sequence.dbId].map((shot) => (
+                                                                    <div
+                                                                        key={shot.id}
+                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                                        title={shot.description || shot.shot_name}
+                                                                    >
+                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                            {shot.shot_name}
+                                                                        </span>
+                                                                        {shot.status === 'fin' && (
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                        )}
+                                                                        {shot.status === 'ip' && (
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            /* แสดง Counter + View button ถ้ามากกว่า 2 ตัว */
+                                                            <>
+                                                                {/* Shot Counter Badge */}
+                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-md">
+                                                                    <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                    <span className="text-xs font-semibold text-blue-300">
+                                                                        {sequenceShots[sequence.dbId].length}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Shot Names - แสดงแค่ 2 ตัวแรก */}
+                                                                <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                    {sequenceShots[sequence.dbId].slice(0, 2).map((shot) => (
+                                                                        <div
+                                                                            key={shot.id}
+                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                            title={shot.description || shot.shot_name}
+                                                                        >
+                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                                {shot.shot_name}
+                                                                            </span>
+                                                                            {shot.status === 'fin' && (
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                            )}
+                                                                            {shot.status === 'ip' && (
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+
+                                                                    <span className="text-gray-500 text-xs">...</span>
+                                                                </div>
+
+                                                                {/* View All Button */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpandedSequenceId(sequence.dbId);
+                                                                        fetchSequenceDetail(sequence.dbId);
+                                                                        setShowExpandedPanel(true);
+                                                                    }}
+                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-blue-600/20 border border-gray-600/30 hover:border-blue-500/40 rounded-md transition-all group flex items-center gap-1.5"
+                                                                    title="View all shots"
+                                                                >
+                                                                    <span className="text-xs text-gray-400 group-hover:text-blue-400 font-medium transition-colors">
+                                                                        View
+                                                                    </span>
+                                                                    <svg
+                                                                        className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all"
+                                                                        fill="none"
+                                                                        stroke="currentColor"
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                    </svg>
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    /* กรณีไม่มี shots */
+                                                    <button
+                                                                    onClick={(e) => {
+                                                                       e.stopPropagation();
+                                                                setExpandedSequenceId(sequence.dbId);
+                                                                fetchSequenceDetail(sequence.dbId);
+                                                                setShowExpandedPanel(true);
+                                                                    }}
+                                                                    className=" bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1"
+                                                                    title="Add assets"
+                                                                >
+
+                                                                    <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                        No assets Click for Add
+                                                                    </span>
+                                                                </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
@@ -1305,8 +1474,8 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
 
                                                                     <div className="flex items-center gap-2">
                                                                         <span className={`text-xs px-2 py-0.5 rounded ${asset.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                                                                asset.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                                    'bg-gray-500/20 text-gray-400'
+                                                                            asset.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                                'bg-gray-500/20 text-gray-400'
                                                                             }`}>
                                                                             {asset.status === 'fin' ? 'Final' :
                                                                                 asset.status === 'ip' ? 'In Progress' :
@@ -1332,15 +1501,15 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
                                                         key={asset.id}
                                                         onClick={() => setExpandedItem({ type: "asset", id: asset.id })}
                                                         className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "asset" && expandedItem?.id === asset.id
-                                                                ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
-                                                                : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
+                                                            ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
+                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
                                                             }`}
                                                     >
                                                         <span className="text-sm font-medium">{asset.asset_name}</span>
 
                                                         <span className={`text-xs px-2 py-0.5 rounded ${asset.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                                                asset.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                    'bg-white/20 text-white/80'
+                                                            asset.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                'bg-white/20 text-white/80'
                                                             }`}>
                                                             {asset.status === 'fin' ? 'Final' :
                                                                 asset.status === 'ip' ? 'In Progress' :
@@ -1354,8 +1523,8 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
                                                                 handleRemoveAssetFromSequence((asset as any).asset_sequence_id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" && expandedItem?.id === asset.id
-                                                                    ? "hover:bg-blue-600 hover:rotate-90"
-                                                                    : "hover:bg-red-500/80 hover:rotate-90"
+                                                                ? "hover:bg-blue-600 hover:rotate-90"
+                                                                : "hover:bg-red-500/80 hover:rotate-90"
                                                                 }`}
                                                             title="Remove from sequence"
                                                         >
@@ -1368,141 +1537,141 @@ const availableShotsToAdd = allProjectShots.filter(shot => {
                                     </div>
 
                                     {/* Shots Section - แสดงเฉพาะ Shots ไม่มี Assets ข้างใน */}
-<div className="space-y-3">
-    <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-300">
-            Shots ({sequenceDetail.shots.length})
-        </h4>
-    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-medium text-gray-300">
+                                                Shots ({sequenceDetail.shots.length})
+                                            </h4>
+                                        </div>
 
-    {/* Add Shot Dropdown */}
-    <div className="relative">
-        <div className="flex gap-2">
-            <input
-                type="text"
-                placeholder="Search and select shot..."
-                value={shotSearchText}
-                onChange={(e) => {
-                    setShotSearchText(e.target.value);
-                    setShowShotDropdown(true);
-                }}
-                onFocus={() => setShowShotDropdown(true)}
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
-            />
-            <button
-                onClick={() => setShowShotDropdown(!showShotDropdown)}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
-            >
-                <span>+ Add</span>
-                <span className="text-xs">▼</span>
-            </button>
-        </div>
+                                        {/* Add Shot Dropdown */}
+                                        <div className="relative">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search and select shot..."
+                                                    value={shotSearchText}
+                                                    onChange={(e) => {
+                                                        setShotSearchText(e.target.value);
+                                                        setShowShotDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowShotDropdown(true)}
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
+                                                />
+                                                <button
+                                                    onClick={() => setShowShotDropdown(!showShotDropdown)}
+                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                >
+                                                    <span>+ Add</span>
+                                                    <span className="text-xs">▼</span>
+                                                </button>
+                                            </div>
 
-        {/* Dropdown List */}
-        {showShotDropdown && (
-            <>
-                {/* Backdrop */}
-                <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => {
-                        setShowShotDropdown(false);
-                        setShotSearchText("");
-                    }}
-                />
+                                            {/* Dropdown List */}
+                                            {showShotDropdown && (
+                                                <>
+                                                    {/* Backdrop */}
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => {
+                                                            setShowShotDropdown(false);
+                                                            setShotSearchText("");
+                                                        }}
+                                                    />
 
-                {/* Dropdown */}
-                <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-20">
-                    {availableShotsToAdd.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                            {shotSearchText
-                                ? "No matching shots found"
-                                : allProjectShots.length === 0
-                                    ? "No available shots in this project"
-                                    : "All shots already added"}
-                        </div>
-                    ) : (
-                        availableShotsToAdd.map(shot => (
-                            <button
-                                key={shot.id}
-                                onClick={() => handleAddShotToSequence(shot.id)}
-                                className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
-                                        <span className="text-xs text-gray-400">#{shot.id}</span>
+                                                    {/* Dropdown */}
+                                                    <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-20">
+                                                        {availableShotsToAdd.length === 0 ? (
+                                                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                                                {shotSearchText
+                                                                    ? "No matching shots found"
+                                                                    : allProjectShots.length === 0
+                                                                        ? "No available shots in this project"
+                                                                        : "All shots already added"}
+                                                            </div>
+                                                        ) : (
+                                                            availableShotsToAdd.map(shot => (
+                                                                <button
+                                                                    key={shot.id}
+                                                                    onClick={() => handleAddShotToSequence(shot.id)}
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
+                                                                            <span className="text-xs text-gray-400">#{shot.id}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-sm text-gray-200 block">{shot.shot_name}</span>
+                                                                            {shot.description && (
+                                                                                <span className="text-xs text-gray-500">{shot.description}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`text-xs px-2 py-0.5 rounded ${shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
+                                                                            shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                                'bg-gray-500/20 text-gray-400'
+                                                                            }`}>
+                                                                            {shot.status === 'fin' ? 'Final' :
+                                                                                shot.status === 'ip' ? 'In Progress' :
+                                                                                    'Waiting'}
+                                                                        </span>
+                                                                        <span className="text-xs text-gray-500 group-hover:text-green-400 font-medium">+ Add</span>
+                                                                    </div>
+                                                                </button>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Shot Tags - แสดงเฉพาะ Shot ไม่แสดง Assets */}
+                                        <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 min-h-[60px]">
+                                            {sequenceDetail.shots.length === 0 ? (
+                                                <p className="text-xs text-gray-500 italic w-full text-center py-2">No shots linked yet</p>
+                                            ) : (
+                                                sequenceDetail.shots.map(shot => (
+                                                    <div
+                                                        key={shot.id}
+                                                        onClick={() => setExpandedItem({ type: "shot", id: shot.id })}
+                                                        className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
+                                                            ? "bg-blue-500/80 text-white border-blue-400 shadow-lg shadow-blue-500/50"
+                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
+                                                            }`}
+                                                    >
+                                                        <span className="text-sm font-medium">{shot.shot_name}</span>
+
+                                                        {/* ⭐ Status Badge */}
+                                                        <span className={`text-xs px-2 py-0.5 rounded ${shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
+                                                            shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                'bg-white/20 text-white/80'
+                                                            }`}>
+                                                            {shot.status === 'fin' ? 'Final' :
+                                                                shot.status === 'ip' ? 'In Progress' :
+                                                                    'Waiting'}
+                                                        </span>
+
+                                                        {/* ⭐ ปุ่มลบ shot */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveShotFromSequence(shot.id);
+                                                            }}
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
+                                                                ? "hover:bg-green-600 hover:rotate-90"
+                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                                }`}
+                                                            title="Remove from sequence"
+                                                        >
+                                                            <span className="text-sm font-bold">×</span>
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="text-sm text-gray-200 block">{shot.shot_name}</span>
-                                        {shot.description && (
-                                            <span className="text-xs text-gray-500">{shot.description}</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-xs px-2 py-0.5 rounded ${shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                                        shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                                            'bg-gray-500/20 text-gray-400'
-                                        }`}>
-                                        {shot.status === 'fin' ? 'Final' :
-                                            shot.status === 'ip' ? 'In Progress' :
-                                                'Waiting'}
-                                    </span>
-                                    <span className="text-xs text-gray-500 group-hover:text-green-400 font-medium">+ Add</span>
-                                </div>
-                            </button>
-                        ))
-                    )}
-                </div>
-            </>
-        )}
-    </div>
-
-    {/* Shot Tags - แสดงเฉพาะ Shot ไม่แสดง Assets */}
-    <div className="flex flex-wrap gap-2 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 min-h-[60px]">
-        {sequenceDetail.shots.length === 0 ? (
-            <p className="text-xs text-gray-500 italic w-full text-center py-2">No shots linked yet</p>
-        ) : (
-            sequenceDetail.shots.map(shot => (
-                <div
-                    key={shot.id}
-                    onClick={() => setExpandedItem({ type: "shot", id: shot.id })}
-                    className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
-                        ? "bg-blue-500/80 text-white border-blue-400 shadow-lg shadow-blue-500/50"
-                        : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
-                        }`}
-                >
-                    <span className="text-sm font-medium">{shot.shot_name}</span>
-
-                    {/* ⭐ Status Badge */}
-                    <span className={`text-xs px-2 py-0.5 rounded ${shot.status === 'fin' ? 'bg-green-500/20 text-green-400' :
-                        shot.status === 'ip' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-white/20 text-white/80'
-                        }`}>
-                        {shot.status === 'fin' ? 'Final' :
-                            shot.status === 'ip' ? 'In Progress' :
-                                'Waiting'}
-                    </span>
-
-                    {/* ⭐ ปุ่มลบ shot */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveShotFromSequence(shot.id);
-                        }}
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
-                            ? "hover:bg-green-600 hover:rotate-90"
-                            : "hover:bg-red-500/80 hover:rotate-90"
-                            }`}
-                        title="Remove from sequence"
-                    >
-                        <span className="text-sm font-bold">×</span>
-                    </button>
-                </div>
-            ))
-        )}
-    </div>
-</div>
 
                                     {/* Editor Section */}
                                     {expandedItem && (

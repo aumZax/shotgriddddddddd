@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "http://100.112.212.19:3000"; 
+const BASE_URL = "https://economics-external-travesti-executives.trycloudflare.com"; 
 // const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";

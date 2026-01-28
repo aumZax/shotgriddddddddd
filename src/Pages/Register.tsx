@@ -9,7 +9,7 @@ export default function Register() {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [role, setRole] = useState<string>("");
+
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
@@ -37,7 +37,7 @@ export default function Register() {
     setError("");
 
     // Validation
-    if (!email || !username || !password || !confirmPassword || !role) {
+    if (!email || !username || !password || !confirmPassword ) {
       return setError("Please fill in all fields");
     }
 
@@ -125,7 +125,7 @@ export default function Register() {
         username: username.trim(),
         email: email.trim().toLowerCase(),
         password: password,
-        role: role,
+        role: "Viewer",
         imageURL: uploadedImageURL, // ใช้ URL ที่ได้จาก API upload
       };
 
@@ -337,17 +337,7 @@ export default function Register() {
             disabled={loading}
             autoComplete="username"
           />
-          <select 
-            value={role} 
-            onChange={(e) => setRole(e.target.value)} 
-            style={inputStyle}
-            disabled={loading}
-          >
-            <option value="">Select Role</option>
-            <option value="Producer">Producer</option>
-            <option value="Supervisor">Supervisor</option>
-            <option value="Artist">Artist</option>
-          </select>
+         
           <input
             type="password"
             placeholder="Password (min 6 characters)"

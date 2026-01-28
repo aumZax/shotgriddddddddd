@@ -20,6 +20,8 @@ interface Shot {
     thumbnail: string;
     description: string;
     status: string;
+    sequence?: SequenceDetail | null;  // เพิ่ม
+    assets?: AssetDetail[];            // เพิ่ม
 }
 
 interface Asset {
@@ -105,6 +107,7 @@ export default function ProjectShot() {
     const [error, setError] = useState('');
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const [showSequenceDropdown, setShowSequenceDropdown] = useState(false);
+    const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
 
     // States สำหรับ Assets Management
     const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
@@ -299,14 +302,61 @@ export default function ProjectShot() {
                 projectId: projectData.projectId
             });
 
-            const mappedData = data.map((category: ShotCategory) => ({
-                ...category,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                shots: category.shots.map((shot: any) => ({
-                    ...shot,
-                    thumbnail: shot.file_url || ""
+            // Fetch details for each shot
+            const mappedData = await Promise.all(
+                data.map(async (category: ShotCategory) => ({
+                    ...category,
+                    shots: await Promise.all(
+                        category.shots.map(async (shot: any) => {
+                            // Fetch shot detail
+                            try {
+                                const detailRes = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, {
+                                    shotId: Number(shot.id)
+                                });
+
+                                const rawData = detailRes.data;
+                                if (rawData.length > 0) {
+                                    const firstRow = rawData[0];
+
+                                    const sequence: SequenceDetail | null = firstRow.sequence_id ? {
+                                        id: firstRow.sequence_id,
+                                        sequence_name: firstRow.sequence_name,
+                                        status: firstRow.sequence_status,
+                                        description: firstRow.sequence_description || "",
+                                        created_at: firstRow.sequence_created_at
+                                    } : null;
+
+                                    const assets: AssetDetail[] = rawData
+                                        .filter((row: any) => row.asset_id)
+                                        .map((row: any) => ({
+                                            id: row.asset_id,
+                                            asset_name: row.asset_name,
+                                            status: row.asset_status,
+                                            description: row.asset_description || "",
+                                            created_at: row.asset_created_at
+                                        }));
+
+                                    return {
+                                        ...shot,
+                                        thumbnail: shot.file_url || "",
+                                        sequence,
+                                        assets
+                                    };
+                                }
+                            } catch (err) {
+                                console.error(`Error fetching detail for shot ${shot.id}:`, err);
+                            }
+
+                            return {
+                                ...shot,
+                                thumbnail: shot.file_url || "",
+                                sequence: null,
+                                assets: []
+                            };
+                        })
+                    )
                 }))
-            }));
+            );
 
             setShotData(mappedData);
             setExpandedCategories(mappedData.length > 0 ? [mappedData[0].category] : []);
@@ -848,10 +898,11 @@ export default function ProjectShot() {
 
             <div className="h-22"></div>
 
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-gray-900">
+            <main className="flex-1 overflow-y-auto">
                 {isLoadingShots && (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-gray-400">Loading shots...</div>
+                    <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <p className="text-gray-400 text-sm">Loading shots...</p>
                     </div>
                 )}
 
@@ -874,155 +925,315 @@ export default function ProjectShot() {
                 )}
 
                 {!isLoadingShots && !shotsError && shotData.length > 0 && (
-                    <div className="space-y-2">
-                        {shotData.map((category, categoryIndex) => (
-                            <div key={category.category} className="bg-gray-800 rounded-xl border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                                <button
-                                    onClick={() => toggleCategory(category.category)}
-                                    className="w-full rounded-xl flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
-                                >
-                                    {expandedCategories.includes(category.category) ? (
-                                        <ChevronDown className="w-4 h-4" />
-                                    ) : (
-                                        <ChevronRight className="w-4 h-4" />
-                                    )}
-                                    <span className="font-medium">{category.category}</span>
-                                    <span className="text-green-400 text-sm">({category.count})</span>
-                                </button>
-
-                                {expandedCategories.includes(category.category) && category.shots.length > 0 && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4 bg-gray-850">
-                                        {category.shots.map((shot, shotIndex) => (
-                                            <div
-                                                key={`${category.category}-${shot.id}-${shotIndex}`}
-                                                onClick={() => handleShotClick(categoryIndex, shotIndex)}
-                                                onContextMenu={(e) => handleContextMenu(e, shot)}
-                                                className={`group cursor-pointer rounded-xl p-3 transition-all duration-300 border-2 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-blue-400 ${isSelected(categoryIndex, shotIndex)
-                                                    ? 'border-blue-500 bg-gray-750'
-                                                    : 'border-gray-400 hover:border-gray-600 hover:bg-gray-750'
-                                                    }`}
-                                            >
-                                                <div className="relative aspect-video bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl overflow-hidden mb-3 cursor-pointer shadow-inner" onClick={() => navigate('/Project_Shot/Others_Shot')}>
-                                                    {shot.thumbnail ? (
-                                                        <img
-                                                            src={shot.thumbnail}
-                                                            alt={`${shot.id}`}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                            <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                                                <Image className="w-6 h-6 text-gray-500" />
-                                                            </div>
-                                                            <p className="text-gray-500 text-xs font-medium">
-                                                                No Thumbnail
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-                                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path key="eye-inner" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path key="eye-outer" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <div
-                                                        onClick={(e) => handleFieldClick('shot_name', categoryIndex, shotIndex, e)}
-                                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                                    >
-                                                        {editingField?.categoryIndex === categoryIndex &&
-                                                            editingField?.shotIndex === shotIndex &&
-                                                            editingField?.field === 'shot_name' ? (
-                                                            <input
-                                                                type="text"
-                                                                value={shot.shot_name}
-                                                                onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'shot_name', e.target.value)}
-                                                                onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'shot_name')}
-                                                                onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'shot_name')}
-                                                                autoFocus
-                                                                className="w-full text-sm font-medium text-gray-200 bg-gray-600 border border-blue-500 rounded px-1 outline-none"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        ) : (
-                                                            <h3 className="text-sm font-medium text-gray-200">
-                                                                {shot.shot_name}
-                                                            </h3>
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        onClick={(e) => handleFieldClick('description', categoryIndex, shotIndex, e)}
-                                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                                    >
-                                                        {editingField?.categoryIndex === categoryIndex &&
-                                                            editingField?.shotIndex === shotIndex &&
-                                                            editingField?.field === 'description' ? (
-                                                            <textarea
-                                                                value={shot.description}
-                                                                onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'description', e.target.value)}
-                                                                onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'description')}
-                                                                onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'description')}
-                                                                autoFocus
-                                                                rows={4}
-                                                                className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none overflow-y-auto leading-relaxed"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-400 truncate min-h-[16px]">
-                                                                {shot.description || '\u00A0'}
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="px-2 relative">
-                                                        <button
-                                                            onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
-                                                            className="flex items-center gap-2 w-full py-1 px-2 rounded hover:bg-gray-700"
-                                                        >
-                                                            {statusConfig[shot.status as StatusType].icon === '-' ? (
-                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                            ) : (
-                                                                <div className={`w-2 h-2 rounded-full ${statusConfig[shot.status as StatusType].color}`}></div>
-                                                            )}
-                                                            <span className="text-xs text-gray-300">{statusConfig[shot.status as StatusType].label}</span>
-                                                        </button>
-
-                                                        {showStatusMenu?.categoryIndex === categoryIndex &&
-                                                            showStatusMenu?.shotIndex === shotIndex && (
-                                                                <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] border border-gray-600`}>
-                                                                    {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                        <button
-                                                                            key={key}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleStatusChange(categoryIndex, shotIndex, key);
-                                                                            }}
-                                                                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg text-left"
-                                                                        >
-                                                                            {config.icon === '-' ? (
-                                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                            ) : (
-                                                                                <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-                                                                            )}
-                                                                            <span className="text-xs text-gray-200">{config.label}</span>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                    <div className="max-w-full mx-auto">
+                        {/* Table Header */}
+                        <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 mb-2">
+                            <div className="flex items-center gap-6 px-5 py-3">
+                                <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</span>
+                                </div>
+                                <div className="w-48 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</span>
+                                </div>
+                                <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shot Name</span>
+                                </div>
+                                <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
+                                </div>
+                                <div className="flex-1 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Assets</span>
+                                </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Table Body - Grouped by Category */}
+                        <div className="space-y-4">
+                            {shotData.map((category, categoryIndex) => (
+                                <div key={category.category} className="space-y-1">
+                                    {/* Category Header */}
+                                    <button
+                                        onClick={() => toggleCategory(category.category)}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
+                                    >
+                                        {expandedCategories.includes(category.category) ? (
+                                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                                        ) : (
+                                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                                        )}
+                                        <span className="text-sm font-medium text-gray-200">{category.category}</span>
+                                        <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
+                                            {category.count}
+                                        </span>
+                                    </button>
+
+                                    {/* Category Shots */}
+                                    {expandedCategories.includes(category.category) && (
+                                        <div className="space-y-1">
+                                            {category.shots.map((shot, shotIndex) => (
+                                                <div
+                                                    key={`${category.category}-${shot.id}-${shotIndex}`}
+                                                    onClick={() => handleShotClick(categoryIndex, shotIndex)}
+                                                    onContextMenu={(e) => handleContextMenu(e, shot)}
+                                                    className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
+                                                            ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                                            : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-6 px-4 py-2.5">
+                                                        {/* Thumbnail */}
+                                                        <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                                            <div
+                                                                className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate('/Project_Shot/Others_Shot');
+                                                                }}
+                                                            >
+                                                                {shot.thumbnail ? (
+                                                                    <img
+                                                                        src={shot.thumbnail}
+                                                                        alt={shot.shot_name}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                        <Image className="w-4 h-4 text-gray-500" />
+                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Hover Overlay */}
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Sequence */}
+                                                        <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
+                                                            {shot.sequence ? (
+                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                                                                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
+                                                                        {shot.sequence.sequence_name}
+                                                                    </span>
+                                                                    {shot.sequence.status === 'fin' && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                    )}
+                                                                    {shot.sequence.status === 'ip' && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-500 text-xs italic">-</span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Shot Name */}
+                                                        <div
+                                                            onClick={(e) => handleFieldClick('shot_name', categoryIndex, shotIndex, e)}
+                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                        >
+                                                            {editingField?.categoryIndex === categoryIndex &&
+                                                                editingField?.shotIndex === shotIndex &&
+                                                                editingField?.field === 'shot_name' ? (
+                                                                <input
+                                                                    type="text"
+                                                                    value={shot.shot_name}
+                                                                    onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'shot_name', e.target.value)}
+                                                                    onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'shot_name')}
+                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'shot_name')}
+                                                                    autoFocus
+                                                                    className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            ) : (
+                                                                <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                                    {shot.shot_name}
+                                                                </h3>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Status */}
+                                                        <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                            <button
+                                                                onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-700/40 transition-colors"
+                                                            >
+                                                                {statusConfig[shot.status as StatusType].icon === '-' ? (
+                                                                    <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                ) : (
+                                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[shot.status as StatusType].color} shadow-sm`}></div>
+                                                                )}
+                                                                <span className="text-xs text-gray-300 font-medium truncate">
+                                                                    {statusConfig[shot.status as StatusType].label}
+                                                                </span>
+                                                            </button>
+
+                                                            {/* Status Dropdown */}
+                                                            {showStatusMenu?.categoryIndex === categoryIndex &&
+                                                                showStatusMenu?.shotIndex === shotIndex && (
+                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[140px] border border-gray-600`}>
+                                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                            <button
+                                                                                key={key}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleStatusChange(categoryIndex, shotIndex, key);
+                                                                                }}
+                                                                                className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
+                                                                            >
+                                                                                {config.icon === '-' ? (
+                                                                                    <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                ) : (
+                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                )}
+                                                                                <span className="text-xs text-gray-200">{config.label}</span>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                        </div>
+
+                                                        {/* Description */}
+                                                        <div
+                                                            onClick={(e) => handleFieldClick('description', categoryIndex, shotIndex, e)}
+                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                        >
+                                                            {editingField?.categoryIndex === categoryIndex &&
+                                                                editingField?.shotIndex === shotIndex &&
+                                                                editingField?.field === 'description' ? (
+                                                                <textarea
+                                                                    value={shot.description}
+                                                                    onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'description', e.target.value)}
+                                                                    onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'description')}
+                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'description')}
+                                                                    autoFocus
+                                                                    rows={1}
+                                                                    className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={shot.description}>
+                                                                    {shot.description || '\u00A0'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Assets */}
+                                                        <div className="flex-1 min-w-0 px-2 py-1">
+                                                            {shotAssets.length > 0 ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    {shotAssets.length <= 2 ? (
+                                                                        <div className="flex-1 flex items-center gap-1.5">
+                                                                            {shotAssets.map((asset) => (
+                                                                                <div
+                                                                                    key={asset.id}
+                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                                                    title={asset.description || asset.asset_name}
+                                                                                >
+                                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                                        {asset.asset_name}
+                                                                                    </span>
+                                                                                    {asset.status === 'fin' && (
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                    )}
+                                                                                    {asset.status === 'ip' && (
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
+                                                                                <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                                                </svg>
+                                                                                <span className="text-xs font-semibold text-green-300">
+                                                                                    {shotAssets.length}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                                {shotAssets.slice(0, 2).map((asset) => (
+                                                                                    <div
+                                                                                        key={asset.id}
+                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                        title={asset.description || asset.asset_name}
+                                                                                    >
+                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                            {asset.asset_name}
+                                                                                        </span>
+                                                                                        {asset.status === 'fin' && (
+                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                        )}
+                                                                                        {asset.status === 'ip' && (
+                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                                <span className="text-gray-500 text-xs">...</span>
+                                                                            </div>
+
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setExpandedShotId(shot.id);
+                                                                                    fetchShotDetail(shot.id);
+                                                                                    setShowExpandedPanel(true);
+                                                                                }}
+                                                                                className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
+                                                                                title="View all assets"
+                                                                            >
+                                                                                <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
+                                                                                    View
+                                                                                </span>
+                                                                                <svg
+                                                                                    className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 transition-all"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    viewBox="0 0 24 24"
+                                                                                >
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpandedShotId(shot.id);
+                                                                        fetchShotDetail(shot.id);
+                                                                        setShowExpandedPanel(true);
+                                                                    }}
+                                                                    className="bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1"
+                                                                    title="Add assets"
+                                                                >
+                                                                    <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                        No assets Click for Add
+                                                                    </span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </main>
@@ -1559,10 +1770,10 @@ export default function ProjectShot() {
                                                                     <div className="flex items-center gap-2">
                                                                         <span
                                                                             className={`text-xs px-2 py-0.5 rounded ${asset.status === "fin"
-                                                                                    ? "bg-green-500/20 text-green-400"
-                                                                                    : asset.status === "ip"
-                                                                                        ? "bg-yellow-500/20 text-yellow-400"
-                                                                                        : "bg-gray-500/20 text-gray-400"
+                                                                                ? "bg-green-500/20 text-green-400"
+                                                                                : asset.status === "ip"
+                                                                                    ? "bg-yellow-500/20 text-yellow-400"
+                                                                                    : "bg-gray-500/20 text-gray-400"
                                                                                 }`}
                                                                         >
                                                                             {asset.status === "fin"
@@ -1597,9 +1808,9 @@ export default function ProjectShot() {
                                                             setExpandedItem({ type: "asset", id: asset.id })
                                                         }
                                                         className={`group flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all border-2 backdrop-blur-sm ${expandedItem?.type === "asset" &&
-                                                                expandedItem?.id === asset.id
-                                                                ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
-                                                                : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
+                                                            expandedItem?.id === asset.id
+                                                            ? "bg-green-500/80 text-white border-green-400 shadow-lg shadow-green-500/50"
+                                                            : "bg-gray-700/60 text-gray-200 border-gray-600/50 hover:bg-gray-600/80 hover:border-gray-500"
                                                             }`}
                                                     >
                                                         <span className="text-sm font-medium">
@@ -1608,10 +1819,10 @@ export default function ProjectShot() {
 
                                                         <span
                                                             className={`text-xs px-2 py-0.5 rounded ${asset.status === "fin"
-                                                                    ? "bg-green-500/20 text-green-400"
-                                                                    : asset.status === "ip"
-                                                                        ? "bg-yellow-500/20 text-yellow-400"
-                                                                        : "bg-white/20 text-white/80"
+                                                                ? "bg-green-500/20 text-green-400"
+                                                                : asset.status === "ip"
+                                                                    ? "bg-yellow-500/20 text-yellow-400"
+                                                                    : "bg-white/20 text-white/80"
                                                                 }`}
                                                         >
                                                             {asset.status === "fin"
@@ -1630,9 +1841,9 @@ export default function ProjectShot() {
                                                                 );
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" &&
-                                                                    expandedItem?.id === asset.id
-                                                                    ? "hover:bg-blue-600 hover:rotate-90"
-                                                                    : "hover:bg-red-500/80 hover:rotate-90"
+                                                                expandedItem?.id === asset.id
+                                                                ? "hover:bg-blue-600 hover:rotate-90"
+                                                                : "hover:bg-red-500/80 hover:rotate-90"
                                                                 }`}
                                                             title="Remove from shot"
                                                         >

@@ -21,12 +21,16 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 setLoading(true);
                 setError(null);
 
-                console.log('🔵 Loading project from storage');
+                // 
+
+// 
+                // console.log('🔵 Loading project from storage');
 
                 const storedData = localStorage.getItem('projectData');
 
                 if (!storedData) {
-                    console.warn('⚠️ No project data in localStorage');
+                    // 
+                    // console.warn('⚠️ No project data in localStorage');
                     setProjectName('No Project Data');
                     setError('Project data not found in storage');
                     setLoading(false);
@@ -34,39 +38,48 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 }
 
                 const projectData = JSON.parse(storedData);
-                console.log('📦 Loaded project data:', projectData);
+                // 
+                // console.log('📦 Loaded project data:', projectData);
 
                 let name = null;
 
                 if (projectData.projectName) {
                     name = projectData.projectName;
-                    console.log('📦 Format 1 - Found project name at root:', name);
+                    // 
+                    // console.log('📦 Format 1 - Found project name at root:', name);
                 }
                 else if (projectData.projectInfo?.project?.projectName) {
                     name = projectData.projectInfo.project.projectName;
-                    console.log('📦 Format 2 - Found project name in projectInfo.project:', name);
+                    // 
+                    // console.log('📦 Format 2 - Found project name in projectInfo.project:', name);
                 }
                 else if (projectData.projectInfo?.projects?.[0]?.projectName) {
                     name = projectData.projectInfo.projects[0].projectName;
-                    console.log('📦 Format 3 - Found project name in projects array:', name);
+                    // 
+                    // console.log('📦 Format 3 - Found project name in projects array:', name);
                 }
                 else if (projectData.projectInfo?.projectName) {
                     name = projectData.projectInfo.projectName;
-                    console.log('📦 Format 4 - Found project name in projectInfo:', name);
+                    // 
+                    // console.log('📦 Format 4 - Found project name in projectInfo:', name);
                 }
 
                 if (name) {
-                    console.log('✨ Setting project name to:', name);
+                    // 
+                    // console.log('✨ Setting project name to:', name);
                     setProjectName(name);
                 } else {
-                    console.warn('⚠️ No project name found in data structure');
-                    console.log('Available data structure:', Object.keys(projectData));
+                    // 
+                    // console.warn('⚠️ No project name found in data structure');
+                    // 
+                    // console.log('Available data structure:', Object.keys(projectData));
                     setProjectName('Untitled Project');
                     setError('Project name not found');
                 }
 
             } catch (error) {
-                console.error('❌ Error loading project from storage:', error);
+                // 
+                // console.error('❌ Error loading project from storage:', error);
                 if (error instanceof Error) {
                     setError(error.message);
                 } else {
@@ -75,7 +88,8 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 setProjectName('Error Loading Project');
             } finally {
                 setLoading(false);
-                console.log('🏁 Load completed');
+                // 
+                // console.log('🏁 Load completed');
             }
         };
 

@@ -643,6 +643,7 @@ const handleContextMenu = (e: React.MouseEvent, peopleId: string, peopleEmail: s
                   top: `${contextMenu.y}px`
               }}
               onClick={(e) => e.stopPropagation()}
+              hidden={!canEditPermission}
           >
               <button
                   onClick={() => {

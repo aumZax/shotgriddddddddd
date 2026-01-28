@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../config";
-import { ChevronDown, Folder, Users } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -46,7 +46,6 @@ export default function Home() {
 
     const canDeleteProject = ["Owner", "Admin"].includes(permission ?? "");
 
-
     const [contextMenu, setContextMenu] = useState<{
         visible: boolean;
         x: number;
@@ -54,8 +53,8 @@ export default function Home() {
         projectId: string;
     } | null>(null);
 
-    const [showMyProjects, setShowMyProjects] = useState(true);
-    const [showSharedProjects, setShowSharedProjects] = useState(true);
+    const [showMyProjects,] = useState(true);
+    const [showSharedProjects,] = useState(true);
 
     const templates = [
         { id: 1, name: 'Animation', subtitle: 'Template' },
@@ -91,7 +90,7 @@ export default function Home() {
 
     const fetchProjectImages = async (projects: Project[]) => {
         if (!projects.length) {
-            console.log("⚠️ No projects to fetch images for");
+            // console.log("⚠️ No projects to fetch images for");
             return;
         }
 
@@ -103,9 +102,9 @@ export default function Home() {
                 params: { projectIds }
             });
 
-            console.log("📦 Received image data:", data);
+            // console.log("📦 Received image data:", data);
             const imagesByProject = data.images as Record<string, Array<{ url: string }>>;
-            console.log("🖼️ Images by project:", imagesByProject);
+            // console.log("🖼️ Images by project:", imagesByProject);
 
             setProjectData(prev =>
                 prev.map(p => {
@@ -113,9 +112,9 @@ export default function Home() {
                     const newImage = projectImages?.[0]?.url;
 
                     if (newImage) {
-                        console.log(`✅ Project ${p.id} (${p.name}): Found image ${newImage}`);
+                        // console.log(`✅ Project ${p.id} (${p.name}): Found image ${newImage}`);
                     } else {
-                        console.log(`⚠️ Project ${p.id} (${p.name}): No image found`);
+                        // console.log(`⚠️ Project ${p.id} (${p.name}): No image found`);
                     }
 
                     return newImage && newImage !== p.image
@@ -124,7 +123,7 @@ export default function Home() {
                 })
             );
 
-            console.log("✅ Project images updated:", Object.keys(imagesByProject).length);
+            // console.log("✅ Project images updated:", Object.keys(imagesByProject).length);
 
         } catch (err) {
             console.error("❌ Error fetching project images:", err);
@@ -142,7 +141,7 @@ export default function Home() {
             const authUser = getAuthUser();
             const currentUserUid = authUser?.id ?? authUser?.uid;
 
-            console.log("📋 Fetching projects for user:", currentUserUid);
+            // console.log("📋 Fetching projects for user:", currentUserUid);
 
             const { data } = await axios.post<{ projects: ProjectApiData[] }>(
                 ENDPOINTS.PROJECTLIST,
@@ -170,10 +169,7 @@ export default function Home() {
 
             });
 
-
-
             console.log("✅ Processed projects:", allProjects.length);
-
 
             const myProjects = allProjects.filter(p => p.creatorUid === currentUserUid);
             const sharedProjects = allProjects.filter(p => p.creatorUid !== currentUserUid);
@@ -184,10 +180,10 @@ export default function Home() {
             setProjectData(sortedProjects);
 
             if (sortedProjects.length > 0) {
-                console.log("🔄 Starting to fetch project images...");
+                // console.log("🔄 Starting to fetch project images...");
                 await fetchProjectImages(sortedProjects);
             } else {
-                console.log("⚠️ No projects found, skipping image fetch");
+                // console.log("⚠️ No projects found, skipping image fetch");
             }
 
         } catch (err) {
@@ -209,8 +205,7 @@ export default function Home() {
         e.stopPropagation();
 
         const project = projectData.find(p => p.id === projectId);
-
-        setPermission(project?.permissionGroup ?? null);   // 👈 สำคัญมาก
+        setPermission(project?.permissionGroup ?? null);
 
         setContextMenu({
             visible: true,
@@ -220,12 +215,26 @@ export default function Home() {
         });
     };
 
-
     const handleImageClick = (projectId: string, event: React.MouseEvent) => {
         event.stopPropagation();
+
         if (uploadingImages.has(projectId)) {
             return;
         }
+
+        const project = projectData.find(p => p.id === projectId);
+        const authUser = getAuthUser();
+        const currentUserUid = authUser?.id ?? authUser?.uid;
+        const isSharedProject = project?.creatorUid !== currentUserUid;
+        const canEdit = ["Admin", "Owner"].includes(project?.permissionGroup || "");
+        // const viewOnly = ["Viewer"].includes(project?.permissionGroup || "");
+
+        if (isSharedProject && !canEdit) {
+            console.log("🔒 No permission to edit image for shared project");
+            // ✅ ลบ alert ออก เพื่อไม่ให้มีการแจ้งเตือน
+            return;
+        }
+
         fileInputRefs.current[projectId]?.click();
     };
 
@@ -278,6 +287,21 @@ export default function Home() {
     const handleFileChange = async (projectId: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const project = projectData.find(p => p.id === projectId);
+        const authUser = getAuthUser();
+        const currentUserUid = authUser?.id ?? authUser?.uid;
+        const isSharedProject = project?.creatorUid !== currentUserUid;
+        const canEdit = ["Admin", "Producer", "Supervisor", "Owner"].includes(project?.permissionGroup || "");
+
+        if (isSharedProject && !canEdit) {
+            console.log("🔒 No permission to upload image for shared project");
+            alert("You don't have permission to edit this project's image");
+            if (fileInputRefs.current[projectId]) {
+                fileInputRefs.current[projectId]!.value = '';
+            }
+            return;
+        }
 
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
@@ -441,13 +465,8 @@ export default function Home() {
                     ...baseData,
                     projectInfo,
                     projectDetails,
-
                 })
             );
-
-
-
-
 
             console.log("✅ Project data saved to localStorage");
 
@@ -493,7 +512,6 @@ export default function Home() {
         const authUser = getAuthUser();
         const createdBy = authUser.id || authUser.uid;
 
-
         console.log("🆕 Creating project:", finalProjectName, "by", createdBy.name);
 
         try {
@@ -521,9 +539,9 @@ export default function Home() {
             const baseProjectData = {
                 projectId,
                 projectName: finalProjectName,
-                thumbnail: "", // ยังไม่มี thumbnail ตอนสร้างใหม่
-                createdBy: authUser?.username || authUser?.name || "Unknown", // เพิ่มชื่อผู้สร้าง
-                createdAt: new Date().toISOString(), // เพิ่มวันที่สร้าง
+                thumbnail: "",
+                createdBy: authUser?.username || authUser?.name || "Unknown",
+                createdAt: new Date().toISOString(),
                 fetchedAt: new Date().toISOString(),
             };
 
@@ -576,9 +594,15 @@ export default function Home() {
 
     const renderProjectCard = (project: Project, isMember: boolean) => {
         const isUploading = uploadingImages.has(project.id);
+        const authUser = getAuthUser();
+        const currentUserUid = authUser?.id ?? authUser?.uid;
+        const isSharedProject = project.creatorUid !== currentUserUid;
+        const canEdit = ["Admin", "Producer", "Supervisor", "Owner"].includes(project.permissionGroup || "");
+        const isDisabled = isSharedProject && !canEdit;
 
         return (
             <div
+
                 key={project.id}
                 onContextMenu={(e) => handleContextMenu(e, project.id)}
                 className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] border-2 ${isMember ? 'border-purple-300' : 'border-blue-300'
@@ -592,12 +616,17 @@ export default function Home() {
                         fileInputRefs.current[project.id] = el;
                     }}
                     onChange={(e) => handleFileChange(project.id, e)}
-                    disabled={isUploading}
+                    disabled={isUploading || isDisabled}
+
                 />
 
                 <div
                     onClick={(e) => handleImageClick(project.id, e)}
-                    className={`h-56 md:h-64 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center relative group ${isUploading ? 'cursor-wait' : 'cursor-pointer hover:brightness-110'
+                    className={`h-56 md:h-64 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center relative group ${isDisabled
+                            ? 'cursor-default'  // ✅ เปลี่ยนจาก cursor-not-allowed เป็น cursor-default
+                            : isUploading
+                                ? 'cursor-wait'
+                                : 'cursor-pointer hover:brightness-110'
                         } transition-all duration-300`}
                 >
                     {project.image ? (
@@ -608,7 +637,6 @@ export default function Home() {
                                 alt=""
                             />
 
-                            {/* Overlay - เพิ่มความเข้มเพื่อให้ตัวหนังสือชัดขึ้น */}
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60" />
                             <img
                                 src={project.image}
@@ -628,14 +656,17 @@ export default function Home() {
                                     <span className="text-white text-base font-semibold">Uploading...</span>
                                 </div>
                             ) : (
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                                        <span className="text-gray-800 text-sm font-semibold flex items-center gap-2">
-                                            <span className="text-lg">📷</span>
-                                            Click to change
-                                        </span>
+                                // ✅ ไม่แสดง overlay เมื่อ hover ถ้าไม่มีสิทธิ์
+                                !isDisabled && (
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                            <span className="text-gray-800 text-sm font-semibold flex items-center gap-2">
+                                                <span className="text-lg">📷</span>
+                                                Click to change
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             )}
                         </>
                     ) : (
@@ -645,8 +676,13 @@ export default function Home() {
                                     <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
                                     <span className="text-gray-700 text-base font-semibold">Uploading...</span>
                                 </div>
+                            ) : isDisabled ? (
+                                // ✅ แสดงไอคอนธรรมดาไม่มีข้อความเมื่อไม่มีสิทธิ์
+                                <div className="text-center opacity-50">
+                                    <div className="text-6xl mb-2">📷</div>
+                                </div>
                             ) : (
-                                <div className="text-center transform group-hover:scale-110 transition-transform duration-300 ">
+                                <div className="text-center transform group-hover:scale-110 transition-transform duration-300">
                                     <div className="text-6xl mb-2 animate-pulse">📷</div>
                                     <span className="text-gray-600 text-sm font-medium">Click to upload</span>
                                 </div>
@@ -701,7 +737,7 @@ export default function Home() {
 
     return (
         <div className="pt-14 h-screen flex flex-col">
-            <header className="w-full h-22 px-4 flex items-center justify-between  fixed z-[50] bg-gray-900 z-40 bg-gradient-to-r from-gray-00 via-gray-800 to-gray-900 border-b border-gray-700/50 backdrop-blur-sm shadow-lg">
+            <header className="w-full h-22 px-4 flex items-center justify-between fixed z-[50] bg-gray-900 z-40 bg-gradient-to-r from-gray-00 via-gray-800 to-gray-900 border-b border-gray-700/50 backdrop-blur-sm shadow-lg">
                 <div className="flex flex-col">
                     <h2 className="text-3xl font-semibold text-gray-200 flex items-center gap-3">
                         Projects
@@ -817,7 +853,7 @@ export default function Home() {
             )}
             <div className="h-22"></div>
 
-            <main className=" flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">
                 {loadingProjects ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="text-gray-400 text-xl flex items-center gap-3">
@@ -841,25 +877,7 @@ export default function Home() {
                                 <>
                                     {myProjects.length > 0 && (
                                         <div className="mb-8">
-                                            <button
-                                                className="w-full flex items-center justify-between p-4 mb-4 cursor-pointer group bg-gradient-to-r from-orange-600 to-purple-400 hover:from-orange-600 hover:to-purple-400 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform"
-                                                onClick={() => setShowMyProjects(!showMyProjects)}
-                                            >
-                                                <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
-                                                    <ChevronDown
-                                                        className={`transition-transform duration-300 ${showMyProjects ? 'rotate-0' : '-rotate-90'}`}
-                                                        size={24}
-                                                    />
-                                                    <Folder />
-                                                    <span>My Projects</span>
-                                                    <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-sm font-semibold">
-                                                        {myProjects.length}
-                                                    </span>
-                                                </h3>
-                                                <span className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                    Click to {showMyProjects ? 'hide' : 'show'}
-                                                </span>
-                                            </button>
+
                                             {showMyProjects && (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                                                     {myProjects.map((project) => renderProjectCard(project, false))}
@@ -870,25 +888,7 @@ export default function Home() {
 
                                     {sharedProjects.length > 0 && (
                                         <div>
-                                            <button
-                                                className="w-full flex items-center justify-between p-4 mb-4 cursor-pointer group bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform "
-                                                onClick={() => setShowSharedProjects(!showSharedProjects)}
-                                            >
-                                                <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
-                                                    <ChevronDown
-                                                        className={`transition-transform duration-300 ${showSharedProjects ? 'rotate-0' : '-rotate-90'}`}
-                                                        size={24}
-                                                    />
-                                                    <Users />
-                                                    <span>Shared with Me</span>
-                                                    <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-sm font-semibold">
-                                                        {sharedProjects.length}
-                                                    </span>
-                                                </h3>
-                                                <span className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                    Click to {showSharedProjects ? 'hide' : 'show'}
-                                                </span>
-                                            </button>
+
                                             {showSharedProjects && (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                                                     {sharedProjects.map((project) => renderProjectCard(project, true))}
@@ -912,21 +912,17 @@ export default function Home() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
+                            hidden={!canDeleteProject}
                             disabled={!canDeleteProject}
                             onClick={() => {
                                 if (!contextMenu) return;
                                 openDeleteConfirm(contextMenu.projectId);
                             }}
-
-                            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50
-             flex items-center gap-2 text-sm
-             disabled:opacity-40 disabled:cursor-not-allowed
-             disabled:hover:bg-transparent"
+                            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                             <span>🗑️</span>
                             Delete Project
                         </button>
-
                     </div>
                 )}
 
@@ -934,7 +930,6 @@ export default function Home() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center">
                         <div
                             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-
                             onClick={() => setDeleteConfirm(null)}
                         />
 
