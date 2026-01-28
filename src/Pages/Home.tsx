@@ -605,7 +605,7 @@ export default function Home() {
 
                 key={project.id}
                 onContextMenu={(e) => handleContextMenu(e, project.id)}
-                className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] border-2 ${isMember ? 'border-purple-300' : 'border-blue-300'
+                className={`rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] border-2 ${isMember ? 'border-purple-300' : 'border-blue-300'
                     }`}
             >
                 <input
@@ -835,7 +835,7 @@ export default function Home() {
                                         setSelectedTemplate('');
                                         setError('');
                                     }}
-                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                                    className="px-4 py-2 bg-red-700 hover:bg-gray-600 text-white rounded transition-colors"
                                 >
                                     Cancel
                                 </button>

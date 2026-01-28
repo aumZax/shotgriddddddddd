@@ -70,7 +70,7 @@ export default function Project_Sequence() {
     const [sequences, setSequences] = useState<SequenceItem[]>([]);
     const [isLoadingSequences, setIsLoadingSequences] = useState(true);
 
-    const [selectedSequence, ] = useState<number | null>(null);
+     const [selectedSequence, setSelectedSequence] = useState<number | null>(null);
     const [editingField, setEditingField] = useState<EditingField | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'bottom' | 'top'>('bottom');
@@ -148,7 +148,11 @@ export default function Project_Sequence() {
         }
     }, [expandedSequenceId]);
 
-
+   const handleSequenceClick = (index: number) => {
+        if (!editingField && !showStatusMenu) {
+            setSelectedSequence(index);
+        }
+    };
 
     // ✅ วางตรงนี้
     if (!projectId) {
@@ -886,6 +890,7 @@ export default function Project_Sequence() {
                                 {filteredSequences.map((sequence, index) => (
                                     <div
                                         key={sequence.dbId}
+                                         onClick={() => handleSequenceClick(index)}
                                         onContextMenu={(e) => handleContextMenu(e, sequence)}
                                         className={`group cursor-pointer rounded-md transition-all duration-150 border ${selectedSequence === index
                                             ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'

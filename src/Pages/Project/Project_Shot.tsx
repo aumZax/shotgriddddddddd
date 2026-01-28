@@ -107,7 +107,7 @@ export default function ProjectShot() {
     const [error, setError] = useState('');
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const [showSequenceDropdown, setShowSequenceDropdown] = useState(false);
-    // const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
+    const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
 
     // States สำหรับ Assets Management
     const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
@@ -189,6 +189,7 @@ export default function ProjectShot() {
         }
     };
 
+    // แก้ไข fetchShotAssets ให้อัพเดท allShotAssets ด้วย
     const fetchShotAssets = async (shotId: number) => {
         try {
             const res = await fetch(ENDPOINTS.GET_ASSET_SHOT, {
@@ -202,21 +203,37 @@ export default function ProjectShot() {
             const result = await res.json();
 
             if (result.success) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const assets: Asset[] = result.data.map((item: any) => ({
                     id: item.asset_id,
                     asset_name: item.asset_name,
                     status: item.status,
                     description: item.description || "",
                     created_at: item.asset_created_at,
-                    asset_shot_id: item.asset_shot_id // ⭐ เก็บไว้สำหรับลบ
+                    asset_shot_id: item.asset_shot_id
                 }));
 
                 setShotAssets(assets);
+
+                // ⭐ เพิ่มบรรทัดนี้ - อัพเดท allShotAssets
+                setAllShotAssets(prev => ({
+                    ...prev,
+                    [shotId]: assets
+                }));
             }
         } catch (err) {
-            console.error("Fetch sequence assets error:", err);
+            console.error("Fetch shot assets error:", err);
             setShotAssets([]);
+        }
+    };
+
+    // เพิ่มฟังก์ชันนี้เพื่อ refresh assets ของทุก shot ที่แสดงอยู่
+    const refreshAllVisibleShotAssets = async () => {
+        const visibleShotIds = shotData.flatMap(cat =>
+            cat.shots.map(shot => Number(shot.id))
+        );
+
+        for (const shotId of visibleShotIds) {
+            await fetchShotAssets(shotId);
         }
     };
 
@@ -230,7 +247,7 @@ export default function ProjectShot() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     shotId: expandedShotId,
-                    assetId: assetId // ⭐ ส่ง assetId ที่เลือก
+                    assetId: assetId
                 })
             });
 
@@ -239,14 +256,13 @@ export default function ProjectShot() {
                 throw new Error(error.message || "Failed to link asset");
             }
 
-            // Refresh รายการ Assets ที่เชื่อมกับ Sequence นี้
+            // ⭐ Refresh assets ของ shot นี้
             await fetchShotAssets(Number(expandedShotId));
 
             // ปิด dropdown และ reset
             setShowShotAssetDropdown(false);
             setShotAssetSearchText("");
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error("Add asset error:", err);
             alert(err.message || "Failed to add asset");
@@ -256,14 +272,11 @@ export default function ProjectShot() {
     const handleRemoveAssetFromShot = async (assetShotId: number) => {
         if (!confirm("Remove this asset from shot?")) return;
         try {
-            const response = await fetch(
-                ENDPOINTS.REMOVE_ASSET_FROM_SHOT,
-                {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ assetShotId }),
-                }
-            );
+            const response = await fetch(ENDPOINTS.REMOVE_ASSET_FROM_SHOT, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assetShotId }),
+            });
 
             const result = await response.json();
 
@@ -272,6 +285,7 @@ export default function ProjectShot() {
             }
 
             if (result.success && shotDetail) {
+                // ⭐ Refresh assets ของ shot นี้
                 await fetchShotAssets(shotDetail.shot_id);
             }
         } catch (err) {
@@ -566,7 +580,17 @@ export default function ProjectShot() {
             alert("Failed to remove sequence: " + (error.response?.data?.error || error.message || "Unknown error"));
         }
     };
-
+    // เพิ่ม useEffect นี้
+    useEffect(() => {
+        if (shotData.length > 0) {
+            // Fetch assets สำหรับทุก shot ที่แสดงอยู่
+            shotData.forEach(category => {
+                category.shots.forEach(shot => {
+                    fetchShotAssets(Number(shot.id));
+                });
+            });
+        }
+    }, [shotData.length]); // ⚠️ ระวัง: ใช้แค่ length เพื่อไม่ให้ loop ไม่รู้จบ
     useEffect(() => {
         fetchShots();
         fetchSequences();
@@ -979,8 +1003,8 @@ export default function ProjectShot() {
                                                     onClick={() => handleShotClick(categoryIndex, shotIndex)}
                                                     onContextMenu={(e) => handleContextMenu(e, shot)}
                                                     className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
-                                                            ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
-                                                            : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                                        ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                                        : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-6 px-4 py-2.5">
@@ -1129,48 +1153,23 @@ export default function ProjectShot() {
                                                         </div>
 
                                                         {/* Assets */}
+                                                        {/* Assets Column */}
                                                         <div className="flex-1 min-w-0 px-2 py-1">
-                                                            {shotAssets.length > 0 ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    {shotAssets.length <= 2 ? (
-                                                                        <div className="flex-1 flex items-center gap-1.5">
-                                                                            {shotAssets.map((asset) => (
-                                                                                <div
-                                                                                    key={asset.id}
-                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
-                                                                                    title={asset.description || asset.asset_name}
-                                                                                >
-                                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
-                                                                                        {asset.asset_name}
-                                                                                    </span>
-                                                                                    {asset.status === 'fin' && (
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                                    )}
-                                                                                    {asset.status === 'ip' && (
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                                    )}
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <>
-                                                                            <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
-                                                                                <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                                                </svg>
-                                                                                <span className="text-xs font-semibold text-green-300">
-                                                                                    {shotAssets.length}
-                                                                                </span>
-                                                                            </div>
+                                                            {(() => {
+                                                                // ⭐ ใช้ allShotAssets ถ้ามี ไม่งั้นใช้ shot.assets
+                                                                const currentAssets = allShotAssets[shot.id] || shot.assets || [];
 
-                                                                            <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-                                                                                {shotAssets.slice(0, 2).map((asset) => (
+                                                                return currentAssets.length > 0 ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        {currentAssets.length <= 2 ? (
+                                                                            <div className="flex-1 flex items-center gap-1.5">
+                                                                                {currentAssets.map((asset) => (
                                                                                     <div
                                                                                         key={asset.id}
-                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
                                                                                         title={asset.description || asset.asset_name}
                                                                                     >
-                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
                                                                                             {asset.asset_name}
                                                                                         </span>
                                                                                         {asset.status === 'fin' && (
@@ -1181,50 +1180,81 @@ export default function ProjectShot() {
                                                                                         )}
                                                                                     </div>
                                                                                 ))}
-                                                                                <span className="text-gray-500 text-xs">...</span>
                                                                             </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
+                                                                                    <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                                                    </svg>
+                                                                                    <span className="text-xs font-semibold text-green-300">
+                                                                                        {currentAssets.length}
+                                                                                    </span>
+                                                                                </div>
 
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setExpandedShotId(shot.id);
-                                                                                    fetchShotDetail(shot.id);
-                                                                                    setShowExpandedPanel(true);
-                                                                                }}
-                                                                                className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
-                                                                                title="View all assets"
-                                                                            >
-                                                                                <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
-                                                                                    View
-                                                                                </span>
-                                                                                <svg
-                                                                                    className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 transition-all"
-                                                                                    fill="none"
-                                                                                    stroke="currentColor"
-                                                                                    viewBox="0 0 24 24"
+                                                                                <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                                    {currentAssets.slice(0, 2).map((asset) => (
+                                                                                        <div
+                                                                                            key={asset.id}
+                                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                            title={asset.description || asset.asset_name}
+                                                                                        >
+                                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                                {asset.asset_name}
+                                                                                            </span>
+                                                                                            {asset.status === 'fin' && (
+                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                            )}
+                                                                                            {asset.status === 'ip' && (
+                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <span className="text-gray-500 text-xs">...</span>
+                                                                                </div>
+
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setExpandedShotId(shot.id);
+                                                                                        fetchShotDetail(shot.id);
+                                                                                        setShowExpandedPanel(true);
+                                                                                    }}
+                                                                                    className="flex-shrink-0 px-3 py-1.5 bg-gray-700/40 hover:bg-green-600/20 border border-gray-600/30 hover:border-green-500/40 rounded-md transition-all group flex items-center gap-1.5"
+                                                                                    title="View all assets"
                                                                                 >
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setExpandedShotId(shot.id);
-                                                                        fetchShotDetail(shot.id);
-                                                                        setShowExpandedPanel(true);
-                                                                    }}
-                                                                    className="bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1"
-                                                                    title="Add assets"
-                                                                >
-                                                                    <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
-                                                                        No assets Click for Add
-                                                                    </span>
-                                                                </button>
-                                                            )}
+                                                                                    <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
+                                                                                        View
+                                                                                    </span>
+                                                                                    <svg
+                                                                                        className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 transition-all"
+                                                                                        fill="none"
+                                                                                        stroke="currentColor"
+                                                                                        viewBox="0 0 24 24"
+                                                                                    >
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                                    </svg>
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setExpandedShotId(shot.id);
+                                                                            fetchShotDetail(shot.id);
+                                                                            setShowExpandedPanel(true);
+                                                                        }}
+                                                                        className="bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
+                                                                        title="Add assets"
+                                                                    >
+                                                                        <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                            No assets - Click to Add
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
