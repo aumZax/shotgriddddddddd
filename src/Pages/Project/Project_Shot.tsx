@@ -1238,7 +1238,7 @@ export default function ProjectShot() {
                                                                             fetchShotDetail(shot.id);
                                                                             setShowExpandedPanel(true);
                                                                         }}
-                                                                        className="bg-gray-600/10 hover:bg-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
+                                                                        className=" bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
                                                                         title="Add assets"
                                                                     >
                                                                         <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">

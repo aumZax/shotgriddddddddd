@@ -696,7 +696,7 @@ export default function Home() {
                     className="p-4 cursor-pointer hover:bg-gradient-to-br hover:from-gray-100 hover:to-blue-50 transition-all duration-300 hover:text-gray-800"
                 >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-white-400 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
+                        <h3 className="text-zinc-100 text-lg font-bold truncate flex-1 hover:text-blue-600 transition-colors">
                             {project.name}
                         </h3>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -716,7 +716,7 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <p className="text-white-500 text-sm mb-2 line-clamp-2 leading-relaxed">
+                    <p className="text-zinc-400 text-sm mb-2 line-clamp-2 leading-relaxed">
                         {project.description}
                     </p>
 
@@ -916,7 +916,7 @@ export default function Home() {
                                 if (!contextMenu) return;
                                 openDeleteConfirm(contextMenu.projectId);
                             }}
-                            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            className="w-full px-4 py-2 text-left text-red-600 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
                         >
                             <span>🗑️</span>
                             Delete Project
@@ -956,14 +956,14 @@ export default function Home() {
                                 <div className="flex justify-end gap-3">
                                     <button
                                         onClick={() => setDeleteConfirm(null)}
-                                        className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                        className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                     >
                                         Cancel
                                     </button>
 
                                     <button
                                         onClick={() => handleDeleteProject(deleteConfirm.projectId)}
-                                        className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                        className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                     >
                                         Delete Project
                                     </button>
