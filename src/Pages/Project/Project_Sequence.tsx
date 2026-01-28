@@ -70,7 +70,7 @@ export default function Project_Sequence() {
     const [sequences, setSequences] = useState<SequenceItem[]>([]);
     const [isLoadingSequences, setIsLoadingSequences] = useState(true);
 
-    const [selectedSequence, setSelectedSequence] = useState<number | null>(null);
+    const [selectedSequence, ] = useState<number | null>(null);
     const [editingField, setEditingField] = useState<EditingField | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'bottom' | 'top'>('bottom');

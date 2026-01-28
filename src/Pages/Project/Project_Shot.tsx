@@ -107,7 +107,7 @@ export default function ProjectShot() {
     const [error, setError] = useState('');
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const [showSequenceDropdown, setShowSequenceDropdown] = useState(false);
-    const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
+    // const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
 
     // States สำหรับ Assets Management
     const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
