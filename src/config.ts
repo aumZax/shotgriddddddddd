@@ -22,7 +22,7 @@ const ENDPOINTS = {
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
   UPLOAD_AVATAR: `${BASE_URL}/upload/avatar`,
-  image_url: "http://100.112.212.19:3000/",
+  image_url: "https://economics-external-travesti-executives.trycloudflare.com",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
