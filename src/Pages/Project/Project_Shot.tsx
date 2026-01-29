@@ -1760,7 +1760,7 @@ export default function ProjectShot() {
                                                                 <button
                                                                     key={asset.id}
                                                                     onClick={() => handleAddAssetToShot(asset.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
+                                                                    className="w-full px-4 py-2.5 text-left transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">

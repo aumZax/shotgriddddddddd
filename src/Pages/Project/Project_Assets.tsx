@@ -2058,7 +2058,7 @@ export default function Project_Assets() {
                                                                 <button
                                                                     key={shot.id}
                                                                     onClick={() => handleAddShotToAsset(shot.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
+                                                                    className="w-full px-4 py-2.5 text-left transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
@@ -2125,7 +2125,7 @@ export default function Project_Assets() {
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.shot_id
                                                                 ? "hover:bg-green-600 hover:rotate-90"
-                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                                : " hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from asset"
                                                         >
