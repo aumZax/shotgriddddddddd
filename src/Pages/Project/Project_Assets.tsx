@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye } from 'lucide-react';
 import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -1054,7 +1054,7 @@ export default function Project_Assets() {
 
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="h-screen flex flex-col bg-gray-900">
             <div className="pt-14">
                 <Navbar_Project activeTab="Assets" />
             </div>
@@ -1094,10 +1094,11 @@ export default function Project_Assets() {
 
             <div className="h-22"></div>
 
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-gray-900">
+          <main className="flex-1 overflow-y-auto">
                 {isLoading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-gray-400">Loading assets...</div>
+                    <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <p className="text-gray-400 text-sm">Loading assets...</p>
                     </div>
                 ) : assetData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
@@ -1109,186 +1110,207 @@ export default function Project_Assets() {
                             </p>
                         </div>
                     </div>
-
                 ) : (
-                    <div className="space-y-2">
-                        {assetData.map((category, categoryIndex) => (
-                            <div key={category.category} className="bg-gray-800 rounded-xl border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                                <button
-                                    onClick={() => toggleCategory(category.category)}
-                                    className="w-full rounded-xl flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white text-sm font-medium hover:shadow-gray-500/50"
-                                >
-                                    {expandedCategories.includes(category.category) ? (
-                                        <ChevronDown className="w-4 h-4" />
-                                    ) : (
-                                        <ChevronRight className="w-4 h-4" />
-                                    )}
-                                    <span className="font-medium">{category.category}</span>
-                                    <span className="text-green-400 text-sm">({category.count})</span>
-                                </button>
-
-                                {expandedCategories.includes(category.category) && category.assets.length > 0 && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4 bg-gray-850">
-                                        {category.assets.map((asset, assetIndex) => (
-                                            <div
-                                                key={asset.id}
-                                                onClick={() => handleAssetClick(categoryIndex, assetIndex)}
-                                                onContextMenu={(e) => handleContextMenu(e, asset)}
-
-                                                className={`group cursor-pointer rounded-xl p-3 transition-all duration-300 border-2 shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-blue-400 ${isSelected(categoryIndex, assetIndex)
-                                                    ? 'border-blue-500 bg-gray-750'
-                                                    : 'border-gray-400 hover:border-gray-600 hover:bg-gray-750'
-                                                    }`}
-                                            >
-                                                <div
-                                                    className="relative aspect-video bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl overflow-hidden mb-3 cursor-pointer shadow-inner"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // ✅ ป้องกัน parent onClick
-
-                                                        // บันทึก selectedAsset
-                                                        const currentAsset = assetData[categoryIndex].assets[assetIndex];
-                                                        localStorage.setItem(
-                                                            "selectedAsset",
-                                                            JSON.stringify({
-                                                                id: currentAsset.id,
-                                                                asset_name: currentAsset.asset_name,
-                                                                description: currentAsset.description,
-                                                                status: currentAsset.status,
-                                                                file_url: currentAsset.file_url || "", // ✅ เปลี่ยนเป็น file_url
-                                                                sequence: assetData[categoryIndex].category
-                                                            })
-                                                        );
-
-                                                        navigate('/Project_Assets/Others_Asset');
-                                                    }}
-                                                >
-                                                    {asset.file_url ? (  // ✅ เปลี่ยนจาก asset.thumbnail เป็น asset.file_url
-                                                        <img
-                                                            src={asset.file_url}  // ✅ ใช้ file_url
-                                                            alt={asset.asset_name}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                            onError={(e) => {
-                                                                // จัดการกรณีรูปโหลดไม่ได้
-                                                                console.error('Failed to load image:', asset.file_url);
-                                                                e.currentTarget.style.display = 'none';
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2
-            bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                            <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                                                <Image className="w-6 h-6 text-gray-500" />
-                                                            </div>
-                                                            <p className="text-gray-500 text-xs font-medium">
-                                                                No Thumbnail
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-                                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <div
-                                                        onClick={(e) => handleFieldClick('asset_name', categoryIndex, assetIndex, e)}
-                                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                                    >
-                                                        {editingField?.categoryIndex === categoryIndex &&
-                                                            editingField?.assetIndex === assetIndex &&
-                                                            editingField?.field === 'asset_name' ? (
-                                                            <input
-                                                                type="text"
-                                                                value={asset.asset_name}
-                                                                onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'asset_name', e.target.value)}
-                                                                onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'asset_name')}
-                                                                onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'asset_name')}
-                                                                autoFocus
-                                                                className="w-full text-sm font-medium text-gray-200 bg-gray-600 border border-blue-500 rounded px-1 outline-none"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        ) : (
-                                                            <h3 className="text-sm font-medium text-gray-200">
-                                                                {asset.asset_name}
-                                                            </h3>
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
-                                                        className="px-2 py-1 rounded hover:bg-gray-700 cursor-text"
-                                                    >
-                                                        {editingField?.categoryIndex === categoryIndex &&
-                                                            editingField?.assetIndex === assetIndex &&
-                                                            editingField?.field === 'description' ? (
-                                                            <textarea
-                                                                value={asset.description}
-                                                                onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'description', e.target.value)}
-                                                                onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'description')}
-                                                                onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'description')}
-                                                                autoFocus
-                                                                rows={4}
-                                                                className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none overflow-y-auto leading-relaxed"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        ) : (
-                                                            <p className="text-xs text-gray-400 truncate min-h-[16px]">
-                                                                {asset.description || '\u00A0'}
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="px-2 relative">
-                                                        <button
-                                                            onClick={(e) => handleFieldClick('status', categoryIndex, assetIndex, e)}
-                                                            className="flex items-center gap-2 w-full py-1 px-2 rounded hover:bg-gray-700"
-                                                        >
-                                                            {statusConfig[asset.status].icon === '-' ? (
-                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                            ) : (
-                                                                <div className={`w-2 h-2 rounded-full ${statusConfig[asset.status].color}`}></div>
-                                                            )}
-                                                            <span className="text-xs text-gray-300">{statusConfig[asset.status].label}</span>
-                                                        </button>
-
-                                                        {showStatusMenu?.categoryIndex === categoryIndex &&
-                                                            showStatusMenu?.assetIndex === assetIndex && (
-                                                                <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] border border-gray-600`}>
-                                                                    {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                        <button
-                                                                            key={key}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleStatusChange(categoryIndex, assetIndex, key);
-                                                                            }}
-                                                                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg text-left"
-                                                                        >
-                                                                            {config.icon === '-' ? (
-                                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                            ) : (
-                                                                                <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-                                                                            )}
-                                                                            <span className="text-xs text-gray-200">{config.label}</span>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                    <div className="max-w-full mx-auto">
+                        {/* Table Header */}
+                        <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 mb-2">
+                            <div className="flex items-center gap-6 px-5 py-3">
+                                <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</span>
+                                </div>
+                                <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Asset Name</span>
+                                </div>
+                                <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</span>
+                                </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Table Body - Grouped by Category */}
+                        <div className="space-y-4">
+                            {assetData.map((category, categoryIndex) => (
+                                <div key={category.category} className="space-y-1">
+                                    {/* Category Header */}
+                                    <button
+                                        onClick={() => toggleCategory(category.category)}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
+                                    >
+                                        {expandedCategories.includes(category.category) ? (
+                                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                                        ) : (
+                                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                                        )}
+                                        <span className="text-sm font-medium text-gray-200">{category.category}</span>
+                                        <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
+                                            {category.count}
+                                        </span>
+                                    </button>
+
+                                    {/* Category Assets */}
+                                    {expandedCategories.includes(category.category) && (
+                                        <div className="space-y-1">
+                                            {category.assets.map((asset, assetIndex) => (
+                                                <div
+                                                    key={asset.id}
+                                                    onClick={() => handleAssetClick(categoryIndex, assetIndex)}
+                                                    onContextMenu={(e) => handleContextMenu(e, asset)}
+                                                    className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, assetIndex)
+                                                        ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                                        : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-6 px-4 py-2.5">
+                                                        {/* Thumbnail */}
+                                                        <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                                            <div
+                                                                className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    
+                                                                    const currentAsset = assetData[categoryIndex].assets[assetIndex];
+                                                                    localStorage.setItem(
+                                                                        "selectedAsset",
+                                                                        JSON.stringify({
+                                                                            id: currentAsset.id,
+                                                                            asset_name: currentAsset.asset_name,
+                                                                            description: currentAsset.description,
+                                                                            status: currentAsset.status,
+                                                                            file_url: currentAsset.file_url || "",
+                                                                            sequence: assetData[categoryIndex].category
+                                                                        })
+                                                                    );
+                                                                    
+                                                                    navigate('/Project_Assets/Others_Asset');
+                                                                }}
+                                                            >
+                                                                {asset.file_url ? (
+                                                                    <img
+                                                                        src={asset.file_url}
+                                                                        alt={asset.asset_name}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        onError={(e) => {
+                                                                            console.error('Failed to load image:', asset.file_url);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                        <Image className="w-4 h-4 text-gray-500" />
+                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Hover Overlay */}
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                        <Eye className="w-3.5 h-3.5 text-white"/>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Asset Name */}
+                                                        <div
+                                                            onClick={(e) => handleFieldClick('asset_name', categoryIndex, assetIndex, e)}
+                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                        >
+                                                            {editingField?.categoryIndex === categoryIndex &&
+                                                                editingField?.assetIndex === assetIndex &&
+                                                                editingField?.field === 'asset_name' ? (
+                                                                <input
+                                                                    type="text"
+                                                                    value={asset.asset_name}
+                                                                    onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'asset_name', e.target.value)}
+                                                                    onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'asset_name')}
+                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'asset_name')}
+                                                                    autoFocus
+                                                                    className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            ) : (
+                                                                <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                                    {asset.asset_name}
+                                                                </h3>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Status */}
+                                                        <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                            <button
+                                                                onClick={(e) => handleFieldClick('status', categoryIndex, assetIndex, e)}
+                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md transition-colors bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                                            >
+                                                                {statusConfig[asset.status].icon === '-' ? (
+                                                                    <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                ) : (
+                                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[asset.status].color} shadow-sm`}></div>
+                                                                )}
+                                                                <span className="text-xs text-gray-300 font-medium truncate">
+                                                                    {statusConfig[asset.status].label}
+                                                                </span>
+                                                            </button>
+
+                                                            {/* Status Dropdown */}
+                                                            {showStatusMenu?.categoryIndex === categoryIndex &&
+                                                                showStatusMenu?.assetIndex === assetIndex && (
+                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[140px] border border-gray-600`}>
+                                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                            <button
+                                                                                key={key}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleStatusChange(categoryIndex, assetIndex, key);
+                                                                                }}
+                                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                            >
+                                                                                {config.icon === '-' ? (
+                                                                                    <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                ) : (
+                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                )}
+                                                                                <span className="text-xs text-gray-200">{config.label}</span>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                        </div>
+
+                                                        {/* Description */}
+                                                        <div
+                                                            onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
+                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text"
+                                                        >
+                                                            {editingField?.categoryIndex === categoryIndex &&
+                                                                editingField?.assetIndex === assetIndex &&
+                                                                editingField?.field === 'description' ? (
+                                                                <textarea
+                                                                    value={asset.description}
+                                                                    onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'description', e.target.value)}
+                                                                    onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'description')}
+                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'description')}
+                                                                    autoFocus
+                                                                    rows={1}
+                                                                    className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={asset.description}>
+                                                                    {asset.description || '\u00A0'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </main>
