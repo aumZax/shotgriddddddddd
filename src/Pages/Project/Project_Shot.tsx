@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp, Box } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
