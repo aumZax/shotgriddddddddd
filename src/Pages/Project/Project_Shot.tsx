@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp, Box } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -956,11 +956,11 @@ export default function ProjectShot() {
                                 <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</span>
                                 </div>
-                              
+
                                 <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shot Name</span>
                                 </div>
-                                  <div className="w-48 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                <div className="w-48 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</span>
                                 </div>
                                 <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
@@ -1034,13 +1034,13 @@ export default function ProjectShot() {
                                                                 {/* Hover Overlay */}
                                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
                                                                     <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                      <Eye className="w-3.5 h-3.5 text-white"/>
+                                                                        <Eye className="w-3.5 h-3.5 text-white" />
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                   
+
 
                                                         {/* Shot Name */}
                                                         <div
@@ -1066,7 +1066,7 @@ export default function ProjectShot() {
                                                                 </h3>
                                                             )}
                                                         </div>
-                                                             {/* Sequence */}
+                                                        {/* Sequence */}
                                                         <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
                                                             {shot.sequence ? (
                                                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
@@ -1182,11 +1182,10 @@ export default function ProjectShot() {
                                                                             </div>
                                                                         ) : (
                                                                             <>
-                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
-                                                                                    <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                                                    </svg>
-                                                                                    <span className="text-xs font-semibold text-green-300">
+                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
+                                                                                   
+                                                                                    <Box  className="w-3.5 h-3.5 text-blue-400"/>
+                                                                                    <span className="text-xs font-semibold text-blue-300">
                                                                                         {currentAssets.length}
                                                                                     </span>
                                                                                 </div>
@@ -1219,15 +1218,16 @@ export default function ProjectShot() {
                                                                                         fetchShotDetail(shot.id);
                                                                                         setShowExpandedPanel(true);
                                                                                     }}
-                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600/50 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
-
+                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-gray-800 border border-gray-700 hover:border-blue-500 rounded-lg"
                                                                                     title="View all assets"
                                                                                 >
-                                                                                    <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
+
+
+                                                                                    <span className="text-xs text-gray-200 group-hover:text-blue-400 font-medium transition-colors">
                                                                                         View
                                                                                     </span>
-                                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all"/>
-                                                                                     
+                                                                                    <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
+
                                                                                 </button>
                                                                             </>
                                                                         )}
@@ -1303,12 +1303,12 @@ export default function ProjectShot() {
                     }} className="relative w-full max-w-2xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
 
                         <div onMouseDown={handleMouseDown} className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none">
-                                <div>
-                                    <h2 className="text-lg font-semibold text-white">
-                                        Create New Shot
-                                    </h2>
-                                </div>
-                             
+                            <div>
+                                <h2 className="text-lg font-semibold text-white">
+                                    Create New Shot
+                                </h2>
+                            </div>
+
                         </div>
 
                         <div className="px-6 py-6 space-y-5">
@@ -1325,7 +1325,7 @@ export default function ProjectShot() {
                                 <label className="block text-sm font-medium text-gray-300">
                                     Shot Name
                                     <span className="text-red-400 ml-1">*</span>
-                                    
+
                                 </label>
                                 <input
                                     type="text"
@@ -1339,7 +1339,7 @@ export default function ProjectShot() {
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Description
-                                    
+
                                 </label>
                                 <input
                                     type="text"
@@ -1353,7 +1353,7 @@ export default function ProjectShot() {
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Task Template
-                                    
+
                                 </label>
                                 <input
                                     type="text"
@@ -1451,19 +1451,19 @@ export default function ProjectShot() {
                                 <span className="group-hover:underline">Bulk Import</span>
                             </button> */}
 
-                                <button
-                                    onClick={handleModalClose}
-                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
-                                >
-                                    Cancel
-                                </button>
+                            <button
+                                onClick={handleModalClose}
+                                className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
+                            >
+                                Cancel
+                            </button>
 
-                                <button
-                                    onClick={handleCreateShot}
-                                    disabled={loading}
-                                    className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
-                                    {loading ? "Creating..." : "Create Shot"}
-                                </button>
+                            <button
+                                onClick={handleCreateShot}
+                                disabled={loading}
+                                className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
+                                {loading ? "Creating..." : "Create Shot"}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1485,7 +1485,7 @@ export default function ProjectShot() {
                             setShowExpandedPanel(true);
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-gray-300 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         👁️ See more
                     </button>
@@ -1498,7 +1498,7 @@ export default function ProjectShot() {
                             });
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/20 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Sequence
                     </button>
@@ -1728,10 +1728,9 @@ export default function ProjectShot() {
                                                 />
                                                 <button
                                                     onClick={() => setShowShotAssetDropdown(!showShotAssetDropdown)}
-                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                    className="px-4 py-2 rounded-lg text-sm text-white transition-colors flex items-center gap-1 bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-600 hover:to-blue-600"
                                                 >
                                                     <span>+ Add</span>
-                                                    <span className="text-xs">▼</span>
                                                 </button>
                                             </div>
 
@@ -1761,7 +1760,7 @@ export default function ProjectShot() {
                                                                 <button
                                                                     key={asset.id}
                                                                     onClick={() => handleAddAssetToShot(asset.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">

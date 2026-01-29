@@ -1265,7 +1265,7 @@ export default function Project_Sequence() {
                             setShowExpandedPanel(true);
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-gray-300 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         👁️ See more
                     </button>
@@ -1280,7 +1280,7 @@ export default function Project_Sequence() {
                             });
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/20 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Sequence
                     </button>
@@ -1409,14 +1409,13 @@ export default function Project_Sequence() {
                                                         setShowAssetDropdown(true);
                                                     }}
                                                     onFocus={() => setShowAssetDropdown(true)}
-                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
                                                 />
                                                 <button
                                                     onClick={() => setShowAssetDropdown(!showAssetDropdown)}
-                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                    className="px-4 py-2  rounded-lg text-sm text-white transition-colors flex items-center gap-1 bg-gradient-to-r from-green-700 to-green-700 hover:from-green-600 hover:to-green-600"
                                                 >
                                                     <span>+ Add</span>
-                                                    <span className="text-xs">▼</span>
                                                 </button>
                                             </div>
 
@@ -1447,7 +1446,7 @@ export default function Project_Sequence() {
                                                                 <button
                                                                     key={asset.id}
                                                                     onClick={() => handleAddAssetToSequence(asset.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
@@ -1470,7 +1469,7 @@ export default function Project_Sequence() {
                                                                                 asset.status === 'ip' ? 'In Progress' :
                                                                                     'Waiting'}
                                                                         </span>
-                                                                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-medium">+ Add</span>
+                                                                        <span className="text-xs text-gray-500 group-hover:text-green-400 font-medium">+ Add</span>
                                                                     </div>
                                                                 </button>
                                                             ))
@@ -1545,14 +1544,13 @@ export default function Project_Sequence() {
                                                         setShowShotDropdown(true);
                                                     }}
                                                     onFocus={() => setShowShotDropdown(true)}
-                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
+                                                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
                                                 />
                                                 <button
                                                     onClick={() => setShowShotDropdown(!showShotDropdown)}
-                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                    className="px-4 py-2 rounded-lg text-sm text-white transition-colors flex items-center gap-1 bg-gradient-to-r from-blue-700 to-blue-700 hover:from-blue-600 hover:to-blue-600"
                                                 >
                                                     <span>+ Add</span>
-                                                    <span className="text-xs">▼</span>
                                                 </button>
                                             </div>
 
@@ -1583,7 +1581,7 @@ export default function Project_Sequence() {
                                                                 <button
                                                                     key={shot.id}
                                                                     onClick={() => handleAddShotToSequence(shot.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
@@ -1606,7 +1604,7 @@ export default function Project_Sequence() {
                                                                                 shot.status === 'ip' ? 'In Progress' :
                                                                                     'Waiting'}
                                                                         </span>
-                                                                        <span className="text-xs text-gray-500 group-hover:text-green-400 font-medium">+ Add</span>
+                                                                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-medium">+ Add</span>
                                                                     </div>
                                                                 </button>
                                                             ))

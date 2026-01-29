@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp, Box } from 'lucide-react';
 import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -1384,11 +1384,11 @@ export default function Project_Assets() {
                                                                             </div>
                                                                         ) : (
                                                                             <>
-                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
-                                                                                    <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                                                    </svg>
-                                                                                    <span className="text-xs font-semibold text-blue-300">
+                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
+                                                                                
+                                                                                    <Box  className="w-3.5 h-3.5 text-green-400"/>
+
+                                                                                    <span className="text-xs font-semibold text-green-300">
                                                                                         {currentAssetShots.length}
                                                                                     </span>
                                                                                 </div>
@@ -1423,13 +1423,14 @@ export default function Project_Assets() {
                                                                                         fetchAssetShots(asset.id);
                                                                                         setShowAssetDetailPanel(true);
                                                                                     }}
-                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-blue-600/50 to-gray-800 border border-gray-700 hover:border-blue-500 rounded-lg"
+
+                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
                                                                                     title="View all shots"
                                                                                 >
-                                                                                    <span className="text-xs text-gray-400 group-hover:text-blue-400 font-medium transition-colors">
+                                                                                    <span className="text-xs text-gray-200 group-hover:text-green-400 font-medium transition-colors">
                                                                                         View
                                                                                     </span>
-                                                                                    <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
+                                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all" />
                                                                                 </button>
                                                                             </>
                                                                         )}
@@ -1763,7 +1764,7 @@ export default function Project_Assets() {
                             setShowAssetDetailPanel(true);
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-gray-300 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         👁️ See more
                     </button>
@@ -1775,7 +1776,7 @@ export default function Project_Assets() {
                             });
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/20 flex items-center gap-2 text-sm"
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Sequence
                     </button>
@@ -1931,7 +1932,7 @@ export default function Project_Assets() {
                                                             }
                                                         }
                                                     }}
-                                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm text-white transition-colors"
+                                                    className="px-4 py-2 rounded-lg text-sm text-white transition-colors bg-gradient-to-r from-purple-800 to-purple-800 hover:from-purple-700 hover:to-purple-700"
                                                 >
                                                     + Add
                                                 </button>
@@ -2024,10 +2025,9 @@ export default function Project_Assets() {
                                                 />
                                                 <button
                                                     onClick={() => setShowAddShotDropdown(!showAddShotDropdown)}
-                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm text-white transition-colors flex items-center gap-1"
+                                                    className="px-4 py-2 rounded-lg text-sm text-white transition-colors flex items-center gap-1 bg-gradient-to-r from-green-700 to-green-700 hover:from-green-600 hover:to-green-600"
                                                 >
                                                     <span>+ Add</span>
-                                                    <span className="text-xs">▼</span>
                                                 </button>
                                             </div>
 
@@ -2058,7 +2058,7 @@ export default function Project_Assets() {
                                                                 <button
                                                                     key={shot.id}
                                                                     onClick={() => handleAddShotToAsset(shot.id)}
-                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0"
+                                                                    className="w-full px-4 py-2.5 text-left hover:bg-gray-700 transition-colors flex items-center justify-between group border-b border-gray-700/50 last:border-b-0 bg-gray-800"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center">
