@@ -731,12 +731,7 @@ export default function Project_Tasks() {
                             <h2 className="text-lg text-gray-200 font-normal">
                                 Create a new Task <span className="text-gray-400 text-sm font-normal">- Global Form</span>
                             </h2>
-                            <button
-                                onClick={closeModal}
-                                className="text-gray-400 hover:text-white text-xl"
-                            >
-                                ⚙️
-                            </button>
+                         
                         </div>
 
                         {/* Body */}
@@ -827,20 +822,20 @@ export default function Project_Tasks() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                            {/* <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <div></div>
                                 <button className="text-sm text-gray-400 hover:text-gray-200 text-left flex items-center gap-1">
                                     More fields <span>▾</span>
                                 </button>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420]  rounded-b flex justify-end items-center gap-3">
+                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420]  rounded-b flex justify-between items-center gap-3">
                             <button
                                 onClick={closeModal}
 
-                                className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded flex items-center justify-center"
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center"
                             >
                                 Cancel
                             </button>

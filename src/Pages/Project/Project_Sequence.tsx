@@ -1160,15 +1160,7 @@ export default function Project_Sequence() {
                                     </h2>
                                     <p className="text-xs text-blue-300/70 mt-0.5">Global Form</p>
                                 </div>
-                                <button
-                                    onClick={closeModal}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-500/20 text-blue-300/70 hover:text-blue-100 transition-all"
-                                    aria-label="Close"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+              
                             </div>
                         </div>
 
@@ -1223,25 +1215,24 @@ export default function Project_Sequence() {
                             </div>
 
                             {/* More fields expandable */}
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
                                 <span>Show more fields</span>
                                 <ChevronDown />
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                                 <span className="group-hover:underline">Bulk Import</span>
-                            </button>
+                            </button> */}
 
-                            <div className="flex gap-3">
                                 <button
                                     onClick={closeModal}
-                                    className="px-6 h-10 bg-[#1a2f4d] hover:bg-[#244163] border border-blue-500/30 text-sm rounded-lg text-blue-100 transition-all font-medium"
+                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-blue-100 transition-all font-medium"
                                 >
                                     Cancel
                                 </button>
@@ -1252,7 +1243,6 @@ export default function Project_Sequence() {
                                 >
                                     Create Sequence
                                 </button>
-                            </div>
                         </div>
                     </div>
                 </div>

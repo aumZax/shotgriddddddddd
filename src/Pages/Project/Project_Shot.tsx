@@ -1301,22 +1301,12 @@ export default function ProjectShot() {
                     }} className="relative w-full max-w-2xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
 
                         <div onMouseDown={handleMouseDown} className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none">
-                            <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-lg font-semibold text-white">
                                         Create New Shot
                                     </h2>
                                 </div>
-                                <button
-                                    onClick={handleModalClose}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-500/20 text-blue-300/70 hover:text-blue-100 transition-all"
-                                    aria-label="Close"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
+                             
                         </div>
 
                         <div className="px-6 py-6 space-y-5">
@@ -1333,6 +1323,7 @@ export default function ProjectShot() {
                                 <label className="block text-sm font-medium text-gray-300">
                                     Shot Name
                                     <span className="text-red-400 ml-1">*</span>
+                                    
                                 </label>
                                 <input
                                     type="text"
@@ -1346,7 +1337,7 @@ export default function ProjectShot() {
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Description
-                                    <span className="text-red-400 ml-1">*</span>
+                                    
                                 </label>
                                 <input
                                     type="text"
@@ -1360,7 +1351,7 @@ export default function ProjectShot() {
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Task Template
-                                    <span className="text-red-400 ml-1">*</span>
+                                    
                                 </label>
                                 <input
                                     type="text"
@@ -1392,7 +1383,6 @@ export default function ProjectShot() {
                             <div className="relative">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Sequence
-                                    <span className="text-red-400 ml-1">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -1443,26 +1433,25 @@ export default function ProjectShot() {
                                 </div>
                             </div>
 
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
                                 <span>Show more fields</span>
                                 <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
-                            </button>
+                            </button> */}
                         </div>
 
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                                 <span className="group-hover:underline">Bulk Import</span>
-                            </button>
+                            </button> */}
 
-                            <div className="flex gap-3">
                                 <button
                                     onClick={handleModalClose}
-                                    className="px-6 h-10 bg-[#3a3a3a] hover:bg-[#4a4a4a] border border-gray-600 text-sm rounded-lg text-gray-200 transition-all font-medium"
+                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
                                 >
                                     Cancel
                                 </button>
@@ -1473,7 +1462,6 @@ export default function ProjectShot() {
                                     className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
                                     {loading ? "Creating..." : "Create Shot"}
                                 </button>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -171,10 +171,10 @@ export default function Project_Assets() {
 
 
 
-const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]);
-const [assetShots, setAssetShots] = useState<AssetShot[]>([]);
-const [showAddShotDropdown, setShowAddShotDropdown] = useState(false);
-const [addShotInput, setAddShotInput] = useState('');
+    const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]);
+    const [assetShots, setAssetShots] = useState<AssetShot[]>([]);
+    const [showAddShotDropdown, setShowAddShotDropdown] = useState(false);
+    const [addShotInput, setAddShotInput] = useState('');
 
 
     const taskTemplates = [
@@ -204,30 +204,30 @@ const [addShotInput, setAddShotInput] = useState('');
     ];
 
     // 1. เพิ่ม useEffect สำหรับดึง shots เมื่อมี sequences
-useEffect(() => {
-    if (sequences.length > 0) {
-        fetchAllProjectShots();
-    }
-}, [sequences]); // ⭐ เพิ่ม dependency
+    useEffect(() => {
+        if (sequences.length > 0) {
+            fetchAllProjectShots();
+        }
+    }, [sequences]); // ⭐ เพิ่ม dependency
 
-// 2. แก้ไข useEffect สำหรับโหลด shots ตอน mount
-useEffect(() => {
-    fetchAssets();
-    fetchSequences();
-}, []);
-
-
+    // 2. แก้ไข useEffect สำหรับโหลด shots ตอน mount
+    useEffect(() => {
+        fetchAssets();
+        fetchSequences();
+    }, []);
 
 
-// Close dropdown when clicking outside
-useEffect(() => {
-    const closeDropdown = () => setShowAddShotDropdown(false);
 
-    if (showAddShotDropdown) {
-        document.addEventListener("click", closeDropdown);
-        return () => document.removeEventListener("click", closeDropdown);
-    }
-}, [showAddShotDropdown]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const closeDropdown = () => setShowAddShotDropdown(false);
+
+        if (showAddShotDropdown) {
+            document.addEventListener("click", closeDropdown);
+            return () => document.removeEventListener("click", closeDropdown);
+        }
+    }, [showAddShotDropdown]);
 
     const fetchAssets = async () => {
         const projectId = localStorage.getItem('projectId');
@@ -268,141 +268,141 @@ useEffect(() => {
     };
 
 
-// frontend: Project_Assets.tsx
-const fetchAllProjectShots = async () => {
-  try {
-    const projectData = getProjectData();
-    
-    if (!projectData?.projectId) {
-      console.log("❌ No projectId found");
-      setAllProjectShots([]);
-      return;
-    }
+    // frontend: Project_Assets.tsx
+    const fetchAllProjectShots = async () => {
+        try {
+            const projectData = getProjectData();
 
-    console.log(`📤 Calling GET_ALL_PROJECT_SHOTS for projectId: ${projectData.projectId}`);
-    
-    // เรียก API เพื่อดึง shots ทั้งหมดจาก project_shots table
-    const { data } = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
-      projectId: projectData.projectId
-    });
+            if (!projectData?.projectId) {
+                console.log("❌ No projectId found");
+                setAllProjectShots([]);
+                return;
+            }
 
-    console.log('📊 API Response from GET_ALL_PROJECT_SHOTS:', data);
-    
-    if (Array.isArray(data)) {
-      console.log(`✅ Loaded ${data.length} shots from database`);
-      setAllProjectShots(data);
-    } else {
-      console.error('❌ API response is not an array:', data);
-      setAllProjectShots([]);
-    }
-    
-  } catch (error: unknown) {
-    console.error('❌ Error in fetchAllProjectShots:');
-    
-    if (axios.isAxiosError(error)) {
-      console.error('Axios Error:', error.message);
-      console.error('Response:', error.response?.data);
-    }
-    
-    setAllProjectShots([]);
-  }
-};
-// ใช้ console.log ดูโครงสร้างข้อมูล
-const fetchAssetShots = async (assetId: string) => {
-    try {
-        console.log('🟡 Fetching asset shots for assetId:', assetId);
-        const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId });
-        
-        console.log('📊 Raw API Response:', res.data);
-        console.log('📊 Data type:', typeof res.data);
-        console.log('📊 Is Array?', Array.isArray(res.data));
-        console.log('📊 Length:', Array.isArray(res.data) ? res.data.length : 'N/A');
-        
-        if (Array.isArray(res.data)) {
-            console.log('✅ First item structure:', res.data[0]);
-            setAssetShots(res.data);
-        } else if (res.data && Array.isArray(res.data.data)) {
-            // กรณี API ส่งกลับเป็น { data: [...] }
-            console.log('✅ Data is nested in data property');
-            setAssetShots(res.data.data);
-        } else if (res.data && res.data.shots) {
-            // กรณี API ส่งกลับเป็น { shots: [...] }
-            console.log('✅ Data is nested in shots property');
-            setAssetShots(res.data.shots);
-        } else {
-            console.warn('⚠️ Invalid shots data format:', res.data);
+            console.log(`📤 Calling GET_ALL_PROJECT_SHOTS for projectId: ${projectData.projectId}`);
+
+            // เรียก API เพื่อดึง shots ทั้งหมดจาก project_shots table
+            const { data } = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
+                projectId: projectData.projectId
+            });
+
+            console.log('📊 API Response from GET_ALL_PROJECT_SHOTS:', data);
+
+            if (Array.isArray(data)) {
+                console.log(`✅ Loaded ${data.length} shots from database`);
+                setAllProjectShots(data);
+            } else {
+                console.error('❌ API response is not an array:', data);
+                setAllProjectShots([]);
+            }
+
+        } catch (error: unknown) {
+            console.error('❌ Error in fetchAllProjectShots:');
+
+            if (axios.isAxiosError(error)) {
+                console.error('Axios Error:', error.message);
+                console.error('Response:', error.response?.data);
+            }
+
+            setAllProjectShots([]);
+        }
+    };
+    // ใช้ console.log ดูโครงสร้างข้อมูล
+    const fetchAssetShots = async (assetId: string) => {
+        try {
+            console.log('🟡 Fetching asset shots for assetId:', assetId);
+            const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId });
+
+            console.log('📊 Raw API Response:', res.data);
+            console.log('📊 Data type:', typeof res.data);
+            console.log('📊 Is Array?', Array.isArray(res.data));
+            console.log('📊 Length:', Array.isArray(res.data) ? res.data.length : 'N/A');
+
+            if (Array.isArray(res.data)) {
+                console.log('✅ First item structure:', res.data[0]);
+                setAssetShots(res.data);
+            } else if (res.data && Array.isArray(res.data.data)) {
+                // กรณี API ส่งกลับเป็น { data: [...] }
+                console.log('✅ Data is nested in data property');
+                setAssetShots(res.data.data);
+            } else if (res.data && res.data.shots) {
+                // กรณี API ส่งกลับเป็น { shots: [...] }
+                console.log('✅ Data is nested in shots property');
+                setAssetShots(res.data.shots);
+            } else {
+                console.warn('⚠️ Invalid shots data format:', res.data);
+                setAssetShots([]);
+            }
+        } catch (error) {
+            console.error('❌ Error fetching asset shots:', error);
+            console.error('❌ Error details:');
             setAssetShots([]);
         }
-    } catch (error) {
-        console.error('❌ Error fetching asset shots:', error);
-        console.error('❌ Error details:');
-        setAssetShots([]);
-    }
-};
+    };
 
-// ⭐ เพิ่ม shot ให้ asset
-const handleAddShotToAsset = async (shotId: number) => {
-    if (!selectedAssetForDetail) return;
+    // ⭐ เพิ่ม shot ให้ asset
+    const handleAddShotToAsset = async (shotId: number) => {
+        if (!selectedAssetForDetail) return;
 
-    try {
-        const linkRes = await fetch(ENDPOINTS.ADD_ASSET_TO_SHOT, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                shotId: shotId,
-                assetId: selectedAssetForDetail.id
-            })
-        });
+        try {
+            const linkRes = await fetch(ENDPOINTS.ADD_ASSET_TO_SHOT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    shotId: shotId,
+                    assetId: selectedAssetForDetail.id
+                })
+            });
 
-        if (linkRes.ok) {
-            console.log('✅ Shot added to asset successfully');
-            // รีเฟรช shots
-            fetchAssetShots(selectedAssetForDetail.id);
-            setAddShotInput('');
-            setShowAddShotDropdown(false);
-        } else {
-            console.error('❌ Failed to add shot to asset');
+            if (linkRes.ok) {
+                console.log('✅ Shot added to asset successfully');
+                // รีเฟรช shots
+                fetchAssetShots(selectedAssetForDetail.id);
+                setAddShotInput('');
+                setShowAddShotDropdown(false);
+            } else {
+                console.error('❌ Failed to add shot to asset');
+            }
+        } catch (err) {
+            console.error('Error adding shot to asset:', err);
         }
-    } catch (err) {
-        console.error('Error adding shot to asset:', err);
-    }
-};
+    };
 
 
-// ⭐ ลบ shot จาก asset
-const handleRemoveShotFromAsset = async (assetShotId: number) => {
-    if (!selectedAssetForDetail) return;
+    // ⭐ ลบ shot จาก asset
+    const handleRemoveShotFromAsset = async (assetShotId: number) => {
+        if (!selectedAssetForDetail) return;
 
-    console.log('🗑️ Attempting to remove shot with assetShotId:', assetShotId);
+        console.log('🗑️ Attempting to remove shot with assetShotId:', assetShotId);
 
-    try {
-        const res = await fetch(ENDPOINTS.REMOVE_ASSET_FROM_SHOT, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ assetShotId })
-        });
+        try {
+            const res = await fetch(ENDPOINTS.REMOVE_ASSET_FROM_SHOT, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assetShotId })
+            });
 
-        console.log('Response status:', res.status);
-        const responseData = await res.json();
-        console.log('Response data:', responseData);
+            console.log('Response status:', res.status);
+            const responseData = await res.json();
+            console.log('Response data:', responseData);
 
-        if (res.ok) {
-            console.log('✅ Shot removed from asset successfully');
-            // รีเฟรช shots
-            fetchAssetShots(selectedAssetForDetail.id);
-        } else {
-            console.error('❌ Failed to remove shot from asset');
+            if (res.ok) {
+                console.log('✅ Shot removed from asset successfully');
+                // รีเฟรช shots
+                fetchAssetShots(selectedAssetForDetail.id);
+            } else {
+                console.error('❌ Failed to remove shot from asset');
+            }
+        } catch (err) {
+            console.error('Error removing shot from asset:', err);
         }
-    } catch (err) {
-        console.error('Error removing shot from asset:', err);
-    }
-};
+    };
 
-// ⭐ กรอง shots ที่ยังไม่ได้เพิ่ม
-const filteredAddShots = allProjectShots.filter(shot =>
-    shot.shot_name.toLowerCase().includes(addShotInput.toLowerCase()) &&
-    !assetShots.some((assetShot: AssetShot) => assetShot.shot_id === shot.id)
-);
+    // ⭐ กรอง shots ที่ยังไม่ได้เพิ่ม
+    const filteredAddShots = allProjectShots.filter(shot =>
+        shot.shot_name.toLowerCase().includes(addShotInput.toLowerCase()) &&
+        !assetShots.some((assetShot: AssetShot) => assetShot.shot_id === shot.id)
+    );
 
     const fetchSequences = async () => {
         setIsLoadingSequences(true);
@@ -474,7 +474,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                 asset_name: asset.asset_name,
                 description: asset.description,
                 status: asset.status,
-                file_url: asset.file_url || "", 
+                file_url: asset.file_url || "",
                 sequence: assetData[categoryIndex].category
             };
 
@@ -667,7 +667,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
         try {
             const projectData = getProjectData();
 
-            const {data} = await axios.post(ENDPOINTS.CREATEASSETS, {
+            const { data } = await axios.post(ENDPOINTS.CREATEASSETS, {
                 projectId: projectData?.projectId,
                 assetName: newAssetName,
                 description: newAssetDescription,
@@ -678,34 +678,34 @@ const filteredAddShots = allProjectShots.filter(shot =>
 
             });
 
-            console.log('✅ Asset created successfully',data);
+            console.log('✅ Asset created successfully', data);
 
             if (newAssetTaskTemplate && newAssetTaskTemplate.trim() !== '') {
 
-            console.log("Not A");
+                console.log("Not A");
 
-            let typeNum: number | null = null;
+                let typeNum: number | null = null;
 
-            if (newAssetTaskTemplate === "Automotive - Concept") typeNum = 0;
-            else if (newAssetTaskTemplate === "Automotive - Part") typeNum = 1;
-            else if (newAssetTaskTemplate === "Automotive - Theme") typeNum = 2;
-            else if (newAssetTaskTemplate === "Film VFX - Character Asset") typeNum = 3;
-            else if (newAssetTaskTemplate === "Film VFX - General Asset") typeNum = 4;
-            else if (newAssetTaskTemplate === "Games - Large Prop") typeNum = 5;
-            else if (newAssetTaskTemplate === "Games - Medium Prop") typeNum = 6;
-            else if (newAssetTaskTemplate === "Games - Small Prop") typeNum = 7;
+                if (newAssetTaskTemplate === "Automotive - Concept") typeNum = 0;
+                else if (newAssetTaskTemplate === "Automotive - Part") typeNum = 1;
+                else if (newAssetTaskTemplate === "Automotive - Theme") typeNum = 2;
+                else if (newAssetTaskTemplate === "Film VFX - Character Asset") typeNum = 3;
+                else if (newAssetTaskTemplate === "Film VFX - General Asset") typeNum = 4;
+                else if (newAssetTaskTemplate === "Games - Large Prop") typeNum = 5;
+                else if (newAssetTaskTemplate === "Games - Medium Prop") typeNum = 6;
+                else if (newAssetTaskTemplate === "Games - Small Prop") typeNum = 7;
 
-            if (typeNum !== null) {
-                await axios.post(ENDPOINTS.CREATE_TASK_ASSET, {
-                projectId: projectData?.projectId,
-                entity_type: "asset",
-                entity_id: data.assetId,
-                typeNum: typeNum,
-                });
-            } else {
-                console.warn("Unknown template:", newAssetTaskTemplate);
-            }
-            
+                if (typeNum !== null) {
+                    await axios.post(ENDPOINTS.CREATE_TASK_ASSET, {
+                        projectId: projectData?.projectId,
+                        entity_type: "asset",
+                        entity_id: data.assetId,
+                        typeNum: typeNum,
+                    });
+                } else {
+                    console.warn("Unknown template:", newAssetTaskTemplate);
+                }
+
             }
 
             setNewAssetName('');
@@ -719,7 +719,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
             setAssetType('');
             setShots([]);
             setShowCreateAsset(false);
-            
+
 
             fetchAssets();
         } catch (error) {
@@ -741,7 +741,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                 if (found) {
                     const updatedSelected = {
                         ...selected,
-                        file_url: found.file_url || "" 
+                        file_url: found.file_url || ""
                     };
 
                     localStorage.setItem(
@@ -1333,15 +1333,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                                         Create New Asset
                                     </h2>
                                 </div>
-                                <button
-                                    onClick={handleAssetModalClose}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-all"
-                                    aria-label="Close"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+
                             </div>
                         </div>
 
@@ -1352,6 +1344,8 @@ const filteredAddShots = allProjectShots.filter(shot =>
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
                                     Asset Name
+                                    <span className="text-red-400 ml-1">*</span>
+
                                 </label>
                                 <input
                                     type="text"
@@ -1542,27 +1536,26 @@ const filteredAddShots = allProjectShots.filter(shot =>
                             </div>
 
                             {/* More fields button */}
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
                                 <span>Show more fields</span>
                                 <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
+                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                                 <span className="group-hover:underline">Bulk Import</span>
-                            </button>
+                            </button> */}
 
-                            <div className="flex gap-3">
                                 <button
                                     onClick={handleAssetModalClose}
-                                    className="px-6 h-10 bg-[#3a3a3a] hover:bg-[#4a4a4a] border border-gray-600 text-sm rounded-lg text-gray-200 transition-all font-medium"
+                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
                                 >
                                     Cancel
                                 </button>
@@ -1573,7 +1566,6 @@ const filteredAddShots = allProjectShots.filter(shot =>
                                     className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
                                     Create Asset
                                 </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1594,7 +1586,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                             setSelectedAssetForDetail(contextMenu.asset); // ✅ ใช้ asset จาก API ตรง ๆ
                             fetchAssetDetail(contextMenu.asset.id); // ⭐ เพิ่มบรรทัดนี้
                             fetchAssetSequences(contextMenu.asset.id); // ⭐ เพิ่มบรรทัดนี้
-                            fetchAssetShots(contextMenu.asset.id); 
+                            fetchAssetShots(contextMenu.asset.id);
                             setShowAssetDetailPanel(true);
                             setContextMenu(null);
                         }}
@@ -1758,7 +1750,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                                                     onClick={() => {
                                                         if (addSequenceInput.trim()) {
                                                             // Find the sequence by name and add it
-                                                            const sequence = sequences.find(seq => 
+                                                            const sequence = sequences.find(seq =>
                                                                 seq.sequence_name.toLowerCase() === addSequenceInput.toLowerCase().trim()
                                                             );
                                                             if (sequence) {
@@ -1773,7 +1765,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                                             </div>
 
                                             {showAddSequenceDropdown && filteredAddSequences.length > 0 && (
-                                                <div 
+                                                <div
                                                     className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
@@ -1835,7 +1827,7 @@ const filteredAddShots = allProjectShots.filter(shot =>
                                         </div>
                                     </div>
 
-                             {/* Shots Section - แสดงเฉพาะ Shots ไม่มี Assets ข้างใน */}
+                                    {/* Shots Section - แสดงเฉพาะ Shots ไม่มี Assets ข้างใน */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-medium text-gray-300">
