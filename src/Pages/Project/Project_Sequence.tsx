@@ -1328,7 +1328,7 @@ export default function Project_Sequence() {
                                         setExpandedItem(null);
                                         setSequenceDetail(null); // ⭐ เพิ่มบรรทัดนี้เพื่อ clear ข้อมูล
                                     }}
-                                    className="w-9 h-9 rounded-lg bg-gray-700/80 hover:bg-red-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group"
+                                    className="w-9 h-9 rounded-lg text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group bg-gradient-to-r from-red-700 to-red-600 hover:from-red-500 hover:to-red-500"
                                 >
                                     <span className="text-lg group-hover:scale-110 transition-transform">✕</span>
                                 </button>
@@ -1511,8 +1511,8 @@ export default function Project_Sequence() {
                                                                 handleRemoveAssetFromSequence((asset as any).asset_sequence_id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" && expandedItem?.id === asset.id
-                                                               ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from sequence"
                                                         >
@@ -1647,8 +1647,8 @@ export default function Project_Sequence() {
                                                                 handleRemoveShotFromSequence(shot.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
-                                                               ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                               ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from sequence"
                                                         >

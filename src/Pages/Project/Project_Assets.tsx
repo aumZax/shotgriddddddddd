@@ -1827,9 +1827,9 @@ export default function Project_Assets() {
                                         setAssetDetail(null); // ⭐ เพิ่มบรรทัดนี้
                                         setAssetSequences([]); // ⭐ เพิ่มบรรทัดนี้
                                     }}
-                                    className="w-9 h-9 rounded-lg bg-gray-700/80 hover:bg-red-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group"
+                                    className="w-9 h-9 rounded-lg text-gray-300 hover:text-white transition-all duration-200 flex items-center justify-center flex-shrink-0 group bg-gradient-to-r from-red-700 to-red-600 hover:from-red-500 hover:to-red-500"
                                 >
-                                    <span className="text-lg group-hover:scale-110 transition-transform">✕</span>
+                                    <span className="text-lg group-hover:scale-110 transition-transform ">✕</span>
                                 </button>
                             </div>
                         </div>
@@ -1989,8 +1989,8 @@ export default function Project_Assets() {
                                                                 handleRemoveSequenceFromAsset(seq.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === seq.sequence_id
-                                                                ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                               ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                         >
                                                             <span className="text-sm font-bold">×</span>
@@ -2124,8 +2124,8 @@ export default function Project_Assets() {
                                                                 handleRemoveShotFromAsset(shot.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.shot_id
-                                                                ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from asset"
                                                         >
