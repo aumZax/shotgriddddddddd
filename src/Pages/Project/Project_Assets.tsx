@@ -221,11 +221,16 @@ export default function Project_Assets() {
 
     // Close dropdown when clicking outside
     useEffect(() => {
-        const closeDropdown = () => setShowAddShotDropdown(false);
+        const closeDropdown = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.relative')) {
+                setShowAddShotDropdown(false);
+            }
+        };
 
         if (showAddShotDropdown) {
-            document.addEventListener("click", closeDropdown);
-            return () => document.removeEventListener("click", closeDropdown);
+            document.addEventListener("mousedown", closeDropdown);
+            return () => document.removeEventListener("mousedown", closeDropdown);
         }
     }, [showAddShotDropdown]);
 
@@ -935,11 +940,17 @@ export default function Project_Assets() {
 
     // Close add sequence dropdown when clicking outside
     useEffect(() => {
-        const closeDropdown = () => setShowAddSequenceDropdown(false);
+        const closeDropdown = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // ตรวจสอบว่าไม่ได้คลิกใน dropdown หรือ input
+            if (!target.closest('.relative')) {
+                setShowAddSequenceDropdown(false);
+            }
+        };
 
         if (showAddSequenceDropdown) {
-            document.addEventListener("click", closeDropdown);
-            return () => document.removeEventListener("click", closeDropdown);
+            document.addEventListener("mousedown", closeDropdown);
+            return () => document.removeEventListener("mousedown", closeDropdown);
         }
     }, [showAddSequenceDropdown]);
 
@@ -1917,13 +1928,14 @@ export default function Project_Assets() {
                                                         setShowAddSequenceDropdown(true);
                                                     }}
                                                     onFocus={() => setShowAddSequenceDropdown(true)}
+                                                    onClick={(e) => e.stopPropagation()} // ⭐ เพิ่มบรรทัดนี้
                                                     placeholder="Type sequence name..."
                                                     className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500"
                                                 />
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // ⭐ เพิ่มบรรทัดนี้
                                                         if (addSequenceInput.trim()) {
-                                                            // Find the sequence by name and add it
                                                             const sequence = sequences.find(seq =>
                                                                 seq.sequence_name.toLowerCase() === addSequenceInput.toLowerCase().trim()
                                                             );
@@ -1989,7 +2001,7 @@ export default function Project_Assets() {
                                                                 handleRemoveSequenceFromAsset(seq.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === seq.sequence_id
-                                                               ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
                                                                 : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                         >
@@ -2021,10 +2033,14 @@ export default function Project_Assets() {
                                                         setShowAddShotDropdown(true);
                                                     }}
                                                     onFocus={() => setShowAddShotDropdown(true)}
+                                                    onClick={(e) => e.stopPropagation()} // ⭐ เพิ่มบรรทัดนี้
                                                     className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-green-500"
                                                 />
                                                 <button
-                                                    onClick={() => setShowAddShotDropdown(!showAddShotDropdown)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // ⭐ เพิ่มบรรทัดนี้
+                                                        setShowAddShotDropdown(!showAddShotDropdown);
+                                                    }}
                                                     className="px-4 py-2 rounded-lg text-sm text-white transition-colors flex items-center gap-1 bg-gradient-to-r from-green-700 to-green-700 hover:from-green-600 hover:to-green-600"
                                                 >
                                                     <span>+ Add</span>

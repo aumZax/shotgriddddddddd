@@ -825,9 +825,8 @@ export default function Home() {
                             </div>
                         </div>
 
-                        <div className="border-t border-gray-700 p-6 flex items-center justify-end">
+                        <div className="border-t border-gray-700 p-6 flex items-center justify-between">
                             
-                            <div className="flex gap-3">
                                 <button
                                     onClick={() => {
                                         setShowModal(false);
@@ -846,7 +845,6 @@ export default function Home() {
                                 >
                                     {loading ? "Creating..." : "Create Project"}
                                 </button>
-                            </div>
                         </div>
                     </div>
                 </div>
