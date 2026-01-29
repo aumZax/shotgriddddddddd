@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Image } from 'lucide-react';
+import { Eye, Image, Upload, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 
 
@@ -107,6 +107,10 @@ export default function Others_Asset() {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [commentText, setCommentText] = useState('');
     const [currentUser] = useState('Current User');
+
+    const [showPreview, setShowPreview] = useState(false);
+
+
 
     useEffect(() => {
         const selectedAsset = getSelectedAsset();
@@ -472,17 +476,55 @@ export default function Others_Asset() {
                             <span className='p-2 text-xl text-gray-200'>{'>'}</span>
                             <span className='p-2 text-xl text-gray-200'>{assetData.asset_name}</span>
                         </div>
+                        {showPreview && assetData.thumbnail && (
+                            <div
+                                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                                onClick={() => setShowPreview(false)}
+                            >
+                                <button
+                                    onClick={() => setShowPreview(false)}
+                                    className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                                >
+                                    <X className="w-6 h-6 text-white" />
+                                </button>
+
+                                <div className="max-w-7xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+                                    {assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                        <video src={assetData.thumbnail} className="w-full h-full object-contain rounded-lg" controls autoPlay />
+                                    ) : (
+                                        <img src={assetData.thumbnail} alt="Preview" className="w-full h-full object-contain rounded-lg" />
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex gap-6 w-full items-start justify-between mb-6">
                             <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
                                 {assetData.thumbnail ? (
-                                    <img
-                                        src={assetData.thumbnail}
-                                        alt="Asset thumbnail"
-                                        className="w-full h-full object-cover rounded-lg "
-                                    />
+                                    // ตรวจสอบว่าเป็นวิดีโอหรือรูปภาพ
+                                    assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                        // แสดงวิดีโอ
+                                        <div className="w-full h-full rounded-lg overflow-hidden">
+                                            <video
+                                                src={assetData.thumbnail}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                                muted
+                                                playsInline
+                                            >
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+                                    ) : (
+                                        // แสดงรูปภาพ
+                                        <img
+                                            src={assetData.thumbnail}
+                                            alt="Asset thumbnail"
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
+                                    )
                                 ) : (
-                                    <div className="w-full h-full  rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
+                                    <div className="w-full h-full rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
                                         <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
                                             <Image className="w-8 h-8 text-gray-500" />
                                         </div>
@@ -490,55 +532,130 @@ export default function Others_Asset() {
                                     </div>
                                 )}
 
-                                {/* Upload Input - คลิกที่รูปทั้งหมดเพื่ออัปโหลด */}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    onChange={async (e) => {
-                                        if (!e.target.files?.[0]) return;
+                                {/* ปุ่มเมนู - แสดงเมื่อมี thumbnail */}
+                                {assetData.thumbnail && (
+                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setShowPreview(true);
+                                                }}
+                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                ดูไฟล์
+                                            </button>
+                                            <label className="px-4 py-2 bg-gradient-to-r from-green-800 to-green-800 hover:from-green-500 hover:to-green-500 text-white rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                                <Upload className="w-4 h-4" />
+                                                เปลี่ยนไฟล์
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,video/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        if (!e.target.files?.[0]) return;
 
-                                        const formData = new FormData();
-                                        formData.append("assetId", assetData.id.toString());
-                                        formData.append("file", e.target.files[0]);
-                                        formData.append("oldImageUrl", assetData.thumbnail || "");
+                                                        const file = e.target.files[0];
+                                                        const formData = new FormData();
+                                                        formData.append("assetId", assetData.id.toString());
+                                                        formData.append("file", file);
+                                                        formData.append("oldImageUrl", assetData.thumbnail || "");
 
-                                        try {
-                                            const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
-                                                method: "POST",
-                                                body: formData,
-                                            });
+                                                        try {
+                                                            const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                                                                method: "POST",
+                                                                body: formData,
+                                                            });
 
-                                            const data = await res.json();
-                                            console.log("📥 Upload Response:", data);
+                                                            const data = await res.json();
+                                                            console.log("📥 Upload Response:", data);
 
-                                            if (res.ok) {
-                                                const newFileUrl = data.file.fileUrl;
+                                                            if (res.ok) {
+                                                                const newFileUrl = data.file?.fileUrl || data.fileUrl;
 
-                                                setAssetData(prev => prev ? {
-                                                    ...prev,
-                                                    thumbnail: newFileUrl
-                                                } : null);
+                                                                setAssetData(prev => prev ? {
+                                                                    ...prev,
+                                                                    thumbnail: newFileUrl
+                                                                } : null);
 
-                                                const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-                                                const updated = {
-                                                    ...stored,
-                                                    file_url: newFileUrl,
-                                                };
-                                                localStorage.setItem("selectedAsset", JSON.stringify(updated));
+                                                                const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+                                                                const updated = {
+                                                                    ...stored,
+                                                                    file_url: newFileUrl,
+                                                                };
+                                                                localStorage.setItem("selectedAsset", JSON.stringify(updated));
 
-                                                console.log("✅ Upload success! New URL:", newFileUrl);
+                                                                console.log("✅ Upload success! New URL:", newFileUrl);
 
-                                            } else {
-                                                console.error("❌ Upload failed:", data.error);
-                                                alert("Upload failed: " + data.error);
+                                                            } else {
+                                                                console.error("❌ Upload failed:", data.error);
+                                                                alert("Upload failed: " + (data.error || "Unknown error"));
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("❌ Upload error:", err);
+                                                            alert("Upload error");
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Upload Input - แสดงเมื่อไม่มี thumbnail */}
+                                {!assetData.thumbnail && (
+                                    <input
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={async (e) => {
+                                            if (!e.target.files?.[0]) return;
+
+                                            const file = e.target.files[0];
+                                            const formData = new FormData();
+                                            formData.append("assetId", assetData.id.toString());
+                                            formData.append("file", file);
+                                            formData.append("oldImageUrl", assetData.thumbnail || "");
+
+                                            try {
+                                                const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                                                    method: "POST",
+                                                    body: formData,
+                                                });
+
+                                                const data = await res.json();
+                                                console.log("📥 Upload Response:", data);
+
+                                                if (res.ok) {
+                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+
+                                                    setAssetData(prev => prev ? {
+                                                        ...prev,
+                                                        thumbnail: newFileUrl
+                                                    } : null);
+
+                                                    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+                                                    const updated = {
+                                                        ...stored,
+                                                        file_url: newFileUrl,
+                                                    };
+                                                    localStorage.setItem("selectedAsset", JSON.stringify(updated));
+
+                                                    console.log("✅ Upload success! New URL:", newFileUrl);
+
+                                                } else {
+                                                    console.error("❌ Upload failed:", data.error);
+                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                }
+                                            } catch (err) {
+                                                console.error("❌ Upload error:", err);
+                                                alert("Upload error");
                                             }
-                                        } catch (err) {
-                                            console.error("❌ Upload error:", err);
-                                            alert("Upload error");
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    />
+                                )}
                             </div>
 
                             <div className="flex-1 space-y-4">
@@ -579,7 +696,7 @@ export default function Others_Asset() {
                                         </div>
 
                                         <div className="min-w-[200px]">
-                                            <span className="text-gray-400 font-medium block mb-1">Sequence / Shot</span>
+                                            <span className="text-gray-400 font-medium block mb-1">Type Name</span>
                                             <p className="text-gray-100 font-medium flex items-center gap-2">
                                                 📁 {assetData.sequence}
                                             </p>
@@ -684,34 +801,34 @@ export default function Others_Asset() {
                             <span className="w-1 h-6 bg-blue-500 rounded"></span>
                             {activeTab}
 
-                        {activeTab === 'Tasks' && (
-                            <button
-                                onClick={() => setShowCreateAsset_Task(true)}
-                                className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                            >
-                                Add Task
-                                <span className="text-xs">▼</span>
+                            {activeTab === 'Tasks' && (
+                                <button
+                                    onClick={() => setShowCreateAsset_Task(true)}
+                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
+                                >
+                                    Add Task
+                                    <span className="text-xs">▼</span>
 
-                            </button>
-                        )}
+                                </button>
+                            )}
 
-                        {activeTab === 'Notes' && (
-                            <button
-                                onClick={() => setShowCreateAsset_Note(true)}
-                                className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                            >
-                                Add Note
-                            </button>
-                        )}
+                            {activeTab === 'Notes' && (
+                                <button
+                                    onClick={() => setShowCreateAsset_Note(true)}
+                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
+                                >
+                                    Add Note
+                                </button>
+                            )}
 
-                        {activeTab === 'Versions' && (
-                            <button
-                                onClick={() => setShowCreateAsset_Versions(true)}
-                                className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                            >
-                                Add Version
-                            </button>
-                        )}
+                            {activeTab === 'Versions' && (
+                                <button
+                                    onClick={() => setShowCreateAsset_Versions(true)}
+                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
+                                >
+                                    Add Version
+                                </button>
+                            )}
                         </h3>
 
 
@@ -1032,3 +1149,5 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
         <p className="text-gray-200">{value}</p>
     </div>
 );
+
+
