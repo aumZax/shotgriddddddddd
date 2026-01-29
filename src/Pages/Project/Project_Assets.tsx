@@ -1385,8 +1385,8 @@ export default function Project_Assets() {
                                                                         ) : (
                                                                             <>
                                                                                 <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
-                                                                                
-                                                                                    <Box  className="w-3.5 h-3.5 text-green-400"/>
+
+                                                                                    <Box className="w-3.5 h-3.5 text-green-400" />
 
                                                                                     <span className="text-xs font-semibold text-green-300">
                                                                                         {currentAssetShots.length}
@@ -1989,8 +1989,8 @@ export default function Project_Assets() {
                                                                 handleRemoveSequenceFromAsset(seq.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === seq.sequence_id
-                                                                ? "hover:bg-purple-600 hover:rotate-90"
-                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                                ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                         >
                                                             <span className="text-sm font-bold">×</span>
@@ -2124,8 +2124,8 @@ export default function Project_Assets() {
                                                                 handleRemoveShotFromAsset(shot.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.shot_id
-                                                                ? "hover:bg-green-600 hover:rotate-90"
-                                                                : " hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from asset"
                                                         >

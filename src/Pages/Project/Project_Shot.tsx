@@ -1693,8 +1693,8 @@ export default function ProjectShot() {
                                                             handleRemoveSequenceFromShot();
                                                         }}
                                                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === shotDetail.sequence!.id
-                                                            ? "hover:bg-green-600 hover:rotate-90"
-                                                            : "hover:bg-red-500/80 hover:rotate-90"
+                                                           ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
                                                             }`}
                                                     >
                                                         <span className="text-sm font-bold">×</span>
@@ -1853,8 +1853,8 @@ export default function ProjectShot() {
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" &&
                                                                 expandedItem?.id === asset.id
-                                                                ? "hover:bg-blue-600 hover:rotate-90"
-                                                                : "hover:bg-red-500/80 hover:rotate-90"
+                                                               ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from shot"
                                                         >
