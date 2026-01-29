@@ -1853,8 +1853,8 @@ export default function ProjectShot() {
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "asset" &&
                                                                 expandedItem?.id === asset.id
-                                                               ? "hover:rotate-90 bg-gradient-to-r hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r hover:from-red-500 hover:to-red-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from shot"
                                                         >
