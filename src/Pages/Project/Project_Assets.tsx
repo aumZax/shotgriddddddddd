@@ -1050,6 +1050,34 @@ export default function Project_Assets() {
         setShowShotDropdown(false);
     };
 
+    // เพิ่ม state ใหม่
+    const [allAssetShots, setAllAssetShots] = useState<Record<string, AssetShot[]>>({});
+
+    // เพิ่มฟังก์ชันดึง shots สำหรับ asset เฉพาะ
+    const fetchShotsForAsset = async (assetId: string) => {
+        try {
+            const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId });
+            if (Array.isArray(res.data)) {
+                setAllAssetShots(prev => ({
+                    ...prev,
+                    [assetId]: res.data
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching shots for asset:', assetId, error);
+        }
+    };
+
+    // เรียกใช้ในตอนโหลดข้อมูล assets
+    useEffect(() => {
+        if (assetData.length > 0) {
+            assetData.forEach(category => {
+                category.assets.forEach(asset => {
+                    fetchShotsForAsset(asset.id);
+                });
+            });
+        }
+    }, [assetData.length]);
 
 
 
@@ -1094,7 +1122,7 @@ export default function Project_Assets() {
 
             <div className="h-22"></div>
 
-          <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
@@ -1121,11 +1149,17 @@ export default function Project_Assets() {
                                 <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Asset Name</span>
                                 </div>
+                                <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</span>
+                                </div>
                                 <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
                                 </div>
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1 flex-shrink-0  border-r border-gray-700/50 pr-4" >
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</span>
+                                </div>
+                                <div className="flex-1 min-w-0  border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shots</span>
                                 </div>
                             </div>
                         </div>
@@ -1161,7 +1195,7 @@ export default function Project_Assets() {
                                                     className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, assetIndex)
                                                         ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
                                                         : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <div className="flex items-center gap-6 px-4 py-2.5">
                                                         {/* Thumbnail */}
@@ -1170,7 +1204,7 @@ export default function Project_Assets() {
                                                                 className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    
+
                                                                     const currentAsset = assetData[categoryIndex].assets[assetIndex];
                                                                     localStorage.setItem(
                                                                         "selectedAsset",
@@ -1183,7 +1217,7 @@ export default function Project_Assets() {
                                                                             sequence: assetData[categoryIndex].category
                                                                         })
                                                                     );
-                                                                    
+
                                                                     navigate('/Project_Assets/Others_Asset');
                                                                 }}
                                                             >
@@ -1207,7 +1241,7 @@ export default function Project_Assets() {
                                                                 {/* Hover Overlay */}
                                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
                                                                     <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                        <Eye className="w-3.5 h-3.5 text-white"/>
+                                                                        <Eye className="w-3.5 h-3.5 text-white" />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1237,6 +1271,20 @@ export default function Project_Assets() {
                                                                 </h3>
                                                             )}
                                                         </div>
+
+                                                        {/* Type */}
+                                                        <div className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4">
+
+                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                                                                <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate" title={category.category}>
+                                                                    {category.category}
+                                                                </span>
+
+                                                            </div>
+
+
+                                                        </div>
+
 
                                                         {/* Status */}
                                                         <div className="w-36 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
@@ -1282,7 +1330,7 @@ export default function Project_Assets() {
                                                         {/* Description */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text"
+                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.assetIndex === assetIndex &&
@@ -1302,6 +1350,109 @@ export default function Project_Assets() {
                                                                     {asset.description || '\u00A0'}
                                                                 </p>
                                                             )}
+                                                        </div>
+
+                                                        {/* Shots */}
+                                                        <div className="flex-1 min-w-0 px-2 py-1">
+                                                            {(() => {
+                                                                // ดึงข้อมูล shots ของ asset นี้จาก assetShots state
+                                                                // โดยต้องกรองเฉพาะ shots ที่เป็นของ asset id นี้
+
+                                                                const currentAssetShots = allAssetShots[asset.id] || [];
+
+                                                                return currentAssetShots.length > 0 ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        {currentAssetShots.length <= 2 ? (
+                                                                            <div className="flex-1 flex items-center gap-1.5">
+                                                                                {currentAssetShots.map((shot) => (
+                                                                                    <div
+                                                                                        key={shot.shot_id}
+                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                                                        title={shot.shot_description || shot.shot_name}
+                                                                                    >
+                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                                            {shot.shot_name}
+                                                                                        </span>
+                                                                                        {shot.shot_status === 'fin' && (
+                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                        )}
+                                                                                        {shot.shot_status === 'ip' && (
+                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
+                                                                                    <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                                    </svg>
+                                                                                    <span className="text-xs font-semibold text-blue-300">
+                                                                                        {currentAssetShots.length}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                                    {currentAssetShots.slice(0, 2).map((shot) => (
+                                                                                        <div
+                                                                                            key={shot.shot_id}
+                                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                            title={shot.shot_description || shot.shot_name}
+                                                                                        >
+                                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                                {shot.shot_name}
+                                                                                            </span>
+                                                                                            {shot.shot_status === 'fin' && (
+                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                            )}
+                                                                                            {shot.shot_status === 'ip' && (
+                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <span className="text-gray-500 text-xs">...</span>
+                                                                                </div>
+
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setSelectedAssetForDetail(asset);
+                                                                                        fetchAssetDetail(asset.id);
+                                                                                        fetchAssetSequences(asset.id);
+                                                                                        fetchAssetShots(asset.id);
+                                                                                        setShowAssetDetailPanel(true);
+                                                                                    }}
+                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-blue-600/50 to-gray-800 border border-gray-700 hover:border-blue-500 rounded-lg"
+                                                                                    title="View all shots"
+                                                                                >
+                                                                                    <span className="text-xs text-gray-400 group-hover:text-blue-400 font-medium transition-colors">
+                                                                                        View
+                                                                                    </span>
+                                                                                    <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedAssetForDetail(asset);
+                                                                            fetchAssetDetail(asset.id);
+                                                                            fetchAssetSequences(asset.id);
+                                                                            fetchAssetShots(asset.id);
+                                                                            setShowAssetDetailPanel(true);
+                                                                        }}
+                                                                        className="bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
+                                                                        title="Add shots"
+                                                                    >
+                                                                        <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                            No shots - Click to Add
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1575,19 +1726,19 @@ export default function Project_Assets() {
                                 <span className="group-hover:underline">Bulk Import</span>
                             </button> */}
 
-                                <button
-                                    onClick={handleAssetModalClose}
-                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
-                                >
-                                    Cancel
-                                </button>
+                            <button
+                                onClick={handleAssetModalClose}
+                                className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-gray-200 transition-all font-medium"
+                            >
+                                Cancel
+                            </button>
 
-                                <button
-                                    onClick={handleCreateAsset}
-                                    // disabled={!selectedSequence || !selectedShot}
-                                    className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
-                                    Create Asset
-                                </button>
+                            <button
+                                onClick={handleCreateAsset}
+                                // disabled={!selectedSequence || !selectedShot}
+                                className="px-6 h-10 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-sm rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">
+                                Create Asset
+                            </button>
                         </div>
                     </div>
                 </div>

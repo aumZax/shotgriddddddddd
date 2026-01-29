@@ -956,11 +956,12 @@ export default function ProjectShot() {
                                 <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</span>
                                 </div>
-                                <div className="w-48 flex-shrink-0 border-r border-gray-700/50 pr-4">
-                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</span>
-                                </div>
+                              
                                 <div className="w-44 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shot Name</span>
+                                </div>
+                                  <div className="w-48 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</span>
                                 </div>
                                 <div className="w-36 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</span>
@@ -1039,24 +1040,7 @@ export default function ProjectShot() {
                                                             </div>
                                                         </div>
 
-                                                        {/* Sequence */}
-                                                        <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
-                                                            {shot.sequence ? (
-                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                                                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
-                                                                        {shot.sequence.sequence_name}
-                                                                    </span>
-                                                                    {shot.sequence.status === 'fin' && (
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                    )}
-                                                                    {shot.sequence.status === 'ip' && (
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-gray-500 text-xs italic">-</span>
-                                                            )}
-                                                        </div>
+                                                   
 
                                                         {/* Shot Name */}
                                                         <div
@@ -1080,6 +1064,24 @@ export default function ProjectShot() {
                                                                 <h3 className="text-sm font-medium text-gray-100 truncate">
                                                                     {shot.shot_name}
                                                                 </h3>
+                                                            )}
+                                                        </div>
+                                                             {/* Sequence */}
+                                                        <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
+                                                            {shot.sequence ? (
+                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                                                                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
+                                                                        {shot.sequence.sequence_name}
+                                                                    </span>
+                                                                    {shot.sequence.status === 'fin' && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                    )}
+                                                                    {shot.sequence.status === 'ip' && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-500 text-xs italic">-</span>
                                                             )}
                                                         </div>
 
