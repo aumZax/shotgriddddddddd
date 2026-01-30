@@ -475,7 +475,7 @@ export default function Others_Sequence() {
                             <div className="relative">
                                 {shotData.thumbnail ? (
                                     <img
-                                        src={ENDPOINTS.image_url+shotData.thumbnail}
+                                        src={shotData.thumbnail}
                                         alt="Shot thumbnail"
                                         className="w-80 h-44 object-cover rounded-lg shadow-md border-2 border-gray-700"
                                     />

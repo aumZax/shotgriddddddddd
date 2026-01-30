@@ -1234,7 +1234,7 @@ export default function Project_Assets() {
                                                             >
                                                                 {asset.file_url ? (
                                                                     <img
-                                                                        src={asset.file_url}
+                                                                        src={ENDPOINTS.image_url+asset.file_url}
                                                                         alt={asset.asset_name}
                                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                         onError={(e) => {

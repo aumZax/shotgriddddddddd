@@ -1020,7 +1020,7 @@ export default function ProjectShot() {
                                                             >
                                                                 {shot.thumbnail ? (
                                                                     <img
-                                                                        src={shot.thumbnail}
+                                                                        src={ENDPOINTS.image_url+shot.thumbnail}
                                                                         alt={shot.shot_name}
                                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                     />
