@@ -518,7 +518,7 @@ export default function Others_Asset() {
                                     ) : (
                                         // แสดงรูปภาพ
                                         <img
-                                            src={assetData.thumbnail}
+                                            src={ENDPOINTS.image_url+assetData.thumbnail}
                                             alt="Asset thumbnail"
                                             className="w-full h-full object-cover rounded-lg"
                                         />
