@@ -305,7 +305,7 @@ export default function Project_Detail() {
                                 <>
                                     {/* Background blur */}
                                     <img
-                                        src={projectThumbnail}
+                                        src={ENDPOINTS.image_url+projectThumbnail}
                                         className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-40"
                                         alt=""
                                     />
@@ -315,7 +315,7 @@ export default function Project_Detail() {
 
                                     {/* Main image */}
                                     <img
-                                        src={projectThumbnail}
+                                        src={ENDPOINTS.image_url+projectThumbnail}
                                         alt={projectName}
                                         className="relative z-10 mx-auto h-full object-contain opacity-90"
                                     />
