@@ -632,14 +632,14 @@ export default function Home() {
                     {project.image ? (
                         <>
                             <img
-                                src={project.image}
+                                src={ENDPOINTS.image_url+project.image}
                                 className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-40"
                                 alt=""
                             />
 
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60" />
                             <img
-                                src={project.image}
+                                src={ENDPOINTS.image_url+project.image}
                                 alt={project.name}
                                 className="relative mx-auto h-full object-contain opacity-90"
                                 onError={(e) => {
