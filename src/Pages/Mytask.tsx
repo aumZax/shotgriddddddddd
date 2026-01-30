@@ -30,7 +30,7 @@ export default function Mytask() {
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
     const [activeTab, setActiveTab] = useState('notes');
     const [isResizing, setIsResizing] = useState(false);
-
+    const [isLoadingTasks, setIsLoadingTasks] = useState(true);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -64,11 +64,12 @@ export default function Mytask() {
 
 
     const [tasks, setTasks] = useState<Task[]>([]);
-    const [, setLoading] = useState(true);
 
 
-    useEffect(() => {
+  useEffect(() => {
         const fetchMyTasks = async () => {
+            setIsLoadingTasks(true); // ⭐ เริ่ม loading
+            
             try {
                 const authUser = localStorage.getItem("authUser");
                 if (!authUser) return;
@@ -86,7 +87,7 @@ export default function Mytask() {
             } catch (err) {
                 console.error("Fetch my tasks error:", err);
             } finally {
-                setLoading(false);
+                setIsLoadingTasks(false); // ⭐ จบ loading
             }
         };
 
@@ -253,7 +254,16 @@ export default function Mytask() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800/50">
-                                {tasks.length === 0 ? (
+                                {isLoadingTasks ? (
+                                    <tr>
+                                        <td colSpan={11} className="px-4 py-16">
+                                            <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                                                <p className="text-gray-400 text-sm">Loading tasks...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : tasks.length === 0 ? (
                                     <tr>
                                         <td colSpan={11} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">

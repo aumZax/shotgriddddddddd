@@ -32,6 +32,8 @@ export default function Project_Tasks() {
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
     const [activeTab, setActiveTab] = useState('notes');
     const [isResizing, setIsResizing] = useState(false);
+    const [isLoadingSequences, setIsLoadingSequences] = useState(true);
+
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -66,31 +68,34 @@ export default function Project_Tasks() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                const projectId = JSON.parse(
-                    localStorage.getItem("projectId") || "null"
-                );
+   useEffect(() => {
+    const fetchTasks = async () => {
+        setIsLoadingSequences(true);  // ← ย้ายเข้ามาใน function
+        
+        try {
+            const projectId = JSON.parse(
+                localStorage.getItem("projectId") || "null"
+            );
 
-                if (!projectId) return;
+            if (!projectId) return;
 
-                const res = await axios.post(
-                    `${ENDPOINTS.PROJECT_TASKS}`,
-                    { projectId }
-                );
-                console.log("RAW TASKS FROM API:", res.data);
+            const res = await axios.post(
+                `${ENDPOINTS.PROJECT_TASKS}`,
+                { projectId }
+            );
+            console.log("RAW TASKS FROM API:", res.data);
 
-                setTasks(res.data);
-            } catch (err) {
-                console.error("Fetch tasks error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+            setTasks(res.data);
+        } catch (err) {
+            console.error("Fetch tasks error:", err);
+        } finally {
+            setLoading(false);
+            setIsLoadingSequences(false);  // ← ย้ายมาไว้ใน finally
+        }
+    };
 
-        fetchTasks();
-    }, []);
+    fetchTasks();
+}, []);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ++++++++++++++++++++++++++++++++++++++++++
     const formatDateThai = (dateString: string) => {
@@ -293,7 +298,18 @@ export default function Project_Tasks() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800/50">
-                                {tasks.length === 0 ? (
+
+                               {isLoadingSequences ? (
+    /* Loading State - ต้อง wrap ด้วย tr และ td */
+    <tr>
+      <td colSpan={11} className="px-4 py-16">
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+          <p className="text-gray-400 text-sm">Loading sequences...</p>
+        </div>
+      </td>
+    </tr>
+  ) : tasks.length === 0 ? (
                                     <tr>
                                         <td colSpan={11} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -786,12 +802,12 @@ export default function Project_Tasks() {
                                 <label className="text-sm text-gray-300 text-right">
                                     Due Date:
                                 </label>
-                               <input
-    type="date"
-    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded
+                                <input
+                                    type="date"
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded
     text-gray-200 text-sm focus:outline-none focus:border-blue-500
     placeholder:text-gray-500 [color-scheme:dark]"
-/>
+                                />
 
                             </div>
 
