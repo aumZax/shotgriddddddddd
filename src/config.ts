@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "https://hills-dream-enzyme-influences.trycloudflare.com"; 
+const BASE_URL = "https://stainless-mats-education-investment.trycloudflare.com"; 
 // const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
@@ -22,7 +22,7 @@ const ENDPOINTS = {
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
   UPLOAD_AVATAR: `${BASE_URL}/upload/avatar`,
-  image_url: "https://hills-dream-enzyme-influences.trycloudflare.com/",
+  image_url: "https://stainless-mats-education-investment.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
