@@ -9,6 +9,11 @@ type Assignee = {
     username: string;
 };
 
+type Reviewer = {
+    id: number;
+    username: string;
+};
+
 type Task = {
     id: number;
     project_id: number;
@@ -16,7 +21,8 @@ type Task = {
     entity_id: number;
     task_name: string;
     status: string;
-    assignees: Assignee[]; // ✅ เปลี่ยนจาก string | null → Assignee[]
+    assignees: Assignee[];
+    reviewers: Reviewer[]; // ⭐ เพิ่มบรรทัดนี้
     start_date: string;
     due_date: string;
     created_at: string;
@@ -66,10 +72,10 @@ export default function Mytask() {
     const [tasks, setTasks] = useState<Task[]>([]);
 
 
-  useEffect(() => {
+    useEffect(() => {
         const fetchMyTasks = async () => {
             setIsLoadingTasks(true); // ⭐ เริ่ม loading
-            
+
             try {
                 const authUser = localStorage.getItem("authUser");
                 if (!authUser) return;
@@ -149,6 +155,16 @@ export default function Mytask() {
         return assignees?.some(u => u.id === currentUserId);
     };
 
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ reviewer task ++++++++++++++++++++++++++++++++++++++++++
+    // เพิ่มใกล้ๆ กับ expandedTaskId
+    const [expandedReviewerTaskId, setExpandedReviewerTaskId] = useState<number | null>(null);
+
+    // เพิ่มใกล้ๆ กับ isCurrentUserAssigned
+    const isCurrentUserReviewer = (reviewers: Reviewer[]) => {
+        const currentUserId = getCurrentUser().id;
+        return reviewers?.some(r => r.id === currentUserId);
+    };
+
 
     return (
         <div
@@ -200,6 +216,9 @@ export default function Mytask() {
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         ผู้รับมอบหมาย
                                     </th>
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+    Reviewer
+</th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-3.5 h-3.5" />
@@ -256,7 +275,7 @@ export default function Mytask() {
                             <tbody className="divide-y divide-gray-800/50">
                                 {isLoadingTasks ? (
                                     <tr>
-                                        <td colSpan={11} className="px-4 py-16">
+                                        <td colSpan={12} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
                                                 <p className="text-gray-400 text-sm">Loading tasks...</p>
@@ -265,7 +284,7 @@ export default function Mytask() {
                                     </tr>
                                 ) : tasks.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} className="px-4 py-16">
+                                        <td colSpan={12} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">
                                                 <div className="text-center space-y-6">
                                                     <div className="relative">
@@ -447,6 +466,100 @@ export default function Mytask() {
                                                     <span className="text-gray-600 text-sm italic">ไม่มี</span>
                                                 )}
                                             </td>
+
+<td className="px-4 py-4">
+    {task.reviewers?.length > 0 ? (
+        <div className="relative inline-block">
+            <button
+                onClick={() =>
+                    setExpandedReviewerTaskId(
+                        expandedReviewerTaskId === task.id ? null : task.id
+                    )
+                }
+                className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 border border-purple-500/30 hover:border-purple-400/50 transition-all shadow-lg hover:shadow-xl"
+            >
+                <Users className="w-4 h-4 text-purple-300" />
+                <span className="text-sm font-semibold text-purple-200">
+                    {task.reviewers.length}
+                </span>
+                {isCurrentUserReviewer(task.reviewers) && (
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                        คุณ
+                    </span>
+                )}
+            </button>
+
+            {expandedReviewerTaskId === task.id && (
+                <>
+                    <div
+                        className="fixed inset-0 z-10 pointer-events-none"
+                        onClick={() => setExpandedReviewerTaskId(null)}
+                    />
+                    <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-full mt-2 z-20 w-64 max-h-80 overflow-hidden bg-gradient-to-br from-purple-800 via-purple-800 to-purple-900 border border-purple-600/50 rounded-xl shadow-2xl ring-1 ring-white/5">
+                        <div className="px-4 py-3 bg-gradient-to-r from-purple-700/50 to-purple-800/50 backdrop-blur-sm border-b border-purple-600/50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-purple-400" />
+                                    <span className="text-sm font-semibold text-purple-200">
+                                        Reviewer
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-md bg-purple-700 text-xs font-semibold text-purple-300">
+                                        {task.reviewers.length}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setExpandedReviewerTaskId(null)}
+                                    className="text-purple-400 hover:text-purple-200 transition-colors p-1 rounded-md hover:bg-purple-700/50"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-2 max-h-64 overflow-y-auto">
+                            {sortAssignees(
+                                task.reviewers,
+                                getCurrentUser().id
+                            ).map((reviewer) => {
+                                const isMe = reviewer.id === getCurrentUser().id;
+                                return (
+                                    <div
+                                        key={reviewer.id}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-purple-700/50 transition-colors group/user"
+                                    >
+                                        <div
+                                            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${
+                                                isMe
+                                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30'
+                                                    : 'bg-gradient-to-br from-purple-500 to-pink-600 text-white ring-purple-500/30'
+                                            } group-hover/user:scale-110 transition-transform`}
+                                        >
+                                            {reviewer.username[0].toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-purple-200 truncate">
+                                                {reviewer.username}
+                                            </p>
+                                        </div>
+                                        {isMe && (
+                                            <span className="px-2 py-1 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                คุณ
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    ) : (
+        <span className="text-gray-600 text-sm italic">ไม่มี</span>
+    )}
+</td>
+
                                             <td className="px-4 py-4">
                                                 {task.start_date ? (
                                                     <div className="flex items-center gap-2 text-sm">
