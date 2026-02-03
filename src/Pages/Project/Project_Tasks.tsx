@@ -4,6 +4,7 @@ import axios from "axios";
 import ENDPOINTS from "../../config";
 import { Calendar, ChevronRight, ClipboardList, Clock, Image, Users } from 'lucide-react';
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 type TaskAssignee = {
     id: number;
@@ -27,6 +28,7 @@ type Task = {
     file_url: string;
     assignees: TaskAssignee[];
     reviewers: TaskReviewer[]; // ⭐ เพิ่ม
+    pipeline_step: PipelineStep | null;  // ⭐ เพิ่มบรรทัดนี้
 };
 
 // เปลี่ยน type Task structure
@@ -36,7 +38,16 @@ type TaskGroup = {
     entity_name: string;
     tasks: Task[];
 };
+
+// ⭐ เพิ่ม type สำหรับ Pipeline Step
+type PipelineStep = {
+    id: number;
+    step_name: string;
+    step_code: string;
+    color_hex: string;
+};
 export default function Project_Tasks() {
+    const navigate = useNavigate();
     const [showCreateMytask, setShowCreateMytask] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
@@ -177,9 +188,7 @@ export default function Project_Tasks() {
         return reviewers?.some(r => r.id === currentUserId);
     };
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ กลุ่มงาน ++++++++++++++++++++++++++++++++++++++++++++++
-
-
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ กลุ่มงาน task ++++++++++++++++++++++++++++++++++++++++++++++
 
     // เปลี่ยน state
     const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
@@ -235,6 +244,28 @@ export default function Project_Tasks() {
     const totalTasks = taskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
 
 
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Pipeline Steps ++++++++++++++++++++++++++++++++++++++++++++++
+    // เพิ่ม state
+    const [pipelineSteps, setPipelineSteps] = useState<any[]>([]);
+    const [selectedPipelineStep, setSelectedPipelineStep] = useState<number | null>(null);
+    const [entityType, setEntityType] = useState<'asset' | 'shot'>('asset');
+
+    // Fetch pipeline steps
+    useEffect(() => {
+        const fetchPipelineSteps = async () => {
+            try {
+                const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
+                    entityType: entityType
+                });
+                setPipelineSteps(res.data);
+            } catch (err) {
+                console.error("Fetch pipeline steps error:", err);
+            }
+        };
+        fetchPipelineSteps();
+    }, [entityType]);
+
+
     return (
         <div
             className="fixed inset-0 pt-14 bg-black"
@@ -271,7 +302,10 @@ export default function Project_Tasks() {
                                         </div>
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        ประเภท
+                                        Link
+                                    </th>
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                        Pipeline Step
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div>สถานะ</div>
@@ -347,7 +381,7 @@ export default function Project_Tasks() {
                             <tbody className="divide-y divide-gray-800/50">
                                 {isLoadingSequences ? (
                                     <tr>
-                                        <td colSpan={12} className="px-4 py-16">
+                                        <td colSpan={14} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
                                                 <p className="text-gray-400 text-sm">Loading sequences...</p>
@@ -356,7 +390,7 @@ export default function Project_Tasks() {
                                     </tr>
                                 ) : taskGroups.length === 0 ? (
                                     <tr>
-                                        <td colSpan={12} className="px-4 py-16">
+                                        <td colSpan={14} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">
                                                 <div className="text-center space-y-6">
                                                     <div className="relative">
@@ -385,11 +419,11 @@ export default function Project_Tasks() {
                                                     className="bg-gray-800 hover:bg-gray-800/60 cursor-pointer transition-all border-b border-gray-700/50"
                                                     onClick={() => toggleGroup(group.entity_type, group.entity_id)}
                                                 >
-                                                    <td colSpan={12} className="px-4 py-2.5">
+                                                    <td colSpan={13} className="px-4 py-2.5">
                                                         <div className="flex items-center gap-3">
                                                             {/* Arrow Icon */}
-                                                            <ChevronRight  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                                                         
+                                                            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+
 
                                                             {/* Entity Info */}
                                                             <div className="flex items-center gap-2.5 flex-1">
@@ -406,13 +440,13 @@ export default function Project_Tasks() {
                                                                         {group.entity_type}
                                                                     </span>
                                                                 </div>
-                                                                 {/* Task Count Badge */}
-                                                            <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-medium">
-                                                                {group.tasks.length}
-                                                            </span>
+                                                                {/* Task Count Badge */}
+                                                                <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-medium">
+                                                                    {group.tasks.length}
+                                                                </span>
                                                             </div>
 
-                                                           
+
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -457,17 +491,72 @@ export default function Project_Tasks() {
                                                                 onClick={() => setSelectedTask(task)}
                                                             >
                                                                 <span className="text-green-400 text-lg group-hover/task:scale-110 transition-transform">✓</span>
-                                                                <span className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-2 transition-colors font-medium">
+                                                                <span className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium">
                                                                     {task.task_name}
                                                                 </span>
                                                             </div>
                                                         </td>
 
+                                                       <td className="px-4 py-4">
+    {task.entity_type ? (
+        <span 
+            onClick={async () => {
+                if (group.entity_type === 'sequence') {
+                    try {
+                        // Fetch sequence detail
+                        const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, {
+                            projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+                        });
+                        
+                        // หา sequence ที่ตรงกับ entity_id
+                        const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
+                        
+                        if (sequence) {
+                            localStorage.setItem(
+                                "sequenceData",
+                                JSON.stringify({
+                                    sequenceId: sequence.id,
+                                    sequenceName: sequence.sequence_name,
+                                    description: sequence.description,
+                                    status: sequence.status || 'wtg',
+                                    thumbnail: sequence.file_url || '',
+                                    createdAt: sequence.created_at,
+                                    projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+                                })
+                            );
+                            navigate("/Project_Sequence/Others_Sequence");
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch sequence:", err);
+                    }
+                }
+            }}
+            className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
+        >
+            {group.entity_name}
+        </span>
+    ) : (
+        <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+    )}
+</td>
+
+                                                        {/* ⭐ Column #5: Pipeline Step - เพิ่มตรงนี้ */}
                                                         <td className="px-4 py-4">
-                                                            {task.entity_type ? (
-                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 text-sm font-medium ring-1 ring-gray-700">
-                                                                    {task.entity_type}
-                                                                </span>
+                                                            {task.pipeline_step ? (
+                                                                <div className="inline-flex items-center gap-2">
+                                                                    {/* สี่เหลี่ยมแสดงสี */}
+                                                                    <div
+                                                                        className="w-4 h-4 rounded border border-gray-400/60"
+                                                                        style={{
+                                                                            backgroundColor: task.pipeline_step.color_hex
+                                                                        }}
+                                                                    />
+
+                                                                    {/* ชื่อ step */}
+                                                                    <span className="text-sm font-medium text-gray-300">
+                                                                        {task.pipeline_step.step_name}
+                                                                    </span>
+                                                                </div>
                                                             ) : (
                                                                 <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
                                                             )}
@@ -1035,6 +1124,37 @@ export default function Project_Tasks() {
                                     placeholder="Enter reviewer name"
                                     className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
+                            </div>
+                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">
+                                    Entity Type:
+                                </label>
+                                <select
+                                    value={entityType}
+                                    onChange={(e) => setEntityType(e.target.value as 'asset' | 'shot')}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm"
+                                >
+                                    <option value="asset">Asset</option>
+                                    <option value="shot">Shot</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">
+                                    Pipeline Step:
+                                </label>
+                                <select
+                                    value={selectedPipelineStep || ''}
+                                    onChange={(e) => setSelectedPipelineStep(Number(e.target.value))}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm"
+                                >
+                                    <option value="">Select step...</option>
+                                    {pipelineSteps.map(step => (
+                                        <option key={step.id} value={step.id}>
+                                            {step.step_name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">

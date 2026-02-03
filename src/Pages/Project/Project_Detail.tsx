@@ -420,7 +420,7 @@ export default function Project_Detail() {
                                             <div className="relative w-32 h-24 flex-shrink-0 ">
                                                 {seq.file_url ? (
                                                     <img
-                                                        src={seq.file_url}
+                                                        src={ENDPOINTS.image_url+seq.file_url}
                                                         alt={seq.sequence_name}
                                                         className="w-full h-full object-cover"
                                                     />

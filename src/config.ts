@@ -86,6 +86,7 @@ const ENDPOINTS = {
   GET_ASSET_SHOTS_JOIN: `${BASE_URL}/get-asset-shots-join`,
 
   PROJECT_TASKS_GROUPED: `${BASE_URL}/project-tasks-grouped`,
+  PIPELINE_STEPS: `${BASE_URL}/pipeline-steps`,
 
 
 

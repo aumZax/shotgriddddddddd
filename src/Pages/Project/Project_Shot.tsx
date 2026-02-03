@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -614,26 +615,6 @@ export default function ProjectShot() {
         );
     };
 
-    const handleShotClick = (categoryIndex: number, shotIndex: number) => {
-        if (editingField || showStatusMenu) return;
-
-        const shot = shotData[categoryIndex].shots[shotIndex];
-
-        localStorage.setItem(
-            "selectedShot",
-            JSON.stringify({
-                id: shot.id,
-                shot_name: shot.shot_name,
-                description: shot.description,
-                status: shot.status,
-                thumbnail: shot.thumbnail || "",
-                sequence: shotData[categoryIndex].category
-            })
-        );
-
-        setSelectedShot({ categoryIndex, shotIndex });
-    };
-
     const handleFieldClick = (field: string, categoryIndex: number, shotIndex: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (field === 'status') {
@@ -1001,7 +982,6 @@ export default function ProjectShot() {
                                             {category.shots.map((shot, shotIndex) => (
                                                 <div
                                                     key={`${category.category}-${shot.id}-${shotIndex}`}
-                                                    onClick={() => handleShotClick(categoryIndex, shotIndex)}
                                                     onContextMenu={(e) => handleContextMenu(e, shot)}
                                                     className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
                                                         ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
@@ -1015,12 +995,33 @@ export default function ProjectShot() {
                                                                 className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    navigate('/Project_Shot/Others_Shot');
+
+                                                                    // ส่งข้อมูลให้ครบถ้วนรวมถึง sequence และ assets
+                                                                    localStorage.setItem(
+                                                                        "selectedShot",
+                                                                        JSON.stringify({
+                                                                            id: shot.id,
+                                                                            shot_name: shot.shot_name,
+                                                                            description: shot.description,
+                                                                            status: shot.status,
+                                                                            thumbnail: shot.thumbnail || "",
+                                                                            sequence: shotData[categoryIndex].category,
+                                                                            // ⭐ เพิ่มข้อมูล sequence และ assets
+                                                                            sequenceDetail: shot.sequence || null,
+                                                                            assets: shot.assets || []
+                                                                        })
+                                                                    );
+
+                                                                    // Navigate ไปหน้าใหม่
+                                                                    navigate("/Project_Shot/Others_Shot");
+
+                                                                    // อัพเดท state
+                                                                    setSelectedShot({ categoryIndex, shotIndex });
                                                                 }}
                                                             >
                                                                 {shot.thumbnail ? (
                                                                     <img
-                                                                        src={ENDPOINTS.image_url+shot.thumbnail}
+                                                                        src={ENDPOINTS.image_url + shot.thumbnail}
                                                                         alt={shot.shot_name}
                                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                     />
@@ -1183,8 +1184,8 @@ export default function ProjectShot() {
                                                                         ) : (
                                                                             <>
                                                                                 <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
-                                                                                   
-                                                                                    <Box  className="w-3.5 h-3.5 text-blue-400"/>
+
+                                                                                    <Box className="w-3.5 h-3.5 text-blue-400" />
                                                                                     <span className="text-xs font-semibold text-blue-300">
                                                                                         {currentAssets.length}
                                                                                     </span>
@@ -1693,8 +1694,8 @@ export default function ProjectShot() {
                                                             handleRemoveSequenceFromShot();
                                                         }}
                                                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "sequence" && expandedItem?.id === shotDetail.sequence!.id
-                                                           ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
-                                                                : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
+                                                            ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                            : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                             }`}
                                                     >
                                                         <span className="text-sm font-bold">×</span>
