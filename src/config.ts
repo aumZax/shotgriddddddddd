@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://pan-alternate-attachment-graduated.trycloudflare.com"; 
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://pan-alternate-attachment-graduated.trycloudflare.com"; 
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -59,7 +59,7 @@ const ENDPOINTS = {
   PROJECT_SHOT_DETAIL: `${BASE_URL}/project-shot-detail`,
   PROJECT_ASSET_DETAIL: `${BASE_URL}/project-asset-detail`,
   DELETEPEOPLE: `${BASE_URL}/delete-people`,
-  PROJECT_TASKS: `${BASE_URL}/project-tasks`,
+  // PROJECT_TASKS: `${BASE_URL}/project-tasks`,
   MY_TASKS: `${BASE_URL}/my-tasks`,
 
   CREATE_TASK_ASSET: `${BASE_URL}/create-task-assets`,
@@ -85,9 +85,7 @@ const ENDPOINTS = {
   GET_ASSET_SEQUENCES_JOIN: `${BASE_URL}/get-asset-sequences-join`,
   GET_ASSET_SHOTS_JOIN: `${BASE_URL}/get-asset-shots-join`,
 
-
-
-
+  PROJECT_TASKS_GROUPED: `${BASE_URL}/project-tasks-grouped`,
 
 
 

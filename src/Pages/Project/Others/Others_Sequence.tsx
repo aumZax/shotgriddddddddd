@@ -475,7 +475,7 @@ export default function Others_Sequence() {
                             <div className="relative">
                                 {shotData.thumbnail ? (
                                     <img
-                                        src={shotData.thumbnail}
+                                        src={ENDPOINTS.image_url+shotData.thumbnail}
                                         alt="Shot thumbnail"
                                         className="w-80 h-44 object-cover rounded-lg shadow-md border-2 border-gray-700"
                                     />
@@ -941,7 +941,7 @@ export default function Others_Sequence() {
                         <div className="bg-[#1a1d24] border-b border-gray-700">
                             <div className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                    <img src={selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
+                                    <img src={ENDPOINTS.image_url+selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
                                     <div>
                                         <div className="text-sm text-gray-400">
                                             Napo (Animation demo) › C005 › {selectedTask.task_name.split('/')[0].trim()}
@@ -1065,7 +1065,7 @@ export default function Others_Sequence() {
                                             <div key={v} className="bg-[#1a1d24] rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors">
                                                 <div className="relative aspect-video bg-gray-800">
                                                     <img
-                                                        src={selectedTask.file_url}
+                                                        src={ENDPOINTS.image_url+selectedTask.file_url}
                                                         alt=""
                                                         className="w-full h-full object-cover"
                                                     />

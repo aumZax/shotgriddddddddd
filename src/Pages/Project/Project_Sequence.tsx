@@ -909,7 +909,7 @@ export default function Project_Sequence() {
                                                 >
                                                     {sequence.thumbnail ? (
                                                         <img
-                                                            src={sequence.thumbnail}
+                                                            src={ENDPOINTS.image_url+sequence.thumbnail}
                                                             alt={`${sequence.id}`}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                         />
