@@ -896,7 +896,7 @@ export default function Project_Tasks() {
                                                                                 setEditingPipelineTaskId(task.id);
                                                                                 setSelectedPipelineStepId(task.pipeline_step?.id || null);
                                                                             }}
-                                                                            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-600/20 to-gray-600/20 border border-gray-700/30 hover:border-blue-500/50 hover:from-gray-700/30 hover:to-gray-500/30 transition-all cursor-pointer group/badge"
+                                                                            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 transition-all cursor-pointer group/badge"
                                                                             title="คลิกเพื่อแก้ไข Pipeline Step"
                                                                         >
                                                                             {/* สี่เหลี่ยมสี */}
