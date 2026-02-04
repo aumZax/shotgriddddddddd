@@ -816,8 +816,8 @@ export default function Project_Tasks() {
                                                                                         setEditingPipelineTaskId(null);
                                                                                     }}
                                                                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${selectedPipelineStepId === step.id
-                                                                                        ? 'bg-blue-500/20 border border-blue-500/40'
-                                                                                        : 'hover:bg-gray-700/50 border border-transparent'
+                                                                                        ? 'bg-blue-800 border border-blue-500'
+                                                                                        : 'hover:bg-gray-700 border border-transparent'
                                                                                         }`}
                                                                                     style={{
                                                                                         backgroundImage: selectedPipelineStepId === step.id
@@ -942,7 +942,7 @@ export default function Project_Tasks() {
                                                                                 setEditingPipelineTaskId(task.id);
                                                                                 setSelectedPipelineStepId(null);
                                                                             }}
-                                                                            className="text-gray-500 italic text-sm px-3 py-1.5 hover:text-blue-400 hover:bg-gray-800/40 rounded-lg transition-all cursor-pointer"
+                                                                            className="text-gray-500 italic text-sm px-3 py-1.5 bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-lg transition-all cursor-pointer"
                                                                             title="คลิกเพื่อเลือก Pipeline Step"
                                                                         >
                                                                             ไม่ระบุ
