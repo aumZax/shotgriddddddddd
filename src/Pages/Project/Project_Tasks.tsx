@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, ChevronRight, ClipboardList, Clock, Image, Users } from 'lucide-react';
+import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Users, X } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -771,11 +771,10 @@ export default function Project_Tasks() {
                                                                             </span>
                                                                             <button
                                                                                 onClick={() => setEditingPipelineTaskId(null)}
-                                                                                className="text-gray-500 hover:text-gray-300 transition-colors"
+                                                                                className="bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                                             >
-                                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                                </svg>
+                                                                                <X className="w-4 h-4" />
+
                                                                             </button>
                                                                         </div>
 
@@ -790,7 +789,7 @@ export default function Project_Tasks() {
                                                                                     }
                                                                                     setEditingPipelineTaskId(null);
                                                                                 }}
-                                                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${!selectedPipelineStepId
+                                                                                className={`w-full flex items-center gap-3 px-3 py-2 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${!selectedPipelineStepId
                                                                                     ? 'bg-blue-500/20 border border-blue-500/40'
                                                                                     : 'hover:bg-gray-700/50 border border-transparent'
                                                                                     }`}
@@ -804,6 +803,8 @@ export default function Project_Tasks() {
                                                                                 <button
                                                                                     key={step.id}
                                                                                     onClick={async () => {
+                                                                                        setSelectedPipelineStepId(step.id); // ⭐ สำคัญ
+
                                                                                         const success = await updateTask(
                                                                                             task.id,
                                                                                             'pipeline_step_id',
@@ -813,17 +814,25 @@ export default function Project_Tasks() {
                                                                                         if (success) {
                                                                                             task.pipeline_step = step;
                                                                                         }
+
                                                                                         setEditingPipelineTaskId(null);
                                                                                     }}
-                                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${selectedPipelineStepId === step.id
-                                                                                        ? 'bg-blue-800 border border-blue-500'
-                                                                                        : 'hover:bg-gray-700 border border-transparent'
+
+                                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl
+                                                                                             ${selectedPipelineStepId === step.id
+                                                                                            ? 'border border-blue-500 bg-blue-500/10'
+                                                                                            : 'border border-transparent hover:bg-gray-700/50'
                                                                                         }`}
                                                                                     style={{
-                                                                                        backgroundImage: selectedPipelineStepId === step.id
-                                                                                            ? `linear-gradient(to right, ${step.color_hex}10 0%, transparent 50%)`
-                                                                                            : 'none'
+                                                                                        backgroundImage:
+                                                                                            selectedPipelineStepId === step.id
+                                                                                                ? `linear-gradient(to right, ${step.color_hex}20 0%, ${step.color_hex}05 40%, transparent 70%)`
+                                                                                                : undefined,
+                                                                                        backgroundColor:
+                                                                                            selectedPipelineStepId === step.id ? '#1f2937' : undefined // gray-800
                                                                                     }}
+
+
                                                                                 >
                                                                                     {/* สี่เหลี่ยมสี */}
                                                                                     <div
@@ -846,8 +855,8 @@ export default function Project_Tasks() {
                                                                                             // แสดง badge ว่าเป็น Shot หรือ Asset
                                                                                             return (
                                                                                                 <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${step.entity_type === 'shot'
-                                                                                                        ? 'bg-blue-500/20 text-blue-400'
-                                                                                                        : 'bg-green-500/20 text-green-400'
+                                                                                                    ? 'bg-blue-500/20 text-blue-400'
+                                                                                                    : 'bg-green-500/20 text-green-400'
                                                                                                     }`}>
                                                                                                     {step.entity_type === 'shot' ? 'Shot' : 'Asset'}
                                                                                                 </span>
@@ -858,9 +867,8 @@ export default function Project_Tasks() {
 
                                                                                     {/* Checkmark ถ้าเลือกอยู่ */}
                                                                                     {selectedPipelineStepId === step.id && (
-                                                                                        <svg className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                                        </svg>
+                                                                                        <Check className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" />
+
                                                                                     )}
                                                                                 </button>
                                                                             ))}
