@@ -313,17 +313,7 @@ export default function Project_Tasks() {
                                             <span>Description</span>
                                         </div>
                                     </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <div>สถานะ</div>
-                                        <div className="mt-2 text-xs text-gray-500 normal-case">
-                                            <div className="flex items-center gap-2">
-                                                <span>เสร็จ:</span>
-                                                <span className="px-2 py-0.5 rounded-md bg-green-500/20 text-green-400 font-semibold">
-                                                    63.64%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </th>
+
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div>สถานะ</div>
                                         <div className="mt-2 text-xs text-gray-500 normal-case">
@@ -398,7 +388,7 @@ export default function Project_Tasks() {
                             <tbody className="divide-y divide-gray-800/50">
                                 {isLoadingSequences ? (
                                     <tr>
-                                        <td colSpan={14} className="px-4 py-16">
+                                        <td colSpan={15} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
                                                 <p className="text-gray-400 text-sm">Loading sequences...</p>
@@ -407,7 +397,7 @@ export default function Project_Tasks() {
                                     </tr>
                                 ) : taskGroups.length === 0 ? (
                                     <tr>
-                                        <td colSpan={14} className="px-4 py-16">
+                                        <td colSpan={15} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">
                                                 <div className="text-center space-y-6">
                                                     <div className="relative">
@@ -436,34 +426,44 @@ export default function Project_Tasks() {
                                                     className="bg-gray-800 hover:bg-gray-800/60 cursor-pointer transition-all border-b border-gray-700/50"
                                                     onClick={() => toggleGroup(group.entity_type, group.entity_id)}
                                                 >
-                                                    <td colSpan={13} className="px-4 py-2.5">
+                                                    <td colSpan={15} className="px-4 py-2.5">
                                                         <div className="flex items-center gap-3">
                                                             {/* Arrow Icon */}
                                                             <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
 
-
                                                             {/* Entity Info */}
                                                             <div className="flex items-center gap-2.5 flex-1">
-                                                                <div className="w-7 h-7 rounded bg-indigo-600/80 flex items-center justify-center">
+                                                                {/* ⭐ แก้ไขส่วนนี้ - จัดการกรณี unassigned */}
+                                                                <div className={`w-7 h-7 rounded flex items-center justify-center ${group.entity_type === 'unassigned'
+                                                                    ? 'bg-yellow-600/80'
+                                                                    : 'bg-indigo-600/80'
+                                                                    }`}>
                                                                     <span className="text-white font-semibold text-xs">
-                                                                        {group.entity_name?.[0]?.toUpperCase()}
+                                                                        {group.entity_type === 'unassigned'
+                                                                            ? '?'
+                                                                            : group.entity_name?.[0]?.toUpperCase()
+                                                                        }
                                                                     </span>
                                                                 </div>
+
                                                                 <div className="flex items-center gap-3">
                                                                     <h3 className="text-sm font-medium text-white">
                                                                         {group.entity_name}
                                                                     </h3>
-                                                                    <span className="text-xs text-gray-500">
-                                                                        {group.entity_type}
-                                                                    </span>
+
+                                                                    {/* ⭐ แสดง type เฉพาะตอนไม่ใช่ unassigned */}
+                                                                    {group.entity_type !== 'unassigned' && group.entity_type && (
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {group.entity_type}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
+
                                                                 {/* Task Count Badge */}
                                                                 <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-medium">
                                                                     {group.tasks.length}
                                                                 </span>
                                                             </div>
-
-
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -515,7 +515,10 @@ export default function Project_Tasks() {
                                                         </td>
 
                                                         <td className="px-4 py-4">
-                                                            {task.entity_type ? (
+                                                            {/* ⭐ เช็คว่าเป็น unassigned หรือไม่ */}
+                                                            {group.entity_type === 'unassigned' ? (
+                                                                <span className="text-gray-600 italic text-sm">ไม่ได้กำหนด</span>
+                                                            ) : task.entity_type ? (
                                                                 <span
                                                                     onClick={async () => {
                                                                         if (group.entity_type === 'sequence') {
@@ -547,6 +550,7 @@ export default function Project_Tasks() {
                                                                                 console.error("Failed to fetch sequence:", err);
                                                                             }
                                                                         }
+                                                                        // ⭐ เพิ่มการจัดการสำหรับ asset และ shot ได้ที่นี่
                                                                     }}
                                                                     className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
                                                                 >
@@ -580,33 +584,24 @@ export default function Project_Tasks() {
                                                         </td>
 
                                                         {/* ⭐ Column #6: Description - เพิ่มตรงนี้ */}
-                                                     <td className="px-4 py-4">
-  <textarea
-    defaultValue={task.description}
-    rows={2}
-    placeholder="ไม่มีรายละเอียด"
-    className="w-full max-w-xs text-sm text-gray-300 bg-transparent
-               border border-transparent rounded px-2 py-1
-               resize-none outline-none
-               hover:bg-gray-700/40 focus:bg-gray-800/60
-               focus:border-gray-600"
-  />
-</td>
+                                                        <td className="px-4 py-4">
+                                                            <textarea
+                                                                value={task.description || ""}
+                                                                onChange={(e) => {
+                                                                    task.description = e.target.value; // ชั่วคราวก่อน (ยังไม่ sync backend)
+                                                                }}
+                                                                rows={2}
+                                                                placeholder="เพิ่มรายละเอียด..."
+                                                                className="w-full max-w-xs text-sm text-gray-300 bg-gray-800/60
+               border border-gray-700 rounded px-2 py-1
+               outline-none resize-none
+               focus:border-blue-500 focus:bg-gray-800"
+                                                            />
+                                                        </td>
+
 
 
                                                         {/* Column #7: สถานะ */}
-                                                        <td className="px-4 py-4">
-                                                            <span
-                                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${task.status === 'wtg'
-                                                                        ? 'text-gray-300 bg-gray-500/10 ring-gray-500/30'
-                                                                        : task.status === 'ip'
-                                                                            ? 'text-blue-300 bg-blue-500/10 ring-blue-500/30'
-                                                                            : 'text-green-300 bg-green-500/10 ring-green-500/30'
-                                                                    }`}
-                                                            >
-                                                                {task.status === 'wtg' ? 'รอดำเนินการ' : task.status === 'ip' ? 'กำลังทำ' : 'เสร็จสิ้น'}
-                                                            </span>
-                                                        </td>
 
                                                         <td className="px-4 py-4">
                                                             <span
