@@ -10,11 +10,10 @@ import { useNavigate } from "react-router-dom";
 type StatusType = keyof typeof statusConfig;
 
 const statusConfig = {
-    wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' }
 };
-
 type TaskAssignee = {
     id: number;
     username: string;
@@ -714,7 +713,7 @@ export default function Project_Tasks() {
                                                                             className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                                             title="แก้ไขชื่อ"
                                                                         >
-                                                                            <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400"/>
+                                                                            <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
 
                                                                         </button>
                                                                     </>
@@ -722,6 +721,8 @@ export default function Project_Tasks() {
                                                             </div>
                                                         </td>
 
+
+                                                        {/* ⭐ Entity Name */}
                                                         <td className="px-4 py-4">
                                                             {/* ⭐ เช็คว่าเป็น unassigned หรือไม่ */}
                                                             {group.entity_type === 'unassigned' ? (
@@ -994,19 +995,50 @@ export default function Project_Tasks() {
                                                             )}
                                                         </td>
 
-                                                        {/* ⭐ Column #6: Description - เพิ่มตรงนี้ */}
+                                                        {/* ⭐ Column #6: Description - แก้ไขเพื่อให้อัพเดทได้ */}
                                                         <td className="px-4 py-4">
                                                             <textarea
                                                                 value={task.description || ""}
                                                                 onChange={(e) => {
-                                                                    task.description = e.target.value; // ชั่วคราวก่อน (ยังไม่ sync backend)
+                                                                    // อัพเดท state ทันทีเพื่อให้ UI responsive
+                                                                    const updatedGroups = [...taskGroups];
+                                                                    const groupIndex = updatedGroups.findIndex(g => g.tasks.includes(task));
+                                                                    const taskIndex = updatedGroups[groupIndex].tasks.indexOf(task);
+                                                                    updatedGroups[groupIndex].tasks[taskIndex].description = e.target.value;
+                                                                    setTaskGroups(updatedGroups);
+                                                                }}
+                                                                onBlur={async (e) => {
+                                                                    // บันทึกลง backend เมื่อ blur
+                                                                    const newDescription = e.target.value.trim();
+                                                                    await updateTask(task.id, 'description', newDescription);
+                                                                }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                                        // กด Enter (ไม่กด Shift) = บันทึก
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+
+                                                                        const target = e.currentTarget;
+                                                                        // const newDescription = target.value.trim();
+
+                                                                        // Blur ก่อน await เพื่อให้ onBlur จัดการ update
+                                                                        target.blur();
+
+                                                                        // ไม่ต้อง await ที่นี่ เพราะ onBlur จะจัดการให้
+                                                                    } else if (e.key === 'Escape') {
+                                                                        // กด Escape = ยกเลิก
+                                                                        e.preventDefault();
+                                                                        e.currentTarget.blur();
+                                                                    }
+                                                                    // กด Shift+Enter = ขึ้นบรรทัดใหม่ (default behavior)
                                                                 }}
                                                                 rows={2}
                                                                 placeholder="เพิ่มรายละเอียด..."
                                                                 className="w-full max-w-xs text-sm text-gray-300 bg-gray-800/60
                                                                 border border-gray-700 rounded px-2 py-1
                                                                 outline-none resize-none
-                                                                focus:border-blue-500 focus:bg-gray-800"
+                                                                focus:border-blue-500 focus:bg-gray-800 
+                                                                transition-colors"
                                                             />
                                                         </td>
 
@@ -1014,7 +1046,7 @@ export default function Project_Tasks() {
                                                         {/* Column #7: สถานะ */}
 
                                                         <td className="px-4 py-4">
-                                                            <div className="w-36 flex-shrink-0 relative">
+                                                            <div className="w-24 flex-shrink-0 relative">
                                                                 <button
                                                                     onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
                                                                     className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg"
@@ -1040,8 +1072,8 @@ export default function Project_Tasks() {
                                                                             />
 
                                                                             {/* Menu */}
-                                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[140px] border border-gray-600`}>
-                                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[180px] border border-gray-600`}>
+                                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                                                     <button
                                                                                         key={key}
                                                                                         onClick={(e) => {
@@ -1055,11 +1087,14 @@ export default function Project_Tasks() {
                                                                                         className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
                                                                                     >
                                                                                         {config.icon === '-' ? (
-                                                                                            <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                                                         ) : (
                                                                                             <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                                                         )}
-                                                                                        <span className="text-xs text-gray-200">{config.label}</span>
+                                                                                        <div className="text-xs text-gray-200">
+                                                                                            <span className="px-4">{config.label}</span>
+                                                                                            <span>{config.fullLabel}</span>
+                                                                                        </div>
                                                                                     </button>
                                                                                 ))}
                                                                             </div>
