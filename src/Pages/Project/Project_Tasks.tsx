@@ -2,9 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, ChevronRight, ClipboardList, Clock, Image, Users } from 'lucide-react';
+import { Calendar, ChevronRight, ClipboardList, Clock, Image, Pencil, Users } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
+
+
+type StatusType = keyof typeof statusConfig;
+
+const statusConfig = {
+    wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
+};
 
 type TaskAssignee = {
     id: number;
@@ -45,6 +54,7 @@ type PipelineStep = {
     step_name: string;
     step_code: string;
     color_hex: string;
+    entity_type?: 'shot' | 'asset'; // เพิ่มบรรทัดนี้
 };
 export default function Project_Tasks() {
     const navigate = useNavigate();
@@ -55,6 +65,14 @@ export default function Project_Tasks() {
     const [activeTab, setActiveTab] = useState('notes');
     const [isResizing, setIsResizing] = useState(false);
     const [isLoadingSequences, setIsLoadingSequences] = useState(true);
+
+
+    const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+    const [editingTaskName, setEditingTaskName] = useState("");
+    // เพิ่ม state สำหรับแก้ไข Pipeline Step
+    const [editingPipelineTaskId, setEditingPipelineTaskId] = useState<number | null>(null);
+    const [selectedPipelineStepId, setSelectedPipelineStepId] = useState<number | null>(null);
+    const [availablePipelineSteps, setAvailablePipelineSteps] = useState<PipelineStep[]>([]);
 
 
 
@@ -265,6 +283,106 @@ export default function Project_Tasks() {
         fetchPipelineSteps();
     }, [entityType]);
 
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Status Menu ++++++++++++++++++++++++++++++++++++++++++++++  
+
+    const [showStatusMenu, setShowStatusMenu] = useState<{
+        categoryIndex: number;
+        shotIndex: number;
+    } | null>(null);
+    const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
+
+    // ✅ เพิ่มฟังก์ชันจัดการ
+    const handleFieldClick = (
+        field: string,
+        categoryIndex: number,
+        shotIndex: number,
+        e: React.MouseEvent
+    ) => {
+        if (field === 'status') {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            setStatusMenuPosition(spaceBelow < 200 && spaceAbove > spaceBelow ? 'top' : 'bottom');
+            setShowStatusMenu({ categoryIndex, shotIndex });
+        }
+    };
+
+    const handleStatusChange = async (
+        categoryIndex: number,
+        shotIndex: number,
+        newStatus: StatusType
+    ) => {
+        try {
+            // ⭐ TODO: เพิ่ม API call เพื่ออัพเดท status ใน backend
+            // const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
+            // await axios.put(`${ENDPOINTS.UPDATE_TASK_STATUS}`, {
+            //     taskId,
+            //     status: newStatus
+            // });
+
+            // อัพเดท state
+            setTaskGroups(prev => {
+                const updated = [...prev];
+                updated[categoryIndex].tasks[shotIndex].status = newStatus;
+                return updated;
+            });
+
+            setShowStatusMenu(null);
+        } catch (err) {
+            console.error('Failed to update status:', err);
+        }
+    };
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Update Task ++++++++++++++++++++++++++++++++++++++++++++++
+    // ฟังก์ชันสำหรับอัพเดท task
+    const updateTask = async (taskId: number, field: string, value: any) => {
+        try {
+            await axios.post(`${ENDPOINTS.UPDATE_TASK}`, {
+                taskId,
+                field,
+                value
+            });
+
+            // อัพเดท state ในตาราง
+            setTaskGroups(prev => {
+                const updated = [...prev];
+                updated.forEach(group => {
+                    group.tasks.forEach(task => {
+                        if (task.id === taskId) {
+                            (task as any)[field] = value;
+                        }
+                    });
+                });
+                return updated;
+            });
+
+            return true;
+        } catch (err) {
+            console.error('Failed to update task:', err);
+            return false;
+        }
+    };
+
+
+    // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
+    const fetchPipelineStepsByType = async (entityType: 'asset' | 'shot') => {
+        try {
+            const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
+                entityType: entityType
+            });
+
+            // ⭐ แก้ไขตรงนี้ - ใช้ prevState เพื่อรวม steps แทนการ replace
+            setAvailablePipelineSteps(prev => {
+                // กรองออก steps ของ type เดิมก่อน แล้วเพิ่ม steps ใหม่เข้าไป
+                const otherTypeSteps = prev.filter(step => step.entity_type !== entityType);
+                return [...otherTypeSteps, ...res.data];
+            });
+        } catch (err) {
+            console.error("Failed to fetch pipeline steps:", err);
+        }
+    };
 
     return (
         <div
@@ -502,15 +620,75 @@ export default function Project_Tasks() {
                                                             )}
                                                         </td>
 
+
+                                                        {/* task name */}
                                                         <td className="px-4 py-4">
-                                                            <div
-                                                                className="flex items-center gap-2 cursor-pointer group/task"
-                                                                onClick={() => setSelectedTask(task)}
-                                                            >
-                                                                <span className="text-green-400 text-lg group-hover/task:scale-110 transition-transform">✓</span>
-                                                                <span className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium">
-                                                                    {task.task_name}
-                                                                </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-green-400 text-lg">✓</span>
+
+                                                                {editingTaskId === task.id ? (
+                                                                    // โหมดแก้ไข
+                                                                    <input
+                                                                        autoFocus
+                                                                        type="text"
+                                                                        value={editingTaskName}
+                                                                        onChange={(e) => setEditingTaskName(e.target.value)}
+                                                                        onBlur={async () => {
+                                                                            if (editingTaskName.trim() && editingTaskName !== task.task_name) {
+                                                                                const success = await updateTask(task.id, 'task_name', editingTaskName.trim());
+                                                                                if (success) {
+                                                                                    task.task_name = editingTaskName.trim();
+                                                                                }
+                                                                            }
+                                                                            setEditingTaskId(null);
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                e.currentTarget.blur();
+                                                                            } else if (e.key === 'Escape') {
+                                                                                setEditingTaskId(null);
+                                                                                setEditingTaskName(task.task_name);
+                                                                            }
+                                                                        }}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="flex-1 px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none"
+                                                                    />
+                                                                ) : (
+                                                                    // โหมดแสดงผล
+                                                                    <>
+                                                                        <span
+                                                                            onClick={() => setSelectedTask(task)}
+                                                                            className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer"
+                                                                        >
+                                                                            {task.task_name}
+                                                                        </span>
+
+                                                                        {/* ปุ่มแก้ไข - แสดงเมื่อ hover */}
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingTaskId(task.id);
+                                                                                setEditingTaskName(task.task_name);
+                                                                            }}
+                                                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all"
+                                                                            title="แก้ไขชื่อ"
+                                                                        >
+                                                                            <svg
+                                                                                className="w-4 h-4 text-gray-400 hover:text-blue-400"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    strokeLinecap="round"
+                                                                                    strokeLinejoin="round"
+                                                                                    strokeWidth={2}
+                                                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                                                                />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </td>
 
@@ -562,24 +740,215 @@ export default function Project_Tasks() {
                                                         </td>
 
                                                         {/* ⭐ Column #5: Pipeline Step - เพิ่มตรงนี้ */}
-                                                        <td className="px-4 py-4">
-                                                            {task.pipeline_step ? (
-                                                                <div className="inline-flex items-center gap-2">
-                                                                    {/* สี่เหลี่ยมแสดงสี */}
-                                                                    <div
-                                                                        className="w-4 h-4 rounded border border-gray-400/60"
-                                                                        style={{
-                                                                            backgroundColor: task.pipeline_step.color_hex
-                                                                        }}
-                                                                    />
+                                                        <td className="px-4 py-4 whitespace-nowrap relative">
+                                                            {editingPipelineTaskId === task.id ? (
+                                                                // โหมดแก้ไข - Card Selector แบบลอย
+                                                                <div
+                                                                    className="absolute top-0 left-0 z-50 min-w-[180px]"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <div className="bg-gray-800 border border-blue-500/40 rounded-lg p-3 shadow-2xl max-h-[320px] overflow-y-auto">
+                                                                        {/* Header */}
+                                                                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-700/50">
+                                                                            <span className="text-xs font-medium text-gray-400">
+                                                                                เลือก Pipeline Step
+                                                                                {(() => {
+                                                                                    const entityType = task.entity_type || group.entity_type;
+                                                                                    if (entityType === 'shot') {
+                                                                                        return <span className="ml-2 text-blue-400">(Shot)</span>;
+                                                                                    } else if (entityType === 'asset') {
+                                                                                        return <span className="ml-2 text-green-400">(Asset)</span>;
+                                                                                    } else {
+                                                                                        return (
+                                                                                            <span className="ml-2">
+                                                                                                <span className="text-blue-400">(Shot</span>
+                                                                                                <span className="text-gray-500"> / </span>
+                                                                                                <span className="text-green-400">Asset)</span>
+                                                                                            </span>
+                                                                                        );
+                                                                                    }
+                                                                                })()}
+                                                                            </span>
+                                                                            <button
+                                                                                onClick={() => setEditingPipelineTaskId(null)}
+                                                                                className="text-gray-500 hover:text-gray-300 transition-colors"
+                                                                            >
+                                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </div>
 
-                                                                    {/* ชื่อ step */}
-                                                                    <span className="text-sm font-medium text-gray-300">
-                                                                        {task.pipeline_step.step_name}
-                                                                    </span>
+                                                                        {/* Options */}
+                                                                        <div className="space-y-1.5">
+                                                                            {/* Option: ไม่ระบุ */}
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    const success = await updateTask(task.id, 'pipeline_step_id', null);
+                                                                                    if (success) {
+                                                                                        task.pipeline_step = null;
+                                                                                    }
+                                                                                    setEditingPipelineTaskId(null);
+                                                                                }}
+                                                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${!selectedPipelineStepId
+                                                                                    ? 'bg-blue-500/20 border border-blue-500/40'
+                                                                                    : 'hover:bg-gray-700/50 border border-transparent'
+                                                                                    }`}
+                                                                            >
+                                                                                <div className="w-3 h-3 rounded border-2 border-gray-500" />
+                                                                                <span className="text-sm text-gray-400 italic">ไม่ระบุ</span>
+                                                                            </button>
+
+                                                                            {/* Pipeline Steps */}
+                                                                            {availablePipelineSteps.map(step => (
+                                                                                <button
+                                                                                    key={step.id}
+                                                                                    onClick={async () => {
+                                                                                        const success = await updateTask(
+                                                                                            task.id,
+                                                                                            'pipeline_step_id',
+                                                                                            step.id
+                                                                                        );
+
+                                                                                        if (success) {
+                                                                                            task.pipeline_step = step;
+                                                                                        }
+                                                                                        setEditingPipelineTaskId(null);
+                                                                                    }}
+                                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${selectedPipelineStepId === step.id
+                                                                                        ? 'bg-blue-500/20 border border-blue-500/40'
+                                                                                        : 'hover:bg-gray-700/50 border border-transparent'
+                                                                                        }`}
+                                                                                    style={{
+                                                                                        backgroundImage: selectedPipelineStepId === step.id
+                                                                                            ? `linear-gradient(to right, ${step.color_hex}10 0%, transparent 50%)`
+                                                                                            : 'none'
+                                                                                    }}
+                                                                                >
+                                                                                    {/* สี่เหลี่ยมสี */}
+                                                                                    <div
+                                                                                        className="w-3 h-3 rounded flex-shrink-0"
+                                                                                        style={{
+                                                                                            backgroundColor: step.color_hex,
+                                                                                            boxShadow: `0 0 8px ${step.color_hex}60`
+                                                                                        }}
+                                                                                    />
+
+                                                                                    {/* ชื่อ step */}
+                                                                                    <span className="text-sm font-medium text-gray-200 text-left">
+                                                                                        {step.step_name}
+                                                                                    </span>
+
+                                                                                    {/* Badge แสดง Shot/Asset ถ้าแสดงทั้ง 2 type */}
+                                                                                    {(() => {
+                                                                                        const entityType = task.entity_type || group.entity_type;
+                                                                                        if (!entityType || entityType === 'unassigned') {
+                                                                                            // แสดง badge ว่าเป็น Shot หรือ Asset
+                                                                                            return (
+                                                                                                <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${step.entity_type === 'shot'
+                                                                                                        ? 'bg-blue-500/20 text-blue-400'
+                                                                                                        : 'bg-green-500/20 text-green-400'
+                                                                                                    }`}>
+                                                                                                    {step.entity_type === 'shot' ? 'Shot' : 'Asset'}
+                                                                                                </span>
+                                                                                            );
+                                                                                        }
+                                                                                        return null;
+                                                                                    })()}
+
+                                                                                    {/* Checkmark ถ้าเลือกอยู่ */}
+                                                                                    {selectedPipelineStepId === step.id && (
+                                                                                        <svg className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                                        </svg>
+                                                                                    )}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+                                                                // โหมดแสดงผล
+                                                                <div className="flex items-center gap-2">
+                                                                    {task.pipeline_step ? (
+                                                                        <button
+                                                                            onClick={async (e) => {
+                                                                                e.stopPropagation();
+
+                                                                                let entityType = task.entity_type || group.entity_type;
+
+                                                                                // ⭐ ถ้าเป็น sequence ให้แจ้งเตือน
+                                                                                if (entityType === 'sequence') {
+                                                                                    alert('Task ที่ link กับ Sequence ไม่สามารถกำหนด Pipeline Step ได้');
+                                                                                    return;
+                                                                                }
+
+                                                                                console.log('Loading pipeline steps for:', entityType);
+
+                                                                                // ⭐ ถ้าไม่มี entity_type หรือเป็น unassigned ให้โหลดทั้ง shot และ asset
+                                                                                if (!entityType || entityType === 'unassigned') {
+                                                                                    await fetchPipelineStepsByType('shot');
+                                                                                    await fetchPipelineStepsByType('asset');
+                                                                                } else {
+                                                                                    await fetchPipelineStepsByType(entityType as 'asset' | 'shot');
+                                                                                }
+
+                                                                                setEditingPipelineTaskId(task.id);
+                                                                                setSelectedPipelineStepId(task.pipeline_step?.id || null);
+                                                                            }}
+                                                                            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gray-800/40 border border-gray-700/50 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all cursor-pointer group/badge"
+                                                                            title="คลิกเพื่อแก้ไข Pipeline Step"
+                                                                        >
+                                                                            {/* สี่เหลี่ยมสี */}
+                                                                            <div
+                                                                                className="w-3 h-3 rounded"
+                                                                                style={{
+                                                                                    backgroundColor: task.pipeline_step.color_hex,
+                                                                                    boxShadow: `0 0 6px ${task.pipeline_step.color_hex}60`
+                                                                                }}
+                                                                            />
+
+                                                                            {/* ชื่อ step */}
+                                                                            <span className="text-sm font-medium text-gray-200 group-hover/badge:text-blue-300 transition-colors">
+                                                                                {task.pipeline_step.step_name}
+                                                                            </span>
+
+                                                                            {/* ไอคอนแก้ไข - แสดงตอน hover */}
+
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={async (e) => {
+                                                                                e.stopPropagation();
+
+                                                                                let entityType = task.entity_type || group.entity_type;
+
+                                                                                // ⭐ ถ้าเป็น sequence ให้แจ้งเตือน
+                                                                                if (entityType === 'sequence') {
+                                                                                    alert('Task ที่ link กับ Sequence ไม่สามารถกำหนด Pipeline Step ได้');
+                                                                                    return;
+                                                                                }
+
+                                                                                console.log('Loading pipeline steps for:', entityType);
+
+                                                                                // ⭐ ถ้าไม่มี entity_type หรือเป็น unassigned ให้โหลดทั้ง shot และ asset
+                                                                                if (!entityType || entityType === 'unassigned') {
+                                                                                    await fetchPipelineStepsByType('shot');
+                                                                                    await fetchPipelineStepsByType('asset');
+                                                                                } else {
+                                                                                    await fetchPipelineStepsByType(entityType as 'asset' | 'shot');
+                                                                                }
+
+                                                                                setEditingPipelineTaskId(task.id);
+                                                                                setSelectedPipelineStepId(null);
+                                                                            }}
+                                                                            className="text-gray-500 italic text-sm px-3 py-1.5 hover:text-blue-400 hover:bg-gray-800/40 rounded-lg transition-all cursor-pointer"
+                                                                            title="คลิกเพื่อเลือก Pipeline Step"
+                                                                        >
+                                                                            ไม่ระบุ
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </td>
 
@@ -593,27 +962,68 @@ export default function Project_Tasks() {
                                                                 rows={2}
                                                                 placeholder="เพิ่มรายละเอียด..."
                                                                 className="w-full max-w-xs text-sm text-gray-300 bg-gray-800/60
-               border border-gray-700 rounded px-2 py-1
-               outline-none resize-none
-               focus:border-blue-500 focus:bg-gray-800"
+                                                                border border-gray-700 rounded px-2 py-1
+                                                                outline-none resize-none
+                                                                focus:border-blue-500 focus:bg-gray-800"
                                                             />
                                                         </td>
-
 
 
                                                         {/* Column #7: สถานะ */}
 
                                                         <td className="px-4 py-4">
-                                                            <span
-                                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${task.status === 'wtg'
-                                                                    ? 'text-gray-300 bg-gray-500/10 ring-gray-500/30'
-                                                                    : task.status === 'ip'
-                                                                        ? 'text-blue-300 bg-blue-500/10 ring-blue-500/30'
-                                                                        : 'text-green-300 bg-green-500/10 ring-green-500/30'
-                                                                    }`}
-                                                            >
-                                                                {task.status === 'wtg' ? 'รอดำเนินการ' : task.status === 'ip' ? 'กำลังทำ' : 'เสร็จสิ้น'}
-                                                            </span>
+                                                            <div className="w-36 flex-shrink-0 relative">
+                                                                <button
+                                                                    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
+                                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg"
+                                                                >
+                                                                    {statusConfig[task.status as StatusType].icon === '-' ? (
+                                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                    ) : (
+                                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
+                                                                    )}
+                                                                    <span className="text-xs text-gray-300 font-medium truncate">
+                                                                        {statusConfig[task.status as StatusType].label}
+                                                                    </span>
+                                                                </button>
+
+                                                                {/* Status Dropdown */}
+                                                                {showStatusMenu?.categoryIndex === taskGroups.findIndex(g => g.tasks.includes(task)) &&
+                                                                    showStatusMenu?.shotIndex === group.tasks.indexOf(task) && (
+                                                                        <>
+                                                                            {/* Backdrop */}
+                                                                            <div
+                                                                                className="fixed inset-0 z-10"
+                                                                                onClick={() => setShowStatusMenu(null)}
+                                                                            />
+
+                                                                            {/* Menu */}
+                                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[140px] border border-gray-600`}>
+                                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                                    <button
+                                                                                        key={key}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleStatusChange(
+                                                                                                taskGroups.findIndex(g => g.tasks.includes(task)),
+                                                                                                group.tasks.indexOf(task),
+                                                                                                key
+                                                                                            );
+                                                                                        }}
+                                                                                        className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                                    >
+                                                                                        {config.icon === '-' ? (
+                                                                                            <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                        ) : (
+                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                        )}
+                                                                                        <span className="text-xs text-gray-200">{config.label}</span>
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+                                                            </div>
                                                         </td>
 
                                                         <td className="px-4 py-4">
