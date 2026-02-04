@@ -383,6 +383,47 @@ export default function Project_Tasks() {
             console.error("Failed to fetch pipeline steps:", err);
         }
     };
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown PIPLINE STEP ++++++++++++++++++++++++++++++++++++++++++++++
+
+    // เพิ่ม useRef ที่ด้านบนของ component
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setEditingPipelineTaskId(null);
+            }
+        };
+
+        if (editingPipelineTaskId) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [editingPipelineTaskId]);
+
+    // เพิ่ม state สำหรับเช็คตำแหน่ง
+    const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+
+    // เพิ่ม useEffect สำหรับคำนวณตำแหน่ง
+    useEffect(() => {
+        if (editingPipelineTaskId && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - rect.bottom;
+            const dropdownHeight = 320; // max-h-[320px]
+
+            // ถ้าพื้นที่ด้านล่างไม่พอ ให้เปิดขึ้นด้านบน
+            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+                setDropdownPosition('top');
+            } else {
+                setDropdownPosition('bottom');
+            }
+        }
+    }, [editingPipelineTaskId]);
+
 
     return (
         <div
@@ -744,7 +785,11 @@ export default function Project_Tasks() {
                                                             {editingPipelineTaskId === task.id ? (
                                                                 // โหมดแก้ไข - Card Selector แบบลอย
                                                                 <div
-                                                                    className="absolute top-0 left-0 z-50 min-w-[180px]"
+                                                                    ref={dropdownRef}  // ⭐ เพิ่มตรงนี้
+                                                                    className={`absolute left-0 z-50 min-w-[200px] ${dropdownPosition === 'top'
+                                                                            ? 'bottom-full mb-2'  // เปิดขึ้นด้านบน
+                                                                            : 'top-0'              // เปิดลงด้านล่าง (default)
+                                                                        }`}
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 >
                                                                     <div className="bg-gray-800 border border-blue-500/40 rounded-lg p-3 shadow-2xl max-h-[320px] overflow-y-auto">
@@ -773,7 +818,7 @@ export default function Project_Tasks() {
                                                                                 onClick={() => setEditingPipelineTaskId(null)}
                                                                                 className="bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                                             >
-                                                                                <X className="w-4 h-4" />
+                                                                                <X className="w-4 h-4 text-gray-100" />
 
                                                                             </button>
                                                                         </div>
