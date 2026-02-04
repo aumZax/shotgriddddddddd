@@ -307,6 +307,23 @@ export default function Project_Tasks() {
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         Pipeline Step
                                     </th>
+                                    {/* ⭐ เพิ่มคอลัมน์ Description ตรงนี้ */}
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                        <div className="flex items-center gap-1">
+                                            <span>Description</span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                        <div>สถานะ</div>
+                                        <div className="mt-2 text-xs text-gray-500 normal-case">
+                                            <div className="flex items-center gap-2">
+                                                <span>เสร็จ:</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-green-500/20 text-green-400 font-semibold">
+                                                    63.64%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div>สถานะ</div>
                                         <div className="mt-2 text-xs text-gray-500 normal-case">
@@ -497,48 +514,48 @@ export default function Project_Tasks() {
                                                             </div>
                                                         </td>
 
-                                                       <td className="px-4 py-4">
-    {task.entity_type ? (
-        <span 
-            onClick={async () => {
-                if (group.entity_type === 'sequence') {
-                    try {
-                        // Fetch sequence detail
-                        const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, {
-                            projectId: JSON.parse(localStorage.getItem("projectId") || "null")
-                        });
-                        
-                        // หา sequence ที่ตรงกับ entity_id
-                        const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
-                        
-                        if (sequence) {
-                            localStorage.setItem(
-                                "sequenceData",
-                                JSON.stringify({
-                                    sequenceId: sequence.id,
-                                    sequenceName: sequence.sequence_name,
-                                    description: sequence.description,
-                                    status: sequence.status || 'wtg',
-                                    thumbnail: sequence.file_url || '',
-                                    createdAt: sequence.created_at,
-                                    projectId: JSON.parse(localStorage.getItem("projectId") || "null")
-                                })
-                            );
-                            navigate("/Project_Sequence/Others_Sequence");
-                        }
-                    } catch (err) {
-                        console.error("Failed to fetch sequence:", err);
-                    }
-                }
-            }}
-            className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
-        >
-            {group.entity_name}
-        </span>
-    ) : (
-        <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
-    )}
-</td>
+                                                        <td className="px-4 py-4">
+                                                            {task.entity_type ? (
+                                                                <span
+                                                                    onClick={async () => {
+                                                                        if (group.entity_type === 'sequence') {
+                                                                            try {
+                                                                                // Fetch sequence detail
+                                                                                const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, {
+                                                                                    projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+                                                                                });
+
+                                                                                // หา sequence ที่ตรงกับ entity_id
+                                                                                const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
+
+                                                                                if (sequence) {
+                                                                                    localStorage.setItem(
+                                                                                        "sequenceData",
+                                                                                        JSON.stringify({
+                                                                                            sequenceId: sequence.id,
+                                                                                            sequenceName: sequence.sequence_name,
+                                                                                            description: sequence.description,
+                                                                                            status: sequence.status || 'wtg',
+                                                                                            thumbnail: sequence.file_url || '',
+                                                                                            createdAt: sequence.created_at,
+                                                                                            projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+                                                                                        })
+                                                                                    );
+                                                                                    navigate("/Project_Sequence/Others_Sequence");
+                                                                                }
+                                                                            } catch (err) {
+                                                                                console.error("Failed to fetch sequence:", err);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
+                                                                >
+                                                                    {group.entity_name}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+                                                            )}
+                                                        </td>
 
                                                         {/* ⭐ Column #5: Pipeline Step - เพิ่มตรงนี้ */}
                                                         <td className="px-4 py-4">
@@ -560,6 +577,35 @@ export default function Project_Tasks() {
                                                             ) : (
                                                                 <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
                                                             )}
+                                                        </td>
+
+                                                        {/* ⭐ Column #6: Description - เพิ่มตรงนี้ */}
+                                                     <td className="px-4 py-4">
+  <textarea
+    defaultValue={task.description}
+    rows={2}
+    placeholder="ไม่มีรายละเอียด"
+    className="w-full max-w-xs text-sm text-gray-300 bg-transparent
+               border border-transparent rounded px-2 py-1
+               resize-none outline-none
+               hover:bg-gray-700/40 focus:bg-gray-800/60
+               focus:border-gray-600"
+  />
+</td>
+
+
+                                                        {/* Column #7: สถานะ */}
+                                                        <td className="px-4 py-4">
+                                                            <span
+                                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${task.status === 'wtg'
+                                                                        ? 'text-gray-300 bg-gray-500/10 ring-gray-500/30'
+                                                                        : task.status === 'ip'
+                                                                            ? 'text-blue-300 bg-blue-500/10 ring-blue-500/30'
+                                                                            : 'text-green-300 bg-green-500/10 ring-green-500/30'
+                                                                    }`}
+                                                            >
+                                                                {task.status === 'wtg' ? 'รอดำเนินการ' : task.status === 'ip' ? 'กำลังทำ' : 'เสร็จสิ้น'}
+                                                            </span>
                                                         </td>
 
                                                         <td className="px-4 py-4">
