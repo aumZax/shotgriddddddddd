@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Users, X } from 'lucide-react';
+import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Pencil, Users, X } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -711,22 +711,11 @@ export default function Project_Tasks() {
                                                                                 setEditingTaskId(task.id);
                                                                                 setEditingTaskName(task.task_name);
                                                                             }}
-                                                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded transition-all"
+                                                                            className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                                             title="แก้ไขชื่อ"
                                                                         >
-                                                                            <svg
-                                                                                className="w-4 h-4 text-gray-400 hover:text-blue-400"
-                                                                                fill="none"
-                                                                                stroke="currentColor"
-                                                                                viewBox="0 0 24 24"
-                                                                            >
-                                                                                <path
-                                                                                    strokeLinecap="round"
-                                                                                    strokeLinejoin="round"
-                                                                                    strokeWidth={2}
-                                                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                                                                />
-                                                                            </svg>
+                                                                            <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400"/>
+
                                                                         </button>
                                                                     </>
                                                                 )}
@@ -787,8 +776,8 @@ export default function Project_Tasks() {
                                                                 <div
                                                                     ref={dropdownRef}  // ⭐ เพิ่มตรงนี้
                                                                     className={`absolute left-0 z-50 min-w-[200px] ${dropdownPosition === 'top'
-                                                                            ? 'bottom-full mb-2'  // เปิดขึ้นด้านบน
-                                                                            : 'top-0'              // เปิดลงด้านล่าง (default)
+                                                                        ? 'bottom-full mb-2'  // เปิดขึ้นด้านบน
+                                                                        : 'top-0'              // เปิดลงด้านล่าง (default)
                                                                         }`}
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 >
@@ -1119,23 +1108,13 @@ export default function Project_Tasks() {
                                                                                                 {task.assignees.length}
                                                                                             </span>
                                                                                         </div>
+
                                                                                         <button
                                                                                             onClick={() => setExpandedTaskId(null)}
-                                                                                            className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-md hover:bg-slate-700/50"
+                                                                                            className="bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                                                         >
-                                                                                            <svg
-                                                                                                className="w-4 h-4"
-                                                                                                fill="none"
-                                                                                                stroke="currentColor"
-                                                                                                viewBox="0 0 24 24"
-                                                                                            >
-                                                                                                <path
-                                                                                                    strokeLinecap="round"
-                                                                                                    strokeLinejoin="round"
-                                                                                                    strokeWidth={2}
-                                                                                                    d="M6 18L18 6M6 6l12 12"
-                                                                                                />
-                                                                                            </svg>
+                                                                                            <X className="w-4 h-4 text-gray-100" />
+
                                                                                         </button>
                                                                                     </div>
                                                                                 </div>
