@@ -451,8 +451,6 @@ export default function Project_Tasks() {
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ reviewer ++++++++++++++++++++++++++++++++++++++++++++++
-    // เพิ่ม state สำหรับ reviewer dropdown (ไว้ใกล้ๆ กับ expandedTaskId)
-    const [expandedReviewerTaskId, setExpandedReviewerTaskId] = useState<number | null>(null);
 
     // เพิ่ม helper function สำหรับเช็คว่า current user เป็น reviewer หรือไม่
     const isCurrentUserReviewer = (reviewers: TaskReviewer[]) => {
