@@ -53,8 +53,6 @@ interface TasksTabProps {
 
 const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     const [tasks, setTasks] = useState<Task[]>(initialTasks);
-    const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
-    const [expandedReviewerTaskId, setExpandedReviewerTaskId] = useState<number | null>(null);
 
     // Task Name Editing
     const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -78,12 +76,10 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
 
     // Refs
     // ⭐ เพิ่ม ref และ state สำหรับ Pipeline dropdown
-    const dropdownRef = useRef<HTMLDivElement>(null);
     const pipelineDropdownRef = useRef<HTMLDivElement>(null); // ⭐ เพิ่มบรรทัดนี้
     const assigneeDropdownRef = useRef<HTMLDivElement>(null);
     const reviewerDropdownRef = useRef<HTMLDivElement>(null);
 
-    const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
     const [pipelineDropdownPosition, setPipelineDropdownPosition] = useState<'bottom' | 'top'>('bottom'); // ⭐ เพิ่มบรรทัดนี้
     const [assigneeDropdownPosition, setAssigneeDropdownPosition] = useState<'bottom' | 'top'>('bottom');
     const [reviewerDropdownPosition, setReviewerDropdownPosition] = useState<'bottom' | 'top'>('bottom');

@@ -59,7 +59,6 @@ export default function Project_Tasks() {
     const navigate = useNavigate();
     const [showCreateMytask, setShowCreateMytask] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
     const [activeTab, setActiveTab] = useState('notes');
     const [isResizing, setIsResizing] = useState(false);
