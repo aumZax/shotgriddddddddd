@@ -35,6 +35,21 @@ interface AssetData {
     dueDate?: string;
 }
 
+// ⭐ เพิ่ม type ที่ขาดหาย (เพิ่มหลังบรรทัด TaskAssignee)
+type TaskReviewer = {
+    id: number;
+    username: string;
+};
+
+type PipelineStep = {
+    id: number;
+    step_name: string;
+    step_code: string;
+    color_hex: string;
+    entity_type?: 'shot' | 'asset';
+};
+
+// ⭐ อัปเดต Task type (แทนที่ Task type เดิม)
 type Task = {
     id: number;
     project_id: number;
@@ -47,7 +62,9 @@ type Task = {
     created_at: string;
     description: string;
     file_url: string;
-    assignees: TaskAssignee[]; // ⭐ สำคัญ
+    assignees: TaskAssignee[];
+    reviewers?: TaskReviewer[];           // ⭐ เพิ่มบรรทัดนี้
+    pipeline_step?: PipelineStep | null;  // ⭐ เพิ่มบรรทัดนี้
 };
 
 type TaskAssignee = {
@@ -232,12 +249,12 @@ export default function Others_Asset() {
 
     const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
     const AssetID = stored.id;
-    console.log(AssetID)
+    console.log("🔍 AssetID:", AssetID);  // ⭐ เพิ่ม log
 
 
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    // const projectName = projectData?.projectName;
+    console.log("🔍 projectId:", projectId);  // ⭐ เพิ่ม log
 
 
     // ++++++++++++++++++++++++++++++++++++++++ right
@@ -278,7 +295,7 @@ export default function Others_Asset() {
             return;
         }
 
-        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
+        axios.post<Task[]>(ENDPOINTS.ASSET_TASK, {
             project_id: projectId,
             entity_type: "asset",
             entity_id: AssetID

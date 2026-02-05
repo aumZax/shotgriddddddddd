@@ -483,14 +483,14 @@ export default function Project_Tasks() {
                                             </div>
                                         </div>
                                     </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         ผู้รับมอบหมาย
                                     </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         Reviewer
                                     </th>
 
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-3.5 h-3.5" />
                                             <span>เริ่มต้น</span>
@@ -502,7 +502,7 @@ export default function Project_Tasks() {
                                             </div>
                                         </div>
                                     </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-3.5 h-3.5" />
                                             <span>สิ้นสุด</span>
@@ -514,7 +514,7 @@ export default function Project_Tasks() {
                                             </div>
                                         </div>
                                     </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-3.5 h-3.5" />
                                             <span>ระยะเวลา</span>
@@ -1297,7 +1297,7 @@ export default function Project_Tasks() {
                                                             )}
                                                         </td>
 
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             {task.start_date ? (
                                                                 <div className="flex items-center gap-2 text-sm">
                                                                     <Calendar className="w-4 h-4 text-gray-500" />
@@ -1310,7 +1310,7 @@ export default function Project_Tasks() {
                                                             )}
                                                         </td>
 
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             {task.due_date ? (
                                                                 <div className="flex items-center gap-2 text-sm">
                                                                     <Calendar className="w-4 h-4 text-gray-500" />
@@ -1323,7 +1323,7 @@ export default function Project_Tasks() {
                                                             )}
                                                         </td>
 
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             {task.start_date && task.due_date ? (
                                                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/10 ring-1 ring-indigo-500/30">
                                                                     <Clock className="w-3.5 h-3.5 text-indigo-400" />

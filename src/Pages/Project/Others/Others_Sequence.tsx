@@ -25,6 +25,22 @@ interface Activity {
 }
 
 
+
+// ⭐ เพิ่ม type ที่ขาดหาย (เพิ่มหลังบรรทัด TaskAssignee)
+type TaskReviewer = {
+    id: number;
+    username: string;
+};
+
+type PipelineStep = {
+    id: number;
+    step_name: string;
+    step_code: string;
+    color_hex: string;
+    entity_type?: 'shot' | 'asset';
+};
+
+// ⭐ อัปเดต Task type (แทนที่ Task type เดิม)
 type Task = {
     id: number;
     project_id: number;
@@ -37,17 +53,15 @@ type Task = {
     created_at: string;
     description: string;
     file_url: string;
-    assignees: TaskAssignee[]; // ⭐ สำคัญ
+    assignees: TaskAssignee[];
+    reviewers?: TaskReviewer[];           // ⭐ เพิ่มบรรทัดนี้
+    pipeline_step?: PipelineStep | null;  // ⭐ เพิ่มบรรทัดนี้
 };
 
 type TaskAssignee = {
     id: number;
     username: string;
 };
-
-
-
-
 
 
 // Initial activities

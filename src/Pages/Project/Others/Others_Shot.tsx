@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Eye, Image, Upload,  } from 'lucide-react';
+import { Eye, Image, Upload, } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -47,6 +47,22 @@ const shotFieldMap: Record<keyof ShotData, string | null> = {
 };
 
 
+
+// ⭐ เพิ่ม type ที่ขาดหาย
+type TaskReviewer = {
+    id: number;
+    username: string;
+};
+
+type PipelineStep = {
+    id: number;
+    step_name: string;
+    step_code: string;
+    color_hex: string;
+    entity_type?: 'shot' | 'asset';
+};
+
+// ⭐ อัปเดต Task type ให้ตรงกับ TaskTab
 type Task = {
     id: number;
     project_id: number;
@@ -59,7 +75,9 @@ type Task = {
     created_at: string;
     description: string;
     file_url: string;
-    assignees: TaskAssignee[]; // ⭐ สำคัญ
+    assignees: TaskAssignee[];
+    reviewers?: TaskReviewer[];      // ⭐ เพิ่ม
+    pipeline_step?: PipelineStep | null;  // ⭐ เพิ่ม
 };
 
 type TaskAssignee = {
@@ -557,167 +575,167 @@ export default function Others_Shot() {
                         </div>
 
                         <div className="flex gap-6 w-full items-start justify-between mb-6">
-                           <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-    {shotData.thumbnail ? (
-        // ตรวจสอบว่าเป็นวิดีโอหรือรูปภาพ
-        shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-            // แสดงวิดีโอ
-            <div className="w-full h-full rounded-lg overflow-hidden">
-                <video
-                    src={ENDPOINTS.image_url + shotData.thumbnail}
-                    className="w-full h-full object-cover"
-                    controls
-                    muted
-                    playsInline
-                >
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        ) : (
-            // แสดงรูปภาพ
-            <img
-                src={ENDPOINTS.image_url + shotData.thumbnail}
-                alt="Shot thumbnail"
-                className="w-full h-full object-cover rounded-lg"
-            />
-        )
-    ) : (
-        <div className="w-full h-full rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                <Image className="w-8 h-8 text-gray-500" />
-            </div>
-            <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
-        </div>
-    )}
+                            <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
+                                {shotData.thumbnail ? (
+                                    // ตรวจสอบว่าเป็นวิดีโอหรือรูปภาพ
+                                    shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                        // แสดงวิดีโอ
+                                        <div className="w-full h-full rounded-lg overflow-hidden">
+                                            <video
+                                                src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                                muted
+                                                playsInline
+                                            >
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+                                    ) : (
+                                        // แสดงรูปภาพ
+                                        <img
+                                            src={ENDPOINTS.image_url + shotData.thumbnail}
+                                            alt="Shot thumbnail"
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
+                                    )
+                                ) : (
+                                    <div className="w-full h-full rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
+                                        <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
+                                            <Image className="w-8 h-8 text-gray-500" />
+                                        </div>
+                                        <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
+                                    </div>
+                                )}
 
-    {/* ปุ่มเมนู - แสดงเมื่อมี thumbnail */}
-    {showPreview && shotData.thumbnail && (
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
-            <div className="flex gap-3">
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowPreview(true);
-                    }}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors"
-                >
-                    <Eye className="w-4 h-4" />
-                    ดูไฟล์
-                </button>
-                <label className="px-4 py-2 bg-gradient-to-r from-green-800 to-green-800 hover:from-green-500 hover:to-green-500 text-white rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4" />
-                    เปลี่ยนไฟล์
-                    <input
-                        type="file"
-                        accept="image/*,video/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                            if (!e.target.files?.[0]) return;
+                                {/* ปุ่มเมนู - แสดงเมื่อมี thumbnail */}
+                                {showPreview && shotData.thumbnail && (
+                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setShowPreview(true);
+                                                }}
+                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                ดูไฟล์
+                                            </button>
+                                            <label className="px-4 py-2 bg-gradient-to-r from-green-800 to-green-800 hover:from-green-500 hover:to-green-500 text-white rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
+                                                <Upload className="w-4 h-4" />
+                                                เปลี่ยนไฟล์
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,video/*"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        if (!e.target.files?.[0]) return;
 
-                            const file = e.target.files[0];
-                            const formData = new FormData();
+                                                        const file = e.target.files[0];
+                                                        const formData = new FormData();
 
-                            formData.append("shotId", shotData.id.toString());
-                            formData.append("file", file);
-                            formData.append("fileName", file.name);
-                            formData.append("oldImageUrl", shotData.thumbnail || "");
-                            formData.append("type", file.type.split('/')[0]);
+                                                        formData.append("shotId", shotData.id.toString());
+                                                        formData.append("file", file);
+                                                        formData.append("fileName", file.name);
+                                                        formData.append("oldImageUrl", shotData.thumbnail || "");
+                                                        formData.append("type", file.type.split('/')[0]);
 
-                            try {
-                                const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                                    method: "POST",
-                                    body: formData,
-                                });
+                                                        try {
+                                                            const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
+                                                                method: "POST",
+                                                                body: formData,
+                                                            });
 
-                                const data = await res.json();
-                                console.log("📥 Upload Response:", data);
+                                                            const data = await res.json();
+                                                            console.log("📥 Upload Response:", data);
 
-                                if (res.ok) {
-                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+                                                            if (res.ok) {
+                                                                const newFileUrl = data.file?.fileUrl || data.fileUrl;
 
-                                    setShotData(prev => ({
-                                        ...prev,
-                                        thumbnail: newFileUrl
-                                    }));
+                                                                setShotData(prev => ({
+                                                                    ...prev,
+                                                                    thumbnail: newFileUrl
+                                                                }));
 
-                                    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                    const updated = {
-                                        ...stored,
-                                        thumbnail: newFileUrl,
-                                    };
-                                    localStorage.setItem("selectedShot", JSON.stringify(updated));
+                                                                const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+                                                                const updated = {
+                                                                    ...stored,
+                                                                    thumbnail: newFileUrl,
+                                                                };
+                                                                localStorage.setItem("selectedShot", JSON.stringify(updated));
 
-                                    console.log("✅ Upload success! New URL:", newFileUrl);
+                                                                console.log("✅ Upload success! New URL:", newFileUrl);
 
-                                } else {
-                                    console.error("❌ Upload failed:", data.error);
-                                    alert("Upload failed: " + (data.error || "Unknown error"));
-                                }
-                            } catch (err) {
-                                console.error("❌ Upload error:", err);
-                                alert("Upload error");
-                            }
-                        }}
-                    />
-                </label>
-            </div>
-        </div>
-    )}
+                                                            } else {
+                                                                console.error("❌ Upload failed:", data.error);
+                                                                alert("Upload failed: " + (data.error || "Unknown error"));
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("❌ Upload error:", err);
+                                                            alert("Upload error");
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
 
-    {/* Upload Input - แสดงเมื่อไม่มี thumbnail */}
-    {!shotData.thumbnail && (
-        <input
-            type="file"
-            accept="image/*,video/*"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            onChange={async (e) => {
-                if (!e.target.files?.[0]) return;
+                                {/* Upload Input - แสดงเมื่อไม่มี thumbnail */}
+                                {!shotData.thumbnail && (
+                                    <input
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={async (e) => {
+                                            if (!e.target.files?.[0]) return;
 
-                const file = e.target.files[0];
-                const formData = new FormData();
-                formData.append("shotId", shotData.id.toString());
-                formData.append("file", file);
-                formData.append("oldImageUrl", shotData.thumbnail || "");
+                                            const file = e.target.files[0];
+                                            const formData = new FormData();
+                                            formData.append("shotId", shotData.id.toString());
+                                            formData.append("file", file);
+                                            formData.append("oldImageUrl", shotData.thumbnail || "");
 
-                try {
-                    const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                        method: "POST",
-                        body: formData,
-                    });
+                                            try {
+                                                const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
+                                                    method: "POST",
+                                                    body: formData,
+                                                });
 
-                    const data = await res.json();
-                    console.log("📥 Upload Response:", data);
+                                                const data = await res.json();
+                                                console.log("📥 Upload Response:", data);
 
-                    if (res.ok) {
-                        const newFileUrl = data.file?.fileUrl || data.fileUrl;
+                                                if (res.ok) {
+                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
 
-                        setShotData(prev => ({
-                            ...prev,
-                            thumbnail: newFileUrl
-                        }));
+                                                    setShotData(prev => ({
+                                                        ...prev,
+                                                        thumbnail: newFileUrl
+                                                    }));
 
-                        const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                        const updated = {
-                            ...stored,
-                            thumbnail: newFileUrl,
-                        };
-                        localStorage.setItem("selectedShot", JSON.stringify(updated));
+                                                    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+                                                    const updated = {
+                                                        ...stored,
+                                                        thumbnail: newFileUrl,
+                                                    };
+                                                    localStorage.setItem("selectedShot", JSON.stringify(updated));
 
-                        console.log("✅ Upload success! New URL:", newFileUrl);
+                                                    console.log("✅ Upload success! New URL:", newFileUrl);
 
-                    } else {
-                        console.error("❌ Upload failed:", data.error);
-                        alert("Upload failed: " + (data.error || "Unknown error"));
-                    }
-                } catch (err) {
-                    console.error("❌ Upload error:", err);
-                    alert("Upload error");
-                }
-            }}
-        />
-    )}
-</div>
+                                                } else {
+                                                    console.error("❌ Upload failed:", data.error);
+                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                }
+                                            } catch (err) {
+                                                console.error("❌ Upload error:", err);
+                                                alert("Upload error");
+                                            }
+                                        }}
+                                    />
+                                )}
+                            </div>
 
                             <div className="flex-1 space-y-4">
                                 <div className="flex-1 space-y-3">
