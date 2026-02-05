@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://finances-epa-happiness-mandate.trycloudflare.com"; 
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://finances-epa-happiness-mandate.trycloudflare.com"; 
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -89,6 +89,12 @@ const ENDPOINTS = {
   PIPELINE_STEPS: `${BASE_URL}/pipeline-steps`,
 
   UPDATE_TASK: `${BASE_URL}/updatetask`,
+
+  ADD_TASK_ASSIGNEE: `${BASE_URL}/add-task-assignee`,
+  REMOVE_TASK_ASSIGNEE: `${BASE_URL}/remove-task-assignee`,
+  ADD_TASK_REVIEWER: `${BASE_URL}/add-task-reviewer`,
+  REMOVE_TASK_REVIEWER: `${BASE_URL}/remove-task-reviewer`,
+  PROJECT_USERS: `${BASE_URL}/project-users`,
 
 
 

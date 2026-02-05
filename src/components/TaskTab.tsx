@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Calendar, Check, ClipboardList, Clock, Image, Pencil, Users, X } from 'lucide-react';
+import { Calendar, Check, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 
@@ -64,19 +64,84 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     const [editingPipelineTaskId, setEditingPipelineTaskId] = useState<number | null>(null);
     const [selectedPipelineStepId, setSelectedPipelineStepId] = useState<number | null>(null);
     const [availablePipelineSteps, setAvailablePipelineSteps] = useState<PipelineStep[]>([]);
-    const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
 
     // Status Menu
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
 
+    // ⭐ เพิ่ม states สำหรับ Assignee/Reviewer management
+    const [projectUsers, setProjectUsers] = useState<{ id: number, username: string }[]>([]);
+    const [editingAssigneeTaskId, setEditingAssigneeTaskId] = useState<number | null>(null);
+    const [editingReviewerTaskId, setEditingReviewerTaskId] = useState<number | null>(null);
+    const [searchAssignee, setSearchAssignee] = useState("");
+    const [searchReviewer, setSearchReviewer] = useState("");
+
     // Refs
+    // ⭐ เพิ่ม ref และ state สำหรับ Pipeline dropdown
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const pipelineDropdownRef = useRef<HTMLDivElement>(null); // ⭐ เพิ่มบรรทัดนี้
+    const assigneeDropdownRef = useRef<HTMLDivElement>(null);
+    const reviewerDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+    const [pipelineDropdownPosition, setPipelineDropdownPosition] = useState<'bottom' | 'top'>('bottom'); // ⭐ เพิ่มบรรทัดนี้
+    const [assigneeDropdownPosition, setAssigneeDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+    const [reviewerDropdownPosition, setReviewerDropdownPosition] = useState<'bottom' | 'top'>('bottom');
 
     // Update tasks when props change
     useEffect(() => {
         setTasks(initialTasks);
     }, [initialTasks]);
+
+    // ⭐ Fetch project users
+    useEffect(() => {
+        const fetchProjectUsers = async () => {
+            try {
+                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                if (!projectId) return;
+
+                const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, { projectId });
+                setProjectUsers(res.data);
+            } catch (err) {
+                console.error("Fetch project users error:", err);
+            }
+        };
+        fetchProjectUsers();
+    }, []);
+
+    // ⭐ Dropdown position calculation for Assignee
+    useEffect(() => {
+        if (editingAssigneeTaskId && assigneeDropdownRef.current) {
+            const rect = assigneeDropdownRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const dropdownHeight = 384;
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+                setAssigneeDropdownPosition('top');
+            } else {
+                setAssigneeDropdownPosition('bottom');
+            }
+        }
+    }, [editingAssigneeTaskId]);
+
+    // ⭐ Dropdown position calculation for Reviewer
+    useEffect(() => {
+        if (editingReviewerTaskId && reviewerDropdownRef.current) {
+            const rect = reviewerDropdownRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const dropdownHeight = 384;
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+                setReviewerDropdownPosition('top');
+            } else {
+                setReviewerDropdownPosition('bottom');
+            }
+        }
+    }, [editingReviewerTaskId]);
 
     // Helper functions
     const formatDateThai = (dateString: string) => {
@@ -117,6 +182,134 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     const isCurrentUserReviewer = (reviewers: TaskReviewer[] = []) => {
         const currentUserId = getCurrentUser().id;
         return reviewers?.some(r => r.id === currentUserId);
+    };
+
+    // ⭐ Filter available assignees
+    const getAvailableAssignees = (task: Task) => {
+        const assignedIds = task.assignees.map(a => a.id);
+        return projectUsers.filter(u =>
+            !assignedIds.includes(u.id) &&
+            u.username.toLowerCase().includes(searchAssignee.toLowerCase())
+        );
+    };
+
+    // ⭐ Filter available reviewers
+    const getAvailableReviewers = (task: Task) => {
+        const reviewerIds = task.reviewers?.map(r => r.id) || [];
+        return projectUsers.filter(u =>
+            !reviewerIds.includes(u.id) &&
+            u.username.toLowerCase().includes(searchReviewer.toLowerCase())
+        );
+    };
+
+    // ⭐ Add Assignee
+    const addAssignee = async (taskId: number, userId: number) => {
+        try {
+            const res = await axios.post(`${ENDPOINTS.ADD_TASK_ASSIGNEE}`, {
+                taskId,
+                userId
+            });
+
+            const newAssignee = res.data.user;
+
+            // อัพเดท tasks state
+            setTasks(prev => prev.map(task => {
+                if (task.id === taskId) {
+                    // ป้องกันการเพิ่มซ้ำ
+                    const exists = task.assignees.some(a => a.id === newAssignee.id);
+                    if (exists) return task;
+
+                    return {
+                        ...task,
+                        assignees: [...task.assignees, newAssignee]
+                    };
+                }
+                return task;
+            }));
+
+            setSearchAssignee("");
+        } catch (err: any) {
+            console.error("Add assignee error:", err);
+            alert(err.response?.data?.message || "ไม่สามารถเพิ่มผู้รับผิดชอบได้");
+        }
+    };
+
+    // ⭐ Remove Assignee
+    const removeAssignee = async (taskId: number, userId: number) => {
+        try {
+            await axios.post(`${ENDPOINTS.REMOVE_TASK_ASSIGNEE}`, {
+                taskId,
+                userId
+            });
+
+            // อัพเดท tasks state
+            setTasks(prev => prev.map(task => {
+                if (task.id === taskId) {
+                    return {
+                        ...task,
+                        assignees: task.assignees.filter(a => a.id !== userId)
+                    };
+                }
+                return task;
+            }));
+        } catch (err) {
+            console.error("Remove assignee error:", err);
+            alert("ไม่สามารถลบผู้รับผิดชอบได้");
+        }
+    };
+
+    // ⭐ Add Reviewer
+    const addReviewer = async (taskId: number, userId: number) => {
+        try {
+            const res = await axios.post(`${ENDPOINTS.ADD_TASK_REVIEWER}`, {
+                taskId,
+                userId
+            });
+
+            const newReviewer = res.data.user;
+
+            setTasks(prev => prev.map(task => {
+                if (task.id === taskId) {
+                    // ป้องกันการเพิ่มซ้ำ
+                    const exists = task.reviewers?.some(r => r.id === newReviewer.id);
+                    if (exists) return task;
+
+                    return {
+                        ...task,
+                        reviewers: [...(task.reviewers || []), newReviewer]
+                    };
+                }
+                return task;
+            }));
+
+            setSearchReviewer("");
+        } catch (err: any) {
+            console.error("Add reviewer error:", err);
+            alert(err.response?.data?.message || "ไม่สามารถเพิ่ม Reviewer ได้");
+        }
+    };
+
+    // ⭐ Remove Reviewer
+    const removeReviewer = async (taskId: number, userId: number) => {
+        try {
+            await axios.post(`${ENDPOINTS.REMOVE_TASK_REVIEWER}`, {
+                taskId,
+                userId
+            });
+
+            setTasks(prev => prev.map(task => {
+                if (task.id === taskId) {
+                    return {
+                        ...task,
+                        reviewers: task.reviewers?.filter(r => r.id !== userId) || []
+                    };
+                }
+                return task;
+            }));
+        } catch (err) {
+            console.error("Remove reviewer error:", err);
+            alert("ไม่สามารถลบ Reviewer ได้");
+        }
     };
 
     // Update Task API
@@ -177,35 +370,21 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
         }
     };
 
-    // Click Outside Dropdown
+
+    // Calculate Dropdown Position +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // ⭐ เปลี่ยนจากโค้ดเดิมเป็น:
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setEditingPipelineTaskId(null);
-            }
-        };
-
-        if (editingPipelineTaskId) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [editingPipelineTaskId]);
-
-    // Calculate Dropdown Position
-    useEffect(() => {
-        if (editingPipelineTaskId && dropdownRef.current) {
-            const rect = dropdownRef.current.getBoundingClientRect();
+        if (editingPipelineTaskId && pipelineDropdownRef.current) {
+            const rect = pipelineDropdownRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
+            const dropdownHeight = 384; // ใช้ค่าเดียวกับ assignee/reviewer
             const spaceBelow = viewportHeight - rect.bottom;
-            const dropdownHeight = 320;
+            const spaceAbove = rect.top;
 
-            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-                setDropdownPosition('top');
+            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+                setPipelineDropdownPosition('top');
             } else {
-                setDropdownPosition('bottom');
+                setPipelineDropdownPosition('bottom');
             }
         }
     }, [editingPipelineTaskId]);
@@ -382,92 +561,23 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     </td>
 
                                     {/* Column #4: Pipeline Step */}
-                                    <td className="px-4 py-4 whitespace-nowrap relative">
-                                        {editingPipelineTaskId === task.id ? (
-                                            <div
-                                                ref={dropdownRef}
-                                                className={`absolute left-0 z-[100] min-w-[200px] ${dropdownPosition === 'top' ? 'bottom-full mb-2' : 'top-0'}`}
-                                                onClick={(e) => e.stopPropagation()}
+                                    <td className="px-4 py-4">
+                                        <div className="relative inline-block" ref={pipelineDropdownRef}>
+                                            <button
+                                                onClick={() => {
+                                                    if (editingPipelineTaskId === task.id) {
+                                                        setEditingPipelineTaskId(null);
+                                                    } else {
+                                                        const entityType = task.entity_type as 'asset' | 'shot';
+                                                        fetchPipelineStepsByType(entityType);
+                                                        setEditingPipelineTaskId(task.id);
+                                                        setSelectedPipelineStepId(task.pipeline_step?.id || null);
+                                                    }
+                                                }}
+                                                className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 transition-all cursor-pointer"
                                             >
-                                                <div className="bg-gray-800 border border-blue-500/40 rounded-lg p-3 shadow-2xl max-h-[320px] overflow-y-auto">
-                                                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-700/50">
-                                                        <span className="text-xs font-medium text-gray-400">
-                                                            เลือก Pipeline Step
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setEditingPipelineTaskId(null)}
-                                                            className="bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
-                                                        >
-                                                            <X className="w-4 h-4 text-gray-100" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-1.5">
-                                                        <button
-                                                            onClick={async () => {
-                                                                const success = await updateTask(task.id, 'pipeline_step_id', null);
-                                                                if (success) {
-                                                                    task.pipeline_step = null;
-                                                                }
-                                                                setEditingPipelineTaskId(null);
-                                                            }}
-                                                            className={`w-full flex items-center gap-3 px-3 py-2 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${!selectedPipelineStepId
-                                                                ? 'bg-blue-500/20 border border-blue-500/40'
-                                                                : 'hover:bg-gray-700/50 border border-transparent'
-                                                                }`}
-                                                        >
-                                                            <div className="w-3 h-3 rounded border-2 border-gray-500" />
-                                                            <span className="text-sm text-gray-400 italic">ไม่ระบุ</span>
-                                                        </button>
-
-                                                        {availablePipelineSteps.map(step => (
-                                                            <button
-                                                                key={step.id}
-                                                                onClick={async () => {
-                                                                    setSelectedPipelineStepId(step.id);
-                                                                    const success = await updateTask(task.id, 'pipeline_step_id', step.id);
-                                                                    if (success) {
-                                                                        task.pipeline_step = step;
-                                                                    }
-                                                                    setEditingPipelineTaskId(null);
-                                                                }}
-                                                                className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${selectedPipelineStepId === step.id
-                                                                    ? 'border border-blue-500 bg-blue-500/10'
-                                                                    : 'border border-transparent hover:bg-gray-700/50'
-                                                                    }`}
-                                                            >
-                                                                <div
-                                                                    className="w-3 h-3 rounded flex-shrink-0"
-                                                                    style={{
-                                                                        backgroundColor: step.color_hex,
-                                                                        boxShadow: `0 0 8px ${step.color_hex}60`
-                                                                    }}
-                                                                />
-                                                                <span className="text-sm font-medium text-gray-200 text-left">
-                                                                    {step.step_name}
-                                                                </span>
-                                                                {selectedPipelineStepId === step.id && (
-                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" />
-                                                                )}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
                                                 {task.pipeline_step ? (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            const entityType = task.entity_type as 'asset' | 'shot';
-                                                            await fetchPipelineStepsByType(entityType);
-                                                            setEditingPipelineTaskId(task.id);
-                                                            setSelectedPipelineStepId(task.pipeline_step?.id || null);
-                                                        }}
-                                                        className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 transition-all cursor-pointer group/badge"
-                                                        title="คลิกเพื่อแก้ไข Pipeline Step"
-                                                    >
+                                                    <>
                                                         <div
                                                             className="w-3 h-3 rounded"
                                                             style={{
@@ -475,27 +585,110 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 boxShadow: `0 0 6px ${task.pipeline_step.color_hex}60`
                                                             }}
                                                         />
-                                                        <span className="text-sm font-medium text-gray-200 group-hover/badge:text-blue-300 transition-colors">
+                                                        <span className="text-sm font-medium text-gray-200">
                                                             {task.pipeline_step.step_name}
                                                         </span>
-                                                    </button>
+                                                    </>
                                                 ) : (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            const entityType = task.entity_type as 'asset' | 'shot';
-                                                            await fetchPipelineStepsByType(entityType);
-                                                            setEditingPipelineTaskId(task.id);
-                                                            setSelectedPipelineStepId(null);
-                                                        }}
-                                                        className="text-gray-500 italic text-sm px-3 py-1.5 bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-lg transition-all cursor-pointer"
-                                                        title="คลิกเพื่อเลือก Pipeline Step"
-                                                    >
+                                                    <span className="text-sm font-medium text-gray-400 italic">
                                                         ไม่ระบุ
-                                                    </button>
+                                                    </span>
                                                 )}
-                                            </div>
-                                        )}
+                                            </button>
+
+                                            {editingPipelineTaskId === task.id && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setEditingPipelineTaskId(null)}
+                                                        style={{ pointerEvents: 'none' }}
+                                                    />
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className={`absolute left-0 ${pipelineDropdownPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} z-[100] w-80 max-h-96 overflow-hidden bg-gray-800 border border-blue-500/40 rounded-lg shadow-2xl`}
+                                                        style={{ pointerEvents: 'auto' }}
+                                                    >
+                                                        {/* Header */}
+                                                        <div className="px-4 py-3 bg-gray-800 border-b border-gray-700/50">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-sm font-semibold text-gray-200">
+                                                                    เลือก Pipeline Step
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => setEditingPipelineTaskId(null)}
+                                                                    className="p-1 hover:bg-gray-700/50 rounded transition-colors"
+                                                                >
+                                                                    <X className="w-4 h-4 text-gray-400 hover:text-gray-200" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="max-h-72 overflow-y-auto">
+                                                            <div className="p-2">
+                                                                {/* ไม่ระบุ Option */}
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        const success = await updateTask(task.id, 'pipeline_step_id', null);
+                                                                        if (success) {
+                                                                            task.pipeline_step = null;
+                                                                        }
+                                                                        setEditingPipelineTaskId(null);
+                                                                    }}
+                                                                    className={`w-full flex items-center gap-3 px-3 py-2 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${!selectedPipelineStepId
+                                                                        ? 'bg-blue-500/20 border border-blue-500/40'
+                                                                        : 'hover:bg-gray-700/50 border border-transparent'
+                                                                    }`}
+                                                                >
+                                                                    <div className="w-3 h-3 rounded border-2 border-gray-500" />
+                                                                    <span className="text-sm text-gray-400 italic">ไม่ระบุ</span>
+                                                                </button>
+
+                                                                {/* Pipeline Steps */}
+                                                                {availablePipelineSteps.map(step => (
+                                                                    <button
+                                                                        key={step.id}
+                                                                        onClick={async () => {
+                                                                            setSelectedPipelineStepId(step.id);
+                                                                            const success = await updateTask(task.id, 'pipeline_step_id', step.id);
+                                                                            if (success) {
+                                                                                task.pipeline_step = step;
+                                                                            }
+                                                                            setEditingPipelineTaskId(null);
+                                                                        }}
+                                                                        className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${selectedPipelineStepId === step.id
+                                                                            ? 'border border-blue-500 bg-blue-500/10'
+                                                                            : 'border border-transparent hover:bg-gray-700/50'
+                                                                        }`}
+                                                                         style={{
+                                                                                                backgroundImage:
+                                                                                                    selectedPipelineStepId === step.id
+                                                                                                        ? `linear-gradient(to right, ${step.color_hex}20 0%, ${step.color_hex}05 40%, transparent 70%)`
+                                                                                                        : undefined,
+                                                                                                backgroundColor:
+                                                                                                    selectedPipelineStepId === step.id ? '#1f2937' : undefined // gray-800
+                                                                                            }}
+                                                                    >
+                                                                        <div
+                                                                            className="w-3 h-3 rounded flex-shrink-0"
+                                                                            style={{
+                                                                                backgroundColor: step.color_hex,
+                                                                                boxShadow: `0 0 8px ${step.color_hex}60`
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-sm font-medium text-gray-200 text-left">
+                                                                            {step.step_name}
+                                                                        </span>
+                                                                        {selectedPipelineStepId === step.id && (
+                                                                            <Check className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" />
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
 
                                     {/* Column #5: Description */}
@@ -585,126 +778,313 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                         </div>
                                     </td>
 
-                                    {/* Column #7: Assignees */}
+                                    {/* ⭐ Column #7: Assignees - แก้ไขใหม่ทั้งหมด */}
                                     <td className="px-4 py-4">
-                                        {task.assignees?.length > 0 ? (
-                                            <div className="relative inline-block">
-                                                <button
-                                                    onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
-                                                    className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all shadow-lg hover:shadow-xl"
-                                                >
-                                                    <Users className="w-4 h-4 text-slate-300" />
-                                                    <span className="text-sm font-semibold text-slate-200">
-                                                        {task.assignees.length}
+                                        <div className="relative inline-block" ref={assigneeDropdownRef}>
+                                            <button
+                                                onClick={() => {
+                                                    if (editingAssigneeTaskId === task.id) {
+                                                        setEditingAssigneeTaskId(null);
+                                                    } else {
+                                                        setEditingAssigneeTaskId(task.id);
+                                                        setSearchAssignee("");
+                                                    }
+                                                }}
+                                                className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all shadow-lg hover:shadow-xl"
+                                            >
+                                                <Users className="w-4 h-4 text-slate-300" />
+                                                <span className="text-sm font-semibold text-slate-200">
+                                                    {task.assignees?.length || 0}
+                                                </span>
+                                                {task.assignees?.length > 0 && isCurrentUserAssigned(task.assignees) && (
+                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                        คุณ
                                                     </span>
-                                                    {isCurrentUserAssigned(task.assignees) && (
-                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
-                                                            คุณ
-                                                        </span>
-                                                    )}
-                                                </button>
+                                                )}
+                                            </button>
 
-                                                {expandedTaskId === task.id && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-10 pointer-events-none" onClick={() => setExpandedTaskId(null)} />
-                                                        <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-full mt-2 z-[100]w-64 max-h-80 overflow-hidden bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl ring-1 ring-white/5">
-                                                            <div className="px-4 py-3 bg-gradient-to-r from-slate-700/50 to-slate-800/50 backdrop-blur-sm border-b border-slate-600/50">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Users className="w-4 h-4 text-slate-400" />
-                                                                        <span className="text-sm font-semibold text-slate-200">ผู้รับผิดชอบ</span>
-                                                                        <span className="px-2 py-0.5 rounded-md bg-slate-700 text-xs font-semibold text-slate-300">
-                                                                            {task.assignees.length}
-                                                                        </span>
-                                                                    </div>
-                                                                    <button onClick={() => setExpandedTaskId(null)} className="bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl">
-                                                                        <X className="w-4 h-4 text-gray-100" />
-                                                                    </button>
+                                            {editingAssigneeTaskId === task.id && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setEditingAssigneeTaskId(null)}
+                                                        style={{ pointerEvents: 'none' }}
+                                                    />
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className={`absolute left-0 ${assigneeDropdownPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} z-[100] w-80 max-h-96 overflow-hidden bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl ring-1 ring-white/5`}
+                                                        style={{ pointerEvents: 'auto' }}
+                                                    >
+                                                        {/* Header */}
+                                                        <div className="px-4 py-3 bg-gradient-to-r from-slate-700/50 to-slate-800/50 backdrop-blur-sm border-b border-slate-600/50">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Users className="w-4 h-4 text-slate-400" />
+                                                                    <span className="text-sm font-semibold text-slate-200">
+                                                                        จัดการผู้รับผิดชอบ
+                                                                    </span>
+                                                                    <span className="px-2 py-0.5 rounded-md bg-slate-700 text-xs font-semibold text-slate-300">
+                                                                        {task.assignees?.length || 0}
+                                                                    </span>
                                                                 </div>
+                                                                <button
+                                                                    onClick={() => setEditingAssigneeTaskId(null)}
+                                                                    className="p-1 hover:bg-slate-700/50 rounded transition-colors"
+                                                                >
+                                                                    <X className="w-4 h-4 text-slate-400 hover:text-slate-200" />
+                                                                </button>
                                                             </div>
-                                                            <div className="p-2 max-h-64 overflow-y-auto">
-                                                                {sortAssignees(task.assignees, getCurrentUser().id).map((user) => {
-                                                                    const isMe = user.id === getCurrentUser().id;
-                                                                    return (
-                                                                        <div key={user.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-700/50 transition-colors group/user">
-                                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ring-blue-500/30'} group-hover/user:scale-110 transition-transform`}>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="ค้นหาชื่อ..."
+                                                                value={searchAssignee}
+                                                                onChange={(e) => setSearchAssignee(e.target.value)}
+                                                                className="w-full px-3 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                                                            />
+                                                        </div>
+
+                                                        <div className="max-h-72 overflow-y-auto">
+                                                            {/* Current Assignees */}
+                                                            {task.assignees && task.assignees.length > 0 && (
+                                                                <div className="p-2 border-b border-slate-700/50">
+                                                                    <div className="text-xs font-medium text-slate-500 px-2 py-1">
+                                                                        ผู้รับผิดชอบปัจจุบัน
+                                                                    </div>
+                                                                    {sortAssignees(task.assignees, getCurrentUser().id).map((user) => {
+                                                                        const isMe = user.id === getCurrentUser().id;
+                                                                        return (
+                                                                            <div
+                                                                                key={user.id}
+                                                                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/user"
+                                                                            >
+                                                                                <div
+                                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe
+                                                                                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30'
+                                                                                        : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ring-blue-500/30'
+                                                                                        }`}
+                                                                                >
+                                                                                    {user.username[0].toUpperCase()}
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="text-sm font-medium text-slate-200 truncate">
+                                                                                        {user.username}
+                                                                                    </p>
+                                                                                </div>
+                                                                                {isMe && (
+                                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                                        คุณ
+                                                                                    </span>
+                                                                                )}
+                                                                                <button
+                                                                                    onClick={() => removeAssignee(task.id, user.id)}
+                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1.5 hover:bg-red-500/20 rounded-lg transition-all"
+                                                                                    title="ลบออก"
+                                                                                >
+                                                                                    <X className="w-4 h-4 text-red-400 hover:text-red-300" />
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Available Users */}
+                                                            {getAvailableAssignees(task).length > 0 && (
+                                                                <div className="p-2">
+                                                                    <div className="text-xs font-medium text-slate-500 px-2 py-1">
+                                                                        เพิ่มผู้รับผิดชอบ
+                                                                    </div>
+                                                                    {getAvailableAssignees(task).map((user) => (
+                                                                        <button
+                                                                            key={user.id}
+                                                                            onClick={() => addAssignee(task.id, user.id)}
+                                                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
+                                                                        >
+                                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-sm font-bold text-white shadow-lg">
                                                                                 {user.username[0].toUpperCase()}
                                                                             </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-sm font-medium text-slate-200 truncate">{user.username}</p>
+                                                                            <div className="flex-1 text-left">
+                                                                                <p className="text-sm font-medium text-slate-300">
+                                                                                    {user.username}
+                                                                                </p>
                                                                             </div>
-                                                                            {isMe && (
-                                                                                <span className="px-2 py-1 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">คุณ</span>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
+                                                                            <UserPlus className="w-4 h-4 text-slate-500 group-hover/add:text-blue-400 transition-colors" />
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Empty States */}
+                                                            {getAvailableAssignees(task).length === 0 && (!task.assignees || task.assignees.length === 0) && (
+                                                                <div className="p-8 text-center">
+                                                                    <Users className="w-12 h-12 text-slate-700 mx-auto mb-2" />
+                                                                    <p className="text-sm text-slate-500">ไม่มีผู้ใช้งาน</p>
+                                                                </div>
+                                                            )}
+
+                                                            {getAvailableAssignees(task).length === 0 && task.assignees && task.assignees.length > 0 && (
+                                                                <div className="p-4 text-center">
+                                                                    <p className="text-xs text-slate-500">เพิ่มครบทุกคนแล้ว</p>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-600 text-sm italic">ไม่มี</span>
-                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
 
-                                    {/* Column #8: Reviewers */}
+                                    {/* ⭐ Column #8: Reviewers - แก้ไขใหม่ทั้งหมด */}
                                     <td className="px-4 py-4">
-                                        {task.reviewers && task.reviewers.length > 0 ? (
-                                            <div className="relative inline-block">
-                                                <button
-                                                    onClick={() => setExpandedReviewerTaskId(expandedReviewerTaskId === task.id ? null : task.id)}
-                                                    className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 border border-purple-500/30 hover:border-purple-400/50 transition-all shadow-lg hover:shadow-xl"
-                                                >
-                                                    <Users className="w-4 h-4 text-purple-300" />
-                                                    <span className="text-sm font-semibold text-purple-200">{task.reviewers.length}</span>
-                                                    {isCurrentUserReviewer(task.reviewers) && (
-                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">คุณ</span>
-                                                    )}
-                                                </button>
-
-                                                {expandedReviewerTaskId === task.id && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-10 pointer-events-none" onClick={() => setExpandedReviewerTaskId(null)} />
-                                                        <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-full mt-2 z-[100]w-64 max-h-80 overflow-hidden bg-gradient-to-br from-purple-800 via-purple-800 to-purple-900 border border-purple-600/50 rounded-xl shadow-2xl ring-1 ring-white/5">
-                                                            <div className="px-4 py-3 bg-gradient-to-r from-purple-700/50 to-purple-800/50 backdrop-blur-sm border-b border-purple-600/50">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Users className="w-4 h-4 text-purple-400" />
-                                                                        <span className="text-sm font-semibold text-purple-200">Reviewer</span>
-                                                                        <span className="px-2 py-0.5 rounded-md bg-purple-700 text-xs font-semibold text-purple-300">{task.reviewers.length}</span>
-                                                                    </div>
-                                                                    <button onClick={() => setExpandedReviewerTaskId(null)} className="text-purple-400 hover:text-purple-200 transition-colors p-1 rounded-md hover:bg-purple-700/50">
-                                                                        <X className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="p-2 max-h-64 overflow-y-auto">
-                                                                {sortAssignees(task.reviewers, getCurrentUser().id).map((reviewer) => {
-                                                                    const isMe = reviewer.id === getCurrentUser().id;
-                                                                    return (
-                                                                        <div key={reviewer.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-purple-700/50 transition-colors group/user">
-                                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30' : 'bg-gradient-to-br from-purple-500 to-pink-600 text-white ring-purple-500/30'} group-hover/user:scale-110 transition-transform`}>
-                                                                                {reviewer.username[0].toUpperCase()}
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-sm font-medium text-purple-200 truncate">{reviewer.username}</p>
-                                                                            </div>
-                                                                            {isMe && (
-                                                                                <span className="px-2 py-1 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">คุณ</span>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    </>
+                                        <div className="relative inline-block" ref={reviewerDropdownRef}>
+                                            <button
+                                                onClick={() => {
+                                                    if (editingReviewerTaskId === task.id) {
+                                                        setEditingReviewerTaskId(null);
+                                                    } else {
+                                                        setEditingReviewerTaskId(task.id);
+                                                        setSearchReviewer("");
+                                                    }
+                                                }}
+                                                className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 border border-purple-500/30 hover:border-purple-400/50 transition-all shadow-lg hover:shadow-xl"
+                                            >
+                                                <Users className="w-4 h-4 text-purple-300" />
+                                                <span className="text-sm font-semibold text-purple-200">
+                                                    {task.reviewers?.length || 0}
+                                                </span>
+                                                {task.reviewers && task.reviewers.length > 0 && isCurrentUserReviewer(task.reviewers) && (
+                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                        คุณ
+                                                    </span>
                                                 )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-600 text-sm italic">ไม่มี</span>
-                                        )}
+                                            </button>
+
+                                            {editingReviewerTaskId === task.id && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setEditingReviewerTaskId(null)}
+                                                        style={{ pointerEvents: 'none' }}
+                                                    />
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className={`absolute left-0 ${reviewerDropdownPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} z-[100] w-80 max-h-96 overflow-hidden bg-gradient-to-br from-purple-800 via-purple-800 to-purple-900 border border-purple-600/50 rounded-xl shadow-2xl ring-1 ring-white/5`}
+                                                        style={{ pointerEvents: 'auto' }}
+                                                    >
+                                                        <div className="px-4 py-3 bg-gradient-to-r from-purple-700/50 to-purple-800/50 backdrop-blur-sm border-b border-purple-600/50">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Users className="w-4 h-4 text-purple-400" />
+                                                                    <span className="text-sm font-semibold text-purple-200">
+                                                                        จัดการ Reviewer
+                                                                    </span>
+                                                                    <span className="px-2 py-0.5 rounded-md bg-purple-700 text-xs font-semibold text-purple-300">
+                                                                        {task.reviewers?.length || 0}
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setEditingReviewerTaskId(null)}
+                                                                    className="p-1 hover:bg-purple-700/50 rounded transition-colors"
+                                                                >
+                                                                    <X className="w-4 h-4 text-purple-400 hover:text-purple-200" />
+                                                                </button>
+                                                            </div>
+
+                                                            <input
+                                                                type="text"
+                                                                placeholder="ค้นหาชื่อ..."
+                                                                value={searchReviewer}
+                                                                onChange={(e) => setSearchReviewer(e.target.value)}
+                                                                className="w-full px-3 py-1.5 bg-purple-900/50 border border-purple-600/50 rounded-lg text-sm text-purple-200 placeholder-purple-400 focus:outline-none focus:border-purple-500/50"
+                                                            />
+                                                        </div>
+
+                                                        <div className="max-h-72 overflow-y-auto">
+                                                            {task.reviewers && task.reviewers.length > 0 && (
+                                                                <div className="p-2 border-b border-purple-700/50">
+                                                                    <div className="text-xs font-medium text-purple-400 px-2 py-1">
+                                                                        Reviewer ปัจจุบัน
+                                                                    </div>
+                                                                    {sortAssignees(task.reviewers, getCurrentUser().id).map((reviewer) => {
+                                                                        const isMe = reviewer.id === getCurrentUser().id;
+                                                                        return (
+                                                                            <div
+                                                                                key={reviewer.id}
+                                                                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-700/50 transition-colors group/user"
+                                                                            >
+                                                                                <div
+                                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe
+                                                                                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30'
+                                                                                        : 'bg-gradient-to-br from-purple-500 to-pink-600 text-white ring-purple-500/30'
+                                                                                        }`}
+                                                                                >
+                                                                                    {reviewer.username[0].toUpperCase()}
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="text-sm font-medium text-purple-200 truncate">
+                                                                                        {reviewer.username}
+                                                                                    </p>
+                                                                                </div>
+                                                                                {isMe && (
+                                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                                        คุณ
+                                                                                    </span>
+                                                                                )}
+                                                                                <button
+                                                                                    onClick={() => removeReviewer(task.id, reviewer.id)}
+                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1.5 hover:bg-red-500/20 rounded-lg transition-all"
+                                                                                    title="ลบออก"
+                                                                                >
+                                                                                    <X className="w-4 h-4 text-red-400 hover:text-red-300" />
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+
+                                                            {getAvailableReviewers(task).length > 0 && (
+                                                                <div className="p-2">
+                                                                    <div className="text-xs font-medium text-purple-400 px-2 py-1">
+                                                                        เพิ่ม Reviewer
+                                                                    </div>
+                                                                    {getAvailableReviewers(task).map((user) => (
+                                                                        <button
+                                                                            key={user.id}
+                                                                            onClick={() => addReviewer(task.id, user.id)}
+                                                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-700/50 transition-colors group/add"
+                                                                        >
+                                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                                                                {user.username[0].toUpperCase()}
+                                                                            </div>
+                                                                            <div className="flex-1 text-left">
+                                                                                <p className="text-sm font-medium text-purple-200">
+                                                                                    {user.username}
+                                                                                </p>
+                                                                            </div>
+                                                                            <UserPlus className="w-4 h-4 text-purple-400 group-hover/add:text-purple-200 transition-colors" />
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {getAvailableReviewers(task).length === 0 && (!task.reviewers || task.reviewers.length === 0) && (
+                                                                <div className="p-8 text-center">
+                                                                    <Users className="w-12 h-12 text-purple-700 mx-auto mb-2" />
+                                                                    <p className="text-sm text-purple-400">ไม่มีผู้ใช้งาน</p>
+                                                                </div>
+                                                            )}
+
+                                                            {getAvailableReviewers(task).length === 0 && task.reviewers && task.reviewers.length > 0 && (
+                                                                <div className="p-4 text-center">
+                                                                    <p className="text-xs text-purple-400">เพิ่มครบทุกคนแล้ว</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
 
                                     {/* Column #9: Start Date */}
