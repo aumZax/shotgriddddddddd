@@ -4,10 +4,9 @@ import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import { Eye, Image, Upload, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
+import NoteTab from "../../../components/NoteTab";
 
 
-
-// Status configuration
 const statusConfig = {
     wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
@@ -15,6 +14,25 @@ const statusConfig = {
 };
 
 type StatusType = keyof typeof statusConfig;
+type FilterType = 'All' | 'ART' | 'MDL' | 'RIG' | 'TXT';
+type CheckedState = Record<FilterType, boolean>;
+type NoteType = 'Client' | 'Internal';
+
+interface Note {
+    id: number;
+    project_id: number;
+    note_type: string;
+    type_id: number;
+    subject: string;
+    body: string;
+    file_url?: string;
+    author: string;
+    status: string;
+    visibility: string;
+    created_at: string;
+    tasks?: string[];
+    assigned_people?: string[];
+}
 
 interface Activity {
     id: number;
@@ -35,21 +53,6 @@ interface AssetData {
     dueDate?: string;
 }
 
-// ⭐ เพิ่ม type ที่ขาดหาย (เพิ่มหลังบรรทัด TaskAssignee)
-type TaskReviewer = {
-    id: number;
-    username: string;
-};
-
-type PipelineStep = {
-    id: number;
-    step_name: string;
-    step_code: string;
-    color_hex: string;
-    entity_type?: 'shot' | 'asset';
-};
-
-// ⭐ อัปเดต Task type (แทนที่ Task type เดิม)
 type Task = {
     id: number;
     project_id: number;
@@ -63,14 +66,39 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers?: TaskReviewer[];           // ⭐ เพิ่มบรรทัดนี้
-    pipeline_step?: PipelineStep | null;  // ⭐ เพิ่มบรรทัดนี้
+    reviewers?: TaskReviewer[];
+    pipeline_step?: PipelineStep | null;
+};
+
+interface Person {
+    id: number;
+    name: string;
+    email: string;
+    status?: string;
+    permissionGroup?: string;
+    projects?: string;
+    groups?: string;
+    createdAt?: string;
+}
+
+type TaskReviewer = {
+    id: number;
+    username: string;
+};
+
+type PipelineStep = {
+    id: number;
+    step_name: string;
+    step_code: string;
+    color_hex: string;
+    entity_type?: 'shot' | 'asset';
 };
 
 type TaskAssignee = {
     id: number;
     username: string;
 };
+
 
 const assetFieldMap: Record<keyof AssetData, string | null> = {
     id: null,
@@ -126,8 +154,94 @@ export default function Others_Asset() {
     const [currentUser] = useState('Current User');
 
     const [showPreview, setShowPreview] = useState(false);
+    const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
+    const [type, setType] = useState<NoteType | null>(null);
+    const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
+    const [checked, setChecked] = useState<CheckedState>({
+        All: false,
+        ART: false,
+        MDL: false,
+        RIG: false,
+        TXT: false,
+    });
 
+    const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
+    const [query, setQuery] = useState('');
+    const [open, setOpen] = useState(false);
+    const [allPeople, setAllPeople] = useState<Person[]>([]);
+    const [loading, setLoading] = useState(true);
 
+    const [files, setFiles] = useState<File[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [, setSelectedFile] = useState<File | null>(null);
+
+    const [openAssignedDropdown, setOpenAssignedDropdown] = useState<string | number | null>(null);
+    const [selectedTasks, setSelectedTasks] = useState<string[]>([])
+    const [subject, setSubject] = useState(
+        assetData?.asset_name ? `Note on ${assetData.asset_name}` : "Thawat's Note on Alice"
+    );
+    const [body, setBody] = useState('');
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [loadingNotes, setLoadingNotes] = useState(false);
+
+    // Context menu for notes
+    const [noteContextMenu, setNoteContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        note: Note;
+    } | null>(null);
+
+    // Delete confirmation modal
+    const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
+        noteId: number;
+        subject: string;
+    } | null>(null);
+
+    const handleFiletaskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
+
+        const selected = Array.from(e.target.files);
+        setFiles((prev) => [...prev, ...selected]);
+
+        e.target.value = '';
+    };
+
+    const removetaskFile = (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
+    };
+
+    useEffect(() => {
+        if (activeTab === 'Notes') {
+            fetchNotes();
+        }
+    }, [activeTab, assetData?.id]);
+
+    useEffect(() => {
+        const fetchPeople = async () => {
+            try {
+                const response = await fetch(ENDPOINTS.GETALLPEOPLE);
+                const data = await response.json();
+                setAllPeople(data);
+            } catch (error) {
+                console.error('Error fetching people:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPeople();
+    }, []);
+
+    // Close context menu when clicking outside
+    useEffect(() => {
+        const closeMenu = () => setNoteContextMenu(null);
+
+        if (noteContextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [noteContextMenu]);
 
     useEffect(() => {
         const selectedAsset = getSelectedAsset();
@@ -135,6 +249,82 @@ export default function Others_Asset() {
             setAssetData(selectedAsset);
         }
     }, []);
+
+    useEffect(() => {
+        if (deleteNoteConfirm) {
+            setNoteContextMenu(null);
+        }
+    }, [deleteNoteConfirm]);
+
+    const fetchNotes = async () => {
+        if (!assetData?.id) return;
+
+        setLoadingNotes(true);
+        try {
+            const response = await fetch(`${ENDPOINTS.GET_NOTES}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    projectId: localStorage.getItem("projectId"),
+                    noteType: 'asset',
+                    typeId: assetData.id
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setNotes(data);
+        } catch (error) {
+            console.error('Error fetching notes:', error);
+            setNotes([]);
+        } finally {
+            setLoadingNotes(false);
+        }
+    };
+
+    const handleDeleteNote = async (noteId: number) => {
+        try {
+            const response = await axios.delete( `${ENDPOINTS.DELETE_NOTE}/${noteId}` );
+
+            if (response.status !== 200 && response.status !== 204) {
+                throw new Error(`Delete failed with status ${response.status}`);
+            }
+
+            // close context menu
+            setNoteContextMenu(null);
+
+            // optimistic update
+            setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
+
+            // show success alert ทันที
+
+        } catch (err) {
+            console.error("❌ DELETE FAILED:", err);
+            alert(err instanceof Error ? err.message : "Failed to delete note");
+            fetchNotes();
+        }
+    };
+
+    const handleNoteContextMenu = (
+        e: React.MouseEvent,
+        note: Note
+    ) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // just open context menu for this note (NoteTab already closes its own dropdown)
+        setNoteContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            note
+        });
+    };
 
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -179,6 +369,120 @@ export default function Others_Asset() {
         }
     };
 
+    const handleCreateNote = async () => {
+        try {
+            setUploading(true);
+
+            let uploadedFileUrl = null;
+
+            const fileToUpload = files[0];
+
+            console.log('📁 Files array:', files);
+            console.log('📁 File to upload:', fileToUpload);
+
+            if (fileToUpload) {
+                console.log('📤 Uploading file:', fileToUpload.name);
+
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
+                formData.append("assetId", assetData?.id.toString() || "");
+                formData.append("fileName", fileToUpload.name);
+                formData.append("type", "note");
+
+
+                const uploadResponse = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('📥 Upload response status:', uploadResponse.status);
+
+                if (!uploadResponse.ok) {
+                    throw new Error('File upload failed');
+                }
+
+                const uploadData = await uploadResponse.json();
+                console.log('✅ Upload successful:', uploadData);
+                uploadedFileUrl = uploadData.file.fileUrl;
+            } else {
+                console.log('ℹ️ No file selected');
+            }
+
+            const noteData = {
+                projectId: projectId ?? null,
+                noteType: 'asset',
+                typeId: assetData?.id ?? null,
+                subject: subject || '',
+                body: body || '',
+                fileUrl: uploadedFileUrl ?? null,
+                author: currentUser || 'Unknown',
+                status: 'opn',
+                visibility: type ?? null,
+                tasks: (selectedTasks && selectedTasks.length > 0) ? selectedTasks : null,
+                assignedPeople: (selectedPeople && selectedPeople.length > 0)
+                    ? selectedPeople.map((person: Person) => person.id)
+                    : null
+            };
+
+            console.log('📝 Creating note with data:', noteData);
+
+            const createResponse = await fetch(ENDPOINTS.CREATE_ASSET_NOTE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(noteData)
+            });
+
+            if (!createResponse.ok) {
+                const errorData = await createResponse.json();
+                console.error('Create note error:', errorData);
+                throw new Error('Failed to create note: ' + JSON.stringify(errorData));
+            }
+
+            const result = await createResponse.json();
+            console.log('✅ Note created successfully:', result);
+
+            // 3. Success
+            alert('Note created successfully!');
+            setShowCreateAsset_Note(false);
+
+            // Reset form
+            setSelectedFile(null);
+            setSelectedPeople([]);
+            setSelectedTasks([]);
+            setFiles([]);
+            setSubject(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "Thawat's Note on Alice");
+            setBody('');
+            setType(null);
+
+            // 4. Refresh notes
+            fetchNotes();
+
+        } catch (error) {
+            console.error('Error creating note:', error);
+            alert('Failed to create note. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const filteredPeople = allPeople.filter(
+        (person: Person) =>
+            person.name.toLowerCase().includes(query.toLowerCase()) &&
+            !selectedPeople.some((selected: Person) => selected.id === person.id)
+    );
+
+    const addPerson = (person: Person) => {
+        setSelectedPeople([...selectedPeople, person]);
+        setQuery('');
+        setOpen(false);
+    };
+
+    const removePerson = (personId: number) => {
+        setSelectedPeople(selectedPeople.filter((person: Person) => person.id !== personId));
+    };
+
     const handleClickOutside = () => {
         if (showStatusMenu) setShowStatusMenu(false);
     };
@@ -201,6 +505,34 @@ export default function Others_Asset() {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSubmitComment();
+        }
+    };
+
+    const handletaskChange = (type: FilterType) => {
+        if (type === 'All') {
+            const newValue = !checked.All;
+
+            const updated: CheckedState = {
+                All: newValue,
+                ART: newValue,
+                MDL: newValue,
+                RIG: newValue,
+                TXT: newValue,
+            };
+
+            setChecked(updated);
+        } else {
+            const updated: CheckedState = {
+                ...checked,
+                [type]: !checked[type],
+            };
+
+            const allChecked = types.every((t) =>
+                t === type ? !checked[type] : checked[t]
+            );
+
+            updated.All = allChecked;
+            setChecked(updated);
         }
     };
 
@@ -244,25 +576,14 @@ export default function Others_Asset() {
         }
     };
 
-
-    // ++++++++++++++++++++++++++++++++++++++ storage +++++++++++++++++++++++++++++++
-
     const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
     const AssetID = stored.id;
-    console.log("🔍 AssetID:", AssetID);  // ⭐ เพิ่ม log
-
-
+    console.log(AssetID)
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    console.log("🔍 projectId:", projectId);  // ⭐ เพิ่ม log
-
-
-    // ++++++++++++++++++++++++++++++++++++++++ right
-    const [rightPanelTab, setRightPanelTab] = useState('notes'); // ← เพิ่มบรรทัดนี้
-
+    const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
-
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -279,11 +600,7 @@ export default function Others_Asset() {
         }
     };
 
-
-
-    // +++++++++++++++++++++++++++++ sequence task +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const [tasks, setTasks] = useState<Task[]>([]);
-
 
     useEffect(() => {
         console.log("🔍 AssetID:", AssetID);
@@ -295,7 +612,7 @@ export default function Others_Asset() {
             return;
         }
 
-        axios.post<Task[]>(ENDPOINTS.ASSET_TASK, {
+        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
             project_id: projectId,
             entity_type: "asset",
             entity_id: AssetID
@@ -307,9 +624,8 @@ export default function Others_Asset() {
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
             });
-    }, [AssetID, projectId]); // เพิ่ม dependency
+    }, [AssetID, projectId]);
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Date  ++++++++++++++++++++++++++++++++++++++++++
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
 
@@ -323,10 +639,8 @@ export default function Others_Asset() {
         return date.toLocaleDateString('th-TH', options);
     };
 
-
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
     const [isPanelOpen, setIsPanelOpen] = useState(false);
+
     useEffect(() => {
         if (selectedTask) {
             setIsPanelOpen(false);
@@ -334,8 +648,6 @@ export default function Others_Asset() {
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
-
-
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -446,11 +758,21 @@ export default function Others_Asset() {
 
             case 'Notes':
                 return (
-                    <div className="text-center text-gray-500 py-8">
-                        No notes available
-                    </div>
+                    <NoteTab
+                        notes={notes}
+                        loadingNotes={loadingNotes}
+                        openAssignedDropdown={openAssignedDropdown}
+                        setOpenAssignedDropdown={setOpenAssignedDropdown}
+                        onContextMenu={handleNoteContextMenu}
+                        onDeleteNote={(noteId: number) => {
+                            const note = notes.find(n => n.id === noteId);
+                            setDeleteNoteConfirm({
+                                noteId,
+                                subject: note?.subject || ''
+                            });
+                        }}
+                    />
                 );
-
             case 'Publishes':
                 return (
                     <div className="text-center text-gray-500 py-8">
@@ -478,8 +800,8 @@ export default function Others_Asset() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-900" onClick={handleClickOutside}
-            onMouseMove={handleMouseMove}  // ← เพิ่มตรงนี้
-            onMouseUp={() => setIsResizing(false)}  // ← เพิ่มตรงนี้ด้วย
+            onMouseMove={handleMouseMove}
+            onMouseUp={() => setIsResizing(false)}
         >
             <div className="pt-14">
                 <Navbar_Project activeTab="other" />
@@ -507,9 +829,9 @@ export default function Others_Asset() {
 
                                 <div className="max-w-7xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
                                     {assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                        <video src={assetData.thumbnail} className="w-full h-full object-contain rounded-lg" controls autoPlay />
+                                        <video src={ENDPOINTS.image_url + assetData.thumbnail} className="w-full h-full object-contain rounded-lg" controls autoPlay />
                                     ) : (
-                                        <img src={assetData.thumbnail} alt="Preview" className="w-full h-full object-contain rounded-lg" />
+                                        <img src={ENDPOINTS.image_url + assetData.thumbnail} alt="Preview" className="w-full h-full object-contain rounded-lg" />
                                     )}
                                 </div>
                             </div>
@@ -518,12 +840,10 @@ export default function Others_Asset() {
                         <div className="flex gap-6 w-full items-start justify-between mb-6">
                             <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
                                 {assetData.thumbnail ? (
-                                    // ตรวจสอบว่าเป็นวิดีโอหรือรูปภาพ
                                     assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                        // แสดงวิดีโอ
                                         <div className="w-full h-full rounded-lg overflow-hidden">
                                             <video
-                                                src={assetData.thumbnail}
+                                                src={ENDPOINTS.image_url + assetData.thumbnail}
                                                 className="w-full h-full object-cover"
                                                 controls
                                                 muted
@@ -533,9 +853,8 @@ export default function Others_Asset() {
                                             </video>
                                         </div>
                                     ) : (
-                                        // แสดงรูปภาพ
                                         <img
-                                            src={ENDPOINTS.image_url+assetData.thumbnail}
+                                            src={ENDPOINTS.image_url + assetData.thumbnail}
                                             alt="Asset thumbnail"
                                             className="w-full h-full object-cover rounded-lg"
                                         />
@@ -549,7 +868,6 @@ export default function Others_Asset() {
                                     </div>
                                 )}
 
-                                {/* ปุ่มเมนู - แสดงเมื่อมี thumbnail */}
                                 {assetData.thumbnail && (
                                     <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
                                         <div className="flex gap-3">
@@ -576,9 +894,12 @@ export default function Others_Asset() {
 
                                                         const file = e.target.files[0];
                                                         const formData = new FormData();
+
                                                         formData.append("assetId", assetData.id.toString());
                                                         formData.append("file", file);
+                                                        formData.append("fileName", file.name);
                                                         formData.append("oldImageUrl", assetData.thumbnail || "");
+                                                        formData.append("type", "thumbnail");
 
                                                         try {
                                                             const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
@@ -621,7 +942,6 @@ export default function Others_Asset() {
                                     </div>
                                 )}
 
-                                {/* Upload Input - แสดงเมื่อไม่มี thumbnail */}
                                 {!assetData.thumbnail && (
                                     <input
                                         type="file"
@@ -836,6 +1156,7 @@ export default function Others_Asset() {
                                 >
                                     Add Note
                                 </button>
+
                             )}
 
                             {activeTab === 'Versions' && (
@@ -846,8 +1167,272 @@ export default function Others_Asset() {
                                     Add Version
                                 </button>
                             )}
-                        </h3>
 
+                        </h3>
+                        {showCreateAsset_Note && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-40 bg-black/60"
+                                    onClick={() => setShowCreateAsset_Note(false)}
+                                />
+
+                                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                                    <div
+                                        style={{
+                                            transform: `translate(${noteModalPosition?.x || 0}px, ${noteModalPosition?.y || 0}px)`
+                                        }}
+                                        className="relative w-full max-w-xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden pointer-events-auto"
+                                    >
+                                        <div
+                                            onMouseDown={(e) => {
+                                                const startX = e.clientX;
+                                                const startY = e.clientY;
+                                                const startPos = noteModalPosition || { x: 0, y: 0 };
+
+                                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                                    const deltaX = moveEvent.clientX - startX;
+                                                    const deltaY = moveEvent.clientY - startY;
+                                                    setNoteModalPosition({
+                                                        x: startPos.x + deltaX,
+                                                        y: startPos.y + deltaY
+                                                    });
+                                                };
+
+                                                const handleMouseUp = () => {
+                                                    document.removeEventListener('mousemove', handleMouseMove);
+                                                    document.removeEventListener('mouseup', handleMouseUp);
+                                                };
+
+                                                document.addEventListener('mousemove', handleMouseMove);
+                                                document.addEventListener('mouseup', handleMouseUp);
+                                            }}
+                                            className="px-5 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none"
+                                        >
+                                            <div className="flex items-baseline justify-between">
+                                                <div className="flex items-baseline gap-2">
+                                                    <h2 className="text-base font-semibold text-white">New Note</h2>
+                                                    <span className="text-xs text-blue-300/60">- Global Form</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => setShowCreateAsset_Note(false)}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    className="text-gray-400 hover:text-white text-xl leading-none transition-colors"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="px-5 py-4 space-y-3">
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    Links
+                                                </label>
+                                                <input
+                                                    disabled
+                                                    type="text"
+                                                    defaultValue={assetData?.asset_name || ''}
+                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    📄 Tasks
+                                                </label>
+                                                <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg">
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                                                        {(['All', 'ART', 'MDL', 'RIG', 'TXT'] as FilterType[]).map((t) => (
+                                                            <label key={t} className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={checked[t]}
+                                                                    onChange={() => handletaskChange(t)}
+                                                                    className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
+                                                                />
+                                                                <span className="text-xs text-gray-300">{t}</span>
+                                                            </label>
+                                                        ))}
+
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    Attach files
+                                                </label>
+
+                                                <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-blue-500/30 bg-[#0a1018] text-blue-200 text-sm cursor-pointer hover:bg-blue-500/10 transition-all">
+                                                    <svg
+                                                        className="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
+                                                    </svg>
+                                                    Upload file
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        onChange={handleFiletaskChange}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+
+                                                {files.length > 0 && (
+                                                    <div className="space-y-1 mt-1">
+                                                        {files.map((file, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="flex items-center justify-between px-2 py-1 text-xs bg-blue-500/10 border border-blue-500/20 rounded"
+                                                            >
+                                                                <span className="truncate text-blue-100">
+                                                                    {file.name}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removetaskFile(index)}
+                                                                    className="text-blue-300 hover:text-red-400"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1.5 relative">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    To
+                                                </label>
+
+                                                <div className="flex flex-wrap gap-1 mb-1">
+                                                    {selectedPeople.map((person) => (
+                                                        <span
+                                                            key={person.id}
+                                                            className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-200 rounded"
+                                                        >
+                                                            {person.name}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removePerson(person.id)}
+                                                                className="text-blue-300 hover:text-red-400"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                <input
+                                                    type="text"
+                                                    value={query}
+                                                    onChange={(e) => {
+                                                        setQuery(e.target.value);
+                                                        setOpen(true);
+                                                    }}
+                                                    onFocus={() => setOpen(true)}
+                                                    onBlur={() => setTimeout(() => setOpen(false), 200)}
+                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                                                    placeholder={loading ? "Loading..." : "Add people..."}
+                                                    disabled={loading}
+                                                />
+
+                                                {open && filteredPeople.length > 0 && (
+                                                    <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                        {filteredPeople.map((person) => (
+                                                            <div
+                                                                key={person.id}
+                                                                onClick={() => addPerson(person)}
+                                                                className="px-3 py-1.5 text-sm text-gray-200 hover:bg-blue-500/20 cursor-pointer"
+                                                            >
+                                                                <div className="font-medium">{person.name}</div>
+                                                                <div className="text-xs text-gray-400">{person.email}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {open && query && filteredPeople.length === 0 && !loading && (
+                                                    <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+                                                        No people found
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    Subject
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={subject}
+                                                    onChange={(e) => setSubject(e.target.value)}
+                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    Type
+                                                </label>
+
+                                                <select
+                                                    value={type ?? ''}
+                                                    onChange={(e) => setType(e.target.value as NoteType)}
+                                                    className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
+                                                    ${type === null
+                                                            ? 'border-red-500/50 text-gray-400'
+                                                            : 'border-blue-500/30 text-blue-50'}
+                                                                focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
+                                                    `}
+                                                >
+                                                    <option value="" disabled hidden>
+                                                        — Please select —
+                                                    </option>
+                                                    <option value="Client">Client</option>
+                                                    <option value="Internal">Internal</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-gray-300">
+                                                    Message
+                                                </label>
+                                                <textarea
+                                                    value={body}
+                                                    onChange={(e) => setBody(e.target.value)}
+                                                    placeholder="Write your note here..."
+                                                    rows={3}
+                                                    className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
+                                            <button
+                                                onClick={() => setShowCreateAsset_Note(false)}
+                                                className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
+                                            >
+                                                Cancel
+                                            </button>
+
+                                            <button
+                                                className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                onClick={handleCreateNote}
+                                                disabled={uploading}
+                                            >
+                                                {uploading ? 'Creating...' : 'Create Note'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <div className="mt-4">
                             {renderTabContent()}
@@ -907,39 +1492,6 @@ export default function Others_Asset() {
                 </div>
             )}
 
-            {showCreateAsset_Note && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/60"
-                        onClick={() => setShowCreateAsset_Note(false)}
-                    />
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-t flex items-center justify-between">
-                            <h2 className="text-lg text-gray-200 font-normal">
-                                Create a new Note
-                            </h2>
-                            <button
-                                onClick={() => setShowCreateAsset_Note(false)}
-                                className="text-gray-400 hover:text-white text-xl"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
-                            <button
-                                onClick={() => setShowCreateAsset_Note(false)}
-                                className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button className="px-4 h-9 bg-[#2d7a9e] hover:bg-[#3a8db5] text-white text-sm rounded">
-                                Create Note
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {showCreateAsset_Versions && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div
@@ -973,9 +1525,100 @@ export default function Others_Asset() {
                 </div>
             )}
 
+            {noteContextMenu && (
+                <div
+                    className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{
+                        left: noteContextMenu.x,
+                        top: noteContextMenu.y,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            if (noteContextMenu) {
+                                setDeleteNoteConfirm({
+                                    noteId: noteContextMenu.note.id,
+                                    subject: noteContextMenu.note.subject,
+                                });
+                            }
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                    >
+                        🗑️ Delete Note
+                    </button>
+                </div>
+            )}
 
+            {deleteNoteConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setDeleteNoteConfirm(null)}
+                    />
 
-            {/* Right Panel - Floating Card */}
+                    <div
+                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl animate-in fade-in zoom-in-95"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">
+                                        Delete Note
+                                    </h3>
+                                    <p className="text-sm text-zinc-400">
+                                        This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">
+                                    Are you sure you want to delete this note?
+                                </p>
+                                <p className="font-semibold text-zinc-100 truncate">
+                                    "{deleteNoteConfirm.subject}"
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteNoteConfirm(null);
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteNote(deleteNoteConfirm.noteId);
+                                        alert('ลบสำเร็จแล้ว');
+
+                                        // close modal
+                                        setDeleteNoteConfirm(null);
+
+                                        // refresh server data (background)
+                                        fetchNotes();
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                >
+                                    Delete Note
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {selectedTask && (
                 <div
                     className={`
@@ -987,15 +1630,12 @@ export default function Others_Asset() {
                     style={{ width: `${rightPanelWidth}px` }}
                 >
 
-                    {/* Resize Handle */}
                     <div
                         className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
                         onMouseDown={handleMouseDown}
                     />
 
-                    {/* Panel Content */}
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Header */}
                         <div className="bg-[#1a1d24] border-b border-gray-700">
                             <div className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
@@ -1012,7 +1652,7 @@ export default function Others_Asset() {
                                 <button
                                     onClick={() => {
                                         setIsPanelOpen(false);
-                                        setTimeout(() => setSelectedTask(null), 300); // ตรงกับ duration
+                                        setTimeout(() => setSelectedTask(null), 300);
                                     }}
 
                                     className="text-gray-400 hover:text-white text-2xl"
@@ -1021,7 +1661,6 @@ export default function Others_Asset() {
                                 </button>
                             </div>
 
-                            {/* Status bar */}
                             <div className="flex items-center gap-4 px-4 py-3">
                                 <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
                                     ? 'text-gray-400 bg-gray-500/20'
@@ -1037,7 +1676,6 @@ export default function Others_Asset() {
                                 </div>
                             </div>
 
-                            {/* Tabs */}
                             <div className="flex border-t border-gray-700">
                                 <button
                                     onClick={() => setRightPanelTab('notes')}
@@ -1062,7 +1700,6 @@ export default function Others_Asset() {
                             </div>
                         </div>
 
-                        {/* Content Area */}
                         <div className="flex-1 overflow-auto p-4">
                             {rightPanelTab === 'notes' && (
                                 <div>
@@ -1152,11 +1789,8 @@ export default function Others_Asset() {
                     </div>
                 </div>
             )}
-
-
-
-
         </div>
+
     );
 }
 
@@ -1166,5 +1800,3 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
         <p className="text-gray-200">{value}</p>
     </div>
 );
-
-

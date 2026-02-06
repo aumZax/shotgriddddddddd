@@ -958,7 +958,7 @@ export default function Project_Sequence() {
                                             <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
                                                 <button
                                                     onClick={(e) => handleFieldClick('status', index, e)}
-                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md   bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-500 rounded-lg transition-colors"
+                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-lg transition-colors"
                                                 >
                                                     {statusConfig[sequence.status as StatusType].icon === '-' ? (
                                                         <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>

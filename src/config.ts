@@ -96,6 +96,10 @@ const ENDPOINTS = {
   REMOVE_TASK_REVIEWER: `${BASE_URL}/remove-task-reviewer`,
   PROJECT_USERS: `${BASE_URL}/project-users`,
 
+  GETALLPEOPLE: `${BASE_URL}/getallpeople`,
+  CREATE_ASSET_NOTE: `${BASE_URL}/create-asset-note`,
+  GET_NOTES: `${BASE_URL}/get-notes`,
+  DELETE_NOTE: `${BASE_URL}/delete-note`,
 
 
 
