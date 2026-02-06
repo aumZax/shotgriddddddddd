@@ -448,12 +448,12 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     </span>
                                 </div>
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                 Pipeline Step
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 Description
-                            </th>
+                            </th> */}
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 สถานะ
                             </th>
@@ -486,7 +486,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                     <tbody className="divide-y divide-gray-800/50">
                         {tasks.length === 0 ? (
                             <tr>
-                                <td colSpan={11} className="px-4 py-16">
+                                <td colSpan={10} className="px-4 py-16">
                                     <div className="flex flex-col items-center justify-center min-h-[400px]">
                                         <div className="text-center space-y-6">
                                             <div className="relative">
@@ -540,9 +540,9 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     </td>
 
                                     {/* Column #3: Task Name */}
-                                    <td className="px-4 py-4">
+                                    <td className="px-4 py-4 w-48"> {/* ⭐ เพิ่ม w-48 หรือ w-40 */}
                                         <div className="flex items-center gap-2">
-                                            <span className="text-green-400 text-lg">✓</span>
+                                            <span className="text-green-400 text-lg flex-shrink-0">✓</span>
 
                                             {editingTaskId === task.id ? (
                                                 <input
@@ -574,7 +574,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                 <>
                                                     <span
                                                         onClick={() => onTaskClick(task)}
-                                                        className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer"
+                                                        className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer truncate max-w-[150px]"
+                                                        title={task.task_name}
                                                     >
                                                         {task.task_name}
                                                     </span>
@@ -585,7 +586,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                             setEditingTaskId(task.id);
                                                             setEditingTaskName(task.task_name);
                                                         }}
-                                                        className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl"
+                                                        className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
                                                         title="แก้ไขชื่อ"
                                                     >
                                                         <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
@@ -727,7 +728,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     </td>
 
                                     {/* Column #5: Description */}
-                                    <td className="px-4 py-4">
+                                    {/* <td className="px-4 py-4">
                                         <textarea
                                             value={task.description || ""}
                                             onChange={(e) => {
@@ -754,7 +755,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                             placeholder="เพิ่มรายละเอียด..."
                                             className="w-full max-w-xs text-sm text-gray-300 bg-gray-800/60 border border-gray-700 rounded px-2 py-1 outline-none resize-none focus:border-blue-500 focus:bg-gray-800 transition-colors"
                                         />
-                                    </td>
+                                    </td> */}
 
                                     {/* Column #6: Status */}
                                     <td className="px-4 py-4">
@@ -813,7 +814,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                         </div>
                                     </td>
 
-                                    {/* ⭐ Column #7: Assignees - แก้ไขใหม่ทั้งหมด */}
+                                    {/* ⭐ Column #7: Assignees */}
                                     <td className="px-4 py-4">
                                         <div className="relative inline-block" ref={assigneeDropdownRef}>
                                             <button
@@ -825,16 +826,43 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                         setSearchAssignee("");
                                                     }
                                                 }}
-                                                className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all shadow-lg hover:shadow-xl"
+                                                className="whitespace-nowrap group/btn min-h-[36px] flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all"
                                             >
-                                                <Users className="w-4 h-4 text-slate-300" />
-                                                <span className="text-sm font-semibold text-slate-200">
-                                                    {task.assignees?.length || 0}
-                                                </span>
-                                                {task.assignees?.length > 0 && isCurrentUserAssigned(task.assignees) && (
-                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
-                                                        คุณ
-                                                    </span>
+                                                <Users className="w-4 h-4 text-slate-300 flex-shrink-0" />
+
+                                                {(!task.assignees || task.assignees.length === 0) && (
+                                                    <span className="text-sm text-slate-400">เพิ่ม</span>
+                                                )}
+
+                                                {task.assignees && task.assignees.length > 0 && task.assignees.length <= 2 && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        {sortAssignees(task.assignees, getCurrentUser().id).map((user, idx) => {
+                                                            const isMe = user.id === getCurrentUser().id;
+                                                            return (
+                                                                <span
+                                                                    key={user.id}
+                                                                    className={`text-sm font-medium ${isMe ? 'text-emerald-300' : 'text-slate-200'
+                                                                        }`}
+                                                                >
+                                                                    {user.username}
+                                                                    {idx < task.assignees.length - 1 && ','}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+
+                                                {task.assignees && task.assignees.length > 2 && (
+                                                    <>
+                                                        <span className="text-sm font-semibold text-slate-200">
+                                                            {task.assignees.length} คน
+                                                        </span>
+                                                        {isCurrentUserAssigned(task.assignees) && (
+                                                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                คุณ
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 )}
                                             </button>
 
@@ -856,7 +884,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 <div className="flex items-center gap-2">
                                                                     <Users className="w-4 h-4 text-slate-400" />
                                                                     <span className="text-sm font-semibold text-slate-200">
-                                                                        จัดการผู้รับผิดชอบ
+                                                                        ผู้รับผิดชอบ
                                                                     </span>
                                                                     <span className="px-2 py-0.5 rounded-md bg-slate-700 text-xs font-semibold text-slate-300">
                                                                         {task.assignees?.length || 0}
@@ -864,15 +892,14 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 </div>
                                                                 <button
                                                                     onClick={() => setEditingAssigneeTaskId(null)}
-                                                                    className="p-1 rounded transition-colors  bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 rounded-2xl"
-
+                                                                    className="p-1 rounded transition-colors bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 rounded-2xl"
                                                                 >
                                                                     <X className="w-4 h-4 text-slate-400 hover:text-slate-200" />
                                                                 </button>
                                                             </div>
                                                             <input
                                                                 type="text"
-                                                                placeholder="ค้นหาชื่อ..."
+                                                                placeholder="ค้นหาเพื่อเพิ่ม..."
                                                                 value={searchAssignee}
                                                                 onChange={(e) => setSearchAssignee(e.target.value)}
                                                                 className="w-full px-3 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
@@ -883,41 +910,38 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                             {/* Current Assignees */}
                                                             {task.assignees && task.assignees.length > 0 && (
                                                                 <div className="p-2 border-b border-slate-700/50">
-                                                                    <div className="text-xs font-medium text-slate-500 px-2 py-1">
-                                                                        ผู้รับผิดชอบปัจจุบัน
+                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
+                                                                        รายชื่อปัจจุบัน
                                                                     </div>
                                                                     {sortAssignees(task.assignees, getCurrentUser().id).map((user) => {
                                                                         const isMe = user.id === getCurrentUser().id;
                                                                         return (
                                                                             <div
                                                                                 key={user.id}
-                                                                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/user"
+                                                                                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/user"
                                                                             >
                                                                                 <div
-                                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe
+                                                                                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ring-2 ${isMe
                                                                                         ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30'
                                                                                         : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ring-blue-500/30'
                                                                                         }`}
                                                                                 >
                                                                                     {user.username[0].toUpperCase()}
                                                                                 </div>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <p className="text-sm font-medium text-slate-200 truncate">
-                                                                                        {user.username}
-                                                                                    </p>
-                                                                                </div>
+                                                                                <span className="flex-1 text-sm font-medium text-slate-200 truncate">
+                                                                                    {user.username}
+                                                                                </span>
                                                                                 {isMe && (
-                                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
                                                                                         คุณ
                                                                                     </span>
                                                                                 )}
                                                                                 <button
                                                                                     onClick={() => removeAssignee(task.id, user.id)}
-                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
-
-                                                                                    title="ลบออก"
+                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+                                                                                    title="ลบ"
                                                                                 >
-                                                                                    <X className="w-4 h-4 text-red-400 hover:text-red-300" />
+                                                                                    <X className="w-3.5 h-3.5 text-red-400" />
                                                                                 </button>
                                                                             </div>
                                                                         );
@@ -925,32 +949,30 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 </div>
                                                             )}
 
-                                                            {/* Available Users */}
-                                                            {getAvailableAssignees(task).length > 0 && (
+                                                            {/* Available Users - แสดงเฉพาะเมื่อมีการค้นหา */}
+                                                            {searchAssignee.trim().length > 0 && getAvailableAssignees(task).length > 0 && (
                                                                 <div className="p-2">
-                                                                    <div className="text-xs font-medium text-slate-500 px-2 py-1">
-                                                                        เพิ่มผู้รับผิดชอบ
+                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
+                                                                        ผลการค้นหา
                                                                     </div>
                                                                     {getAvailableAssignees(task).map((user) => (
                                                                         <div
                                                                             key={user.id}
-                                                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
+
+                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
                                                                         >
-                                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-xs font-bold text-white shadow-lg">
                                                                                 {user.username[0].toUpperCase()}
                                                                             </div>
-                                                                            <div className="flex-1 text-left">
-                                                                                <p className="text-sm font-medium text-slate-300">
-                                                                                    {user.username}
-                                                                                </p>
-                                                                            </div>
+                                                                            <span className="flex-1 text-left text-sm font-medium text-slate-300">
+                                                                                {user.username}
+                                                                            </span>
                                                                             <button
                                                                                 onClick={() => addAssignee(task.id, user.id)}
-
-                                                                                className=" p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
-                                                                                title="เพิ่มAssigned"
+                                                                                className=" p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                                title="เพิ่มReviewer"
                                                                             >
-                                                                                <UserPlus className="w-4 h-4 text-gray-200 group-hover/add:text-blue-400 transition-colors" />
+                                                                                <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-400" />
 
                                                                             </button>
                                                                         </div>
@@ -959,16 +981,14 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                             )}
 
                                                             {/* Empty States */}
-                                                            {getAvailableAssignees(task).length === 0 && (!task.assignees || task.assignees.length === 0) && (
-                                                                <div className="p-8 text-center">
-                                                                    <Users className="w-12 h-12 text-slate-700 mx-auto mb-2" />
-                                                                    <p className="text-sm text-slate-500">ไม่มีผู้ใช้งาน</p>
+                                                            {!task.assignees || task.assignees.length === 0 ? (
+                                                                <div className="p-6 text-center">
+                                                                    <Users className="w-10 h-10 text-slate-700 mx-auto mb-2" />
+                                                                    <p className="text-xs text-slate-500">ค้นหาเพื่อเพิ่มผู้รับผิดชอบ</p>
                                                                 </div>
-                                                            )}
-
-                                                            {getAvailableAssignees(task).length === 0 && task.assignees && task.assignees.length > 0 && (
-                                                                <div className="p-4 text-center">
-                                                                    <p className="text-xs text-slate-500">เพิ่มครบทุกคนแล้ว</p>
+                                                            ) : searchAssignee.trim().length > 0 && getAvailableAssignees(task).length === 0 && (
+                                                                <div className="p-6 text-center">
+                                                                    <p className="text-xs text-slate-500">ไม่พบผลการค้นหา</p>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -978,7 +998,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                         </div>
                                     </td>
 
-                                    {/* ⭐ Column #8: Reviewers - แก้ไขใหม่ทั้งหมด */}
+                                    {/* ⭐ Column #8: Reviewers */}
                                     <td className="px-4 py-4">
                                         <div className="relative inline-block" ref={reviewerDropdownRef}>
                                             <button
@@ -990,16 +1010,43 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                         setSearchReviewer("");
                                                     }
                                                 }}
-                                                className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all shadow-lg hover:shadow-xl"
+                                                className="whitespace-nowrap group/btn min-h-[36px] flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all"
                                             >
-                                                <Users className="w-4 h-4 text-slate-300" />
-                                                <span className="text-sm font-semibold text-slate-200">
-                                                    {task.reviewers?.length || 0}
-                                                </span>
-                                                {task.reviewers && task.reviewers.length > 0 && isCurrentUserReviewer(task.reviewers) && (
-                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
-                                                        คุณ
-                                                    </span>
+                                                <Users className="w-4 h-4 text-slate-300 flex-shrink-0" />
+
+                                                {(!task.reviewers || task.reviewers.length === 0) && (
+                                                    <span className="text-sm text-slate-400">เพิ่ม</span>
+                                                )}
+
+                                                {task.reviewers && task.reviewers.length > 0 && task.reviewers.length <= 2 && (
+                                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                                        {sortAssignees(task.reviewers, getCurrentUser().id).map((user, idx) => {
+                                                            const isMe = user.id === getCurrentUser().id;
+                                                            return (
+                                                                <span
+                                                                    key={user.id}
+                                                                    className={`text-sm font-medium ${isMe ? 'text-emerald-300' : 'text-slate-200'
+                                                                        }`}
+                                                                >
+                                                                    {user.username}
+                                                                    {idx < task.reviewers!.length - 1 && ','}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+
+                                                {task.reviewers && task.reviewers.length > 2 && (
+                                                    <>
+                                                        <span className="text-sm font-semibold text-slate-200">
+                                                            {task.reviewers.length} คน
+                                                        </span>
+                                                        {isCurrentUserReviewer(task.reviewers) && (
+                                                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                คุณ
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 )}
                                             </button>
 
@@ -1020,7 +1067,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 <div className="flex items-center gap-2">
                                                                     <Users className="w-4 h-4 text-slate-400" />
                                                                     <span className="text-sm font-semibold text-slate-200">
-                                                                        จัดการ Reviewer
+                                                                        Reviewer
                                                                     </span>
                                                                     <span className="px-2 py-0.5 rounded-md bg-slate-700 text-xs font-semibold text-slate-300">
                                                                         {task.reviewers?.length || 0}
@@ -1028,16 +1075,14 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 </div>
                                                                 <button
                                                                     onClick={() => setEditingReviewerTaskId(null)}
-                                                                    className="p-1 hover:bg-slate-700/50 rounded transition-colors  bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700 rounded-2xl"
-
+                                                                    className="p-1 hover:bg-slate-700/50 rounded-2xl transition-colors bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700 rounded-2xl"
                                                                 >
                                                                     <X className="w-4 h-4 text-slate-400 hover:text-slate-200" />
                                                                 </button>
                                                             </div>
-
                                                             <input
                                                                 type="text"
-                                                                placeholder="ค้นหาชื่อ..."
+                                                                placeholder="ค้นหาเพื่อเพิ่ม..."
                                                                 value={searchReviewer}
                                                                 onChange={(e) => setSearchReviewer(e.target.value)}
                                                                 className="w-full px-3 py-1.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-slate-500/50"
@@ -1045,43 +1090,41 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                         </div>
 
                                                         <div className="max-h-72 overflow-y-auto">
+                                                            {/* Current Reviewers */}
                                                             {task.reviewers && task.reviewers.length > 0 && (
                                                                 <div className="p-2 border-b border-slate-700/50">
-                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1">
-                                                                        Reviewer ปัจจุบัน
+                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
+                                                                        รายชื่อปัจจุบัน
                                                                     </div>
                                                                     {sortAssignees(task.reviewers, getCurrentUser().id).map((reviewer) => {
                                                                         const isMe = reviewer.id === getCurrentUser().id;
                                                                         return (
                                                                             <div
                                                                                 key={reviewer.id}
-                                                                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/user"
+                                                                                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/user"
                                                                             >
                                                                                 <div
-                                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ring-2 ${isMe
+                                                                                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ring-2 ${isMe
                                                                                         ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-emerald-500/30'
                                                                                         : 'bg-gradient-to-br from-pink-500 to-pink-600 text-white ring-slate-500/30'
                                                                                         }`}
                                                                                 >
                                                                                     {reviewer.username[0].toUpperCase()}
                                                                                 </div>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <p className="text-sm font-medium text-slate-200 truncate">
-                                                                                        {reviewer.username}
-                                                                                    </p>
-                                                                                </div>
+                                                                                <span className="flex-1 text-sm font-medium text-slate-200 truncate">
+                                                                                    {reviewer.username}
+                                                                                </span>
                                                                                 {isMe && (
-                                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
+                                                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/50">
                                                                                         คุณ
                                                                                     </span>
                                                                                 )}
                                                                                 <button
                                                                                     onClick={() => removeReviewer(task.id, reviewer.id)}
-                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1.5 rounded-2xl transition-all  bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700"
-
-                                                                                    title="ลบออก"
+                                                                                    className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700"
+                                                                                    title="ลบ"
                                                                                 >
-                                                                                    <X className="w-4 h-4 text-red-400 hover:text-red-300" />
+                                                                                    <X className="w-3.5 h-3.5 text-red-400" />
                                                                                 </button>
                                                                             </div>
                                                                         );
@@ -1089,49 +1132,44 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                 </div>
                                                             )}
 
-                                                            {getAvailableReviewers(task).length > 0 && (
+                                                            {/* Available Reviewers - แสดงเฉพาะเมื่อมีการค้นหา */}
+                                                            {searchReviewer.trim().length > 0 && getAvailableReviewers(task).length > 0 && (
                                                                 <div className="p-2">
-                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1">
-                                                                        เพิ่ม Reviewer
+                                                                    <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
+                                                                        ผลการค้นหา
                                                                     </div>
                                                                     {getAvailableReviewers(task).map((user) => (
                                                                         <div
                                                                             key={user.id}
-                                                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
+                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
                                                                         >
-                                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white shadow-lg">
                                                                                 {user.username[0].toUpperCase()}
                                                                             </div>
-                                                                            <div className="flex-1 text-left">
-                                                                                <p className="text-sm font-medium text-slate-200">
-                                                                                    {user.username}
-                                                                                </p>
-                                                                            </div>
+                                                                            <span className="flex-1 text-left text-sm font-medium text-slate-200">
+                                                                                {user.username}
+                                                                            </span>
                                                                             <button
                                                                                 onClick={() => addReviewer(task.id, user.id)}
-
-
-                                                                                className=" p-1.5 rounded-2xl transition-all  bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700"
-                                                                                title="เพิ่ม reviewer"
+                                                                                className=" p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                                title="เพิ่มReviewer"
                                                                             >
-                                                                                <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-500 transition-colors" />
-
+                                                                                <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-500" />
                                                                             </button>
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                             )}
 
-                                                            {getAvailableReviewers(task).length === 0 && (!task.reviewers || task.reviewers.length === 0) && (
-                                                                <div className="p-8 text-center">
-                                                                    <Users className="w-12 h-12 text-slate-700 mx-auto mb-2" />
-                                                                    <p className="text-sm text-slate-400">ไม่มีผู้ใช้งาน</p>
+                                                            {/* Empty States */}
+                                                            {!task.reviewers || task.reviewers.length === 0 ? (
+                                                                <div className="p-6 text-center">
+                                                                    <Users className="w-10 h-10 text-slate-700 mx-auto mb-2" />
+                                                                    <p className="text-xs text-slate-400">ค้นหาเพื่อเพิ่ม Reviewer</p>
                                                                 </div>
-                                                            )}
-
-                                                            {getAvailableReviewers(task).length === 0 && task.reviewers && task.reviewers.length > 0 && (
-                                                                <div className="p-4 text-center">
-                                                                    <p className="text-xs text-slate-400">เพิ่มครบทุกคนแล้ว</p>
+                                                            ) : searchReviewer.trim().length > 0 && getAvailableReviewers(task).length === 0 && (
+                                                                <div className="p-6 text-center">
+                                                                    <p className="text-xs text-slate-400">ไม่พบผลการค้นหา</p>
                                                                 </div>
                                                             )}
                                                         </div>
