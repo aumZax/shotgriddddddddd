@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Eye, Image, Upload, X } from 'lucide-react';
+import { Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 
@@ -177,8 +177,9 @@ export default function Others_Asset() {
 
     const [openAssignedDropdown, setOpenAssignedDropdown] = useState<string | number | null>(null);
     const [selectedTasks, setSelectedTasks] = useState<string[]>([])
+    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [subject, setSubject] = useState(
-        assetData?.asset_name ? `Note on ${assetData.asset_name}` : "Thawat's Note on Alice"
+        assetData?.asset_name ? `Note on ${assetData.asset_name}` : ""
     );
     const [body, setBody] = useState('');
     const [notes, setNotes] = useState<Note[]>([]);
@@ -247,6 +248,8 @@ export default function Others_Asset() {
         const selectedAsset = getSelectedAsset();
         if (selectedAsset) {
             setAssetData(selectedAsset);
+            // ✅ Set subject เมื่อ asset ถูก load
+            setSubject(`Note on ${selectedAsset.asset_name}`);
         }
     }, []);
 
@@ -258,6 +261,8 @@ export default function Others_Asset() {
 
     const fetchNotes = async () => {
         if (!assetData?.id) return;
+
+
 
         setLoadingNotes(true);
         try {
@@ -289,7 +294,7 @@ export default function Others_Asset() {
 
     const handleDeleteNote = async (noteId: number) => {
         try {
-            const response = await axios.delete( `${ENDPOINTS.DELETE_NOTE}/${noteId}` );
+            const response = await axios.delete(`${ENDPOINTS.DELETE_NOTE}/${noteId}`);
 
             if (response.status !== 200 && response.status !== 204) {
                 throw new Error(`Delete failed with status ${response.status}`);
@@ -452,7 +457,7 @@ export default function Others_Asset() {
             setSelectedPeople([]);
             setSelectedTasks([]);
             setFiles([]);
-            setSubject(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "Thawat's Note on Alice");
+            setSubject(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
             setBody('');
             setType(null);
 
@@ -771,6 +776,11 @@ export default function Others_Asset() {
                                 subject: note?.subject || ''
                             });
                         }}
+                        onNoteClick={(note: Note) => {
+                            setSelectedNote(note);
+                            setIsPanelOpen(false);
+                            setTimeout(() => setIsPanelOpen(true), 10);
+                        }}
                     />
                 );
             case 'Publishes':
@@ -827,11 +837,20 @@ export default function Others_Asset() {
                                     <X className="w-6 h-6 text-white" />
                                 </button>
 
-                                <div className="max-w-7xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className="max-w-4xl max-h-[80vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                     {assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                        <video src={ENDPOINTS.image_url + assetData.thumbnail} className="w-full h-full object-contain rounded-lg" controls autoPlay />
+                                        <video
+                                            src={ENDPOINTS.image_url + assetData.thumbnail}
+                                            className="w-full h-full object-contain rounded-lg"
+                                            controls
+                                            autoPlay
+                                        />
                                     ) : (
-                                        <img src={ENDPOINTS.image_url + assetData.thumbnail} alt="Preview" className="w-full h-full object-contain rounded-lg" />
+                                        <img
+                                            src={ENDPOINTS.image_url + assetData.thumbnail}
+                                            alt="Preview"
+                                            className="w-full h-full object-contain rounded-lg"
+                                        />
                                     )}
                                 </div>
                             </div>
@@ -1785,6 +1804,129 @@ export default function Others_Asset() {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {selectedNote && (
+                <div
+                    className={`
+            fixed right-0 top-26 bottom-0
+            bg-[#2a2d35] shadow-2xl flex z-40
+            transform transition-transform duration-300 ease-out
+            ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+                    style={{ width: `${rightPanelWidth}px` }}
+                >
+
+                    <div
+                        className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
+                        onMouseDown={handleMouseDown}
+                    />
+
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <div className="bg-[#1a1d24] border-b border-gray-700">
+                            <div className="flex items-center justify-between px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                    <div>
+                                        <div className="text-sm text-gray-400">
+                                            Napo (Animation demo) › C005 › {selectedNote?.note_type}
+                                        </div>
+                                        <h2 className="text-xl text-white font-normal mt-1">
+                                            {selectedNote?.subject}
+                                        </h2>
+                                    </div>
+
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setIsPanelOpen(false);
+                                        setTimeout(() => setSelectedNote(null), 300);
+                                    }}
+
+                                    className="text-gray-400 hover:text-white text-2xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-center">
+                                         {selectedNote?.file_url? (
+                                
+                                <div className="flex items-center justify-center">
+                                    <img
+                                        src={ENDPOINTS.image_url + selectedNote?.file_url || ''} 
+                                        alt=""
+                                        className="w-80 h-80 object-cover rounded"
+                                    />
+                                </div>
+                                ):(
+                                    <div className="w-80 h-80 rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
+                                            <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
+                                                <Image className="w-8 h-8 text-gray-500" />
+                                            </div>
+                                            <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
+                                        </div>
+                                    )}
+                            </div>
+                           
+
+                            <div className="flex items-center gap-4 px-4 py-3">
+                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedNote?.status === 'wtg'
+                                    ? 'text-gray-400 bg-gray-500/20'
+                                    : selectedNote?.status === 'ip'
+                                        ? 'text-blue-400 bg-blue-500/20'
+                                        : 'text-green-400 bg-green-500/20'
+                                    }`}>
+                                    {selectedNote?.status}
+                                </span>
+                                <div className="flex items-center gap-2 text-sm text-gray-400">
+                                    <span>📅</span>
+                                    <span>วันที่สร้าง {formatDateThai(selectedNote?.created_at)}</span>
+                                    
+                                </div>
+                                 <User className="w-4 h-4 text-gray-400" />
+                                        <span>ผู้รับผิดชอบ : {selectedNote?.assigned_people?.map((person, index) => (
+                                            <span key={index}>{person}{index < (selectedNote.assigned_people?.length || 0) - 1 ? ' , ' : ''}</span>
+                                        ))}</span>
+                            </div>
+
+                            <div className="flex border-t border-gray-700">
+                                <button
+
+                                    onClick={() => setRightPanelTab('notes')}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
+                                        ? 'text-white border-b-2 border-blue-500'
+                                        : 'text-gray-400 hover:text-white'
+                                        }`}
+                                >
+                                    <span>📝</span>
+                                    <span>NOTES</span>
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-4">
+                            {rightPanelTab === 'notes' && (
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder={selectedNote?.body || 'Write a note...'}
+                                        value={selectedNote?.body || ''}
+                                        onChange={(e) => {
+                                            if (selectedNote) {
+                                                setSelectedNote({ ...selectedNote, body: e.target.value });
+                                            }
+                                        }}
+
+                                        className="w-full px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500 mb-4"
+                                    />
+
+                                </div>
+                            )}
+
+
                         </div>
                     </div>
                 </div>

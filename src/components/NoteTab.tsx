@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FileText, Calendar, Users, Paperclip } from 'lucide-react';
 import ENDPOINTS from '../config';
 
@@ -24,18 +24,60 @@ interface NotesTabProps {
     loadingNotes: boolean;
     openAssignedDropdown: string | number | null;
     setOpenAssignedDropdown: (id: string | number | null) => void;
-    onContextMenu?: (e: React.MouseEvent, note: Note) => void; 
+    onContextMenu?: (e: React.MouseEvent, note: Note) => void;
     onDeleteNote?: (noteId: number) => void;
+    onNoteClick?: (note: Note) => void;
 }
 
-const NotesTab = ({ 
-    notes, 
-    loadingNotes, 
-    // openAssignedDropdown, 
-    // setOpenAssignedDropdown 
-    onContextMenu
+const NotesTab = ({
+    notes,
+    loadingNotes,
+    onContextMenu,
+    onNoteClick
 }: NotesTabProps) => {
     const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
+    const dropdownRef = useRef<{ [key: number]: HTMLDivElement | null }>({});
+    const buttonRef = useRef<{ [key: number]: HTMLButtonElement | null }>({});
+    const [dropdownPos, setDropdownPos] = useState<{ [key: number]: { top: number; left: number } }>({});
+
+    useEffect(() => {
+        if (expandedNoteId === null) return;
+
+        const button = buttonRef.current[expandedNoteId];
+        const dropdown = dropdownRef.current[expandedNoteId];
+
+        if (!button || !dropdown) return;
+
+        const calculatePos = () => {
+            const btnRect = button.getBoundingClientRect();
+            const dropHeight = dropdown.offsetHeight;
+
+            // ขึ้นด้านบนเสมอ
+            // eslint-disable-next-line prefer-const
+            let top = btnRect.top - dropHeight - 8;
+            let left = btnRect.left;
+
+            // จำกัดซ้าย-ขวา
+            if (left < 10) left = 10;
+            if (left + 256 > window.innerWidth) {
+                left = window.innerWidth - 256 - 10;
+            }
+
+            setDropdownPos(prev => ({
+                ...prev,
+                [expandedNoteId]: { top, left }
+            }));
+        };
+
+        calculatePos();
+        window.addEventListener('scroll', calculatePos);
+        window.addEventListener('resize', calculatePos);
+
+        return () => {
+            window.removeEventListener('scroll', calculatePos);
+            window.removeEventListener('resize', calculatePos);
+        };
+    }, [expandedNoteId]);
 
     // Helper functions
     const formatDateThai = (dateString: string) => {
@@ -208,7 +250,7 @@ const NotesTab = ({
 
                                     {/* Subject & Body */}
                                     <td className="px-4 py-4">
-                                        <div className="space-y-1">
+                                        <div className="space-y-1 cursor-pointer hover:opacity-80" onClick={() => onNoteClick?.(note)}>
                                             <div className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors">
                                                 {note.subject}
                                             </div>
@@ -243,11 +285,10 @@ const NotesTab = ({
                                     {/* Type (Visibility) */}
                                     <td className="px-4 py-4">
                                         {note.visibility ? (
-                                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${
-                                                note.visibility === 'Client'
+                                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${note.visibility === 'Client'
                                                     ? 'text-purple-300 bg-purple-500/10 ring-purple-500/30'
                                                     : 'text-gray-300 bg-gray-500/10 ring-gray-500/30'
-                                            }`}>
+                                                }`}>
                                                 {note.visibility}
                                             </span>
                                         ) : (
@@ -257,11 +298,10 @@ const NotesTab = ({
 
                                     {/* Status */}
                                     <td className="px-4 py-4">
-                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${
-                                            note.status === 'open' || note.status === 'opn'
+                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ring-1 ${note.status === 'open' || note.status === 'opn'
                                                 ? 'text-green-300 bg-green-500/10 ring-green-500/30'
                                                 : 'text-gray-300 bg-gray-500/10 ring-gray-500/30'
-                                        }`}>
+                                            }`}>
                                             {note.status === 'open' || note.status === 'opn' ? 'เปิด' : 'ปิด'}
                                         </span>
                                     </td>
@@ -270,20 +310,32 @@ const NotesTab = ({
                                     <td className="px-4 py-4" style={{ overflow: 'visible', position: 'relative' }}>
                                         {note.assigned_people && note.assigned_people.length > 0 ? (
                                             <div className="relative inline-block">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setExpandedNoteId(
-                                                            expandedNoteId === note.id ? null : note.id
-                                                        );
-                                                    }}
-                                                    className="group/btn h-9 flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border border-slate-500/30 hover:border-slate-400/50 transition-all shadow-lg hover:shadow-xl"
-                                                >
-                                                    <Users className="w-4 h-4 text-slate-300" />
-                                                    <span className="text-sm font-semibold text-slate-200">
-                                                        {note.assigned_people.length}
-                                                    </span>
-                                                </button>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {note.assigned_people?.map((person, index) => (
+                                                        <button
+                                                            key={index}
+                                                            disabled
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setExpandedNoteId(
+                                                                    expandedNoteId === note.id ? null : note.id
+                                                                );
+                                                            }}
+                                                            ref={(el) => {
+                                                                if (el) buttonRef.current[note.id] = el;
+                                                            }}
+                                                            className="group/btn h-9 flex items-center px-3.5 py-2 rounded-lg
+                                                                    bg-gradient-to-r from-slate-700 to-slate-600
+                                                                    hover:from-slate-600 hover:to-slate-500
+                                                                    border border-slate-500/30 hover:border-slate-400/50
+                                                                    transition-all shadow-lg hover:shadow-xl"
+                                                            >
+                                                            <span className="text-sm font-semibold text-slate-200">
+                                                                {person}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
 
                                                 {expandedNoteId === note.id && (
                                                     <>
@@ -291,9 +343,17 @@ const NotesTab = ({
                                                             className="fixed inset-0 z-10"
                                                             onClick={() => setExpandedNoteId(null)}
                                                         />
-                                                        <div 
-                                                            onClick={(e) => e.stopPropagation()} 
-                                                            className="absolute left-0 top-full mt-2 z-20 w-64 max-h-80 overflow-hidden bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl ring-1 ring-white/5"
+                                                        <div
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            ref={(el) => {
+                                                                if (el) dropdownRef.current[note.id] = el;
+                                                            }}
+                                                            className="fixed z-[9999] w-64 max-h-80 overflow-y-auto bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl ring-1 ring-white/5"
+                                                            style={{
+                                                                top: `${dropdownPos[note.id]?.top ?? 0}px`,
+                                                                left: `${dropdownPos[note.id]?.left ?? 0}px`,
+                                                                position: 'fixed'
+                                                            }}
                                                         >
                                                             <div className="px-4 py-3 bg-gradient-to-r from-slate-700/50 to-slate-800/50 backdrop-blur-sm border-b border-slate-600/50">
                                                                 <div className="flex items-center justify-between">
@@ -393,7 +453,7 @@ const NotesTab = ({
                                         )}
                                     </td>
                                     <td className="px-4 py-4">
-                                       {note.read_status ? (
+                                        {note.read_status ? (
                                             <span className="text-gray-600 text-sm italic">{note.read_status}</span>
                                         ) : (
                                             <span className="text-gray-600 text-sm italic">ไม่มี</span>
