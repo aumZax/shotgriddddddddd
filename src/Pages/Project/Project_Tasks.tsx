@@ -739,26 +739,7 @@ export default function Project_Tasks() {
     const totalTasks = taskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
 
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Pipeline Steps ++++++++++++++++++++++++++++++++++++++++++++++
-    // เพิ่ม state
-    const [pipelineSteps, setPipelineSteps] = useState<any[]>([]);
-    const [selectedPipelineStep, setSelectedPipelineStep] = useState<number | null>(null);
-    const [entityType, setEntityType] = useState<'asset' | 'shot'>('asset');
-
-    // Fetch pipeline steps
-    useEffect(() => {
-        const fetchPipelineSteps = async () => {
-            try {
-                const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
-                    entityType: entityType
-                });
-                setPipelineSteps(res.data);
-            } catch (err) {
-                console.error("Fetch pipeline steps error:", err);
-            }
-        };
-        fetchPipelineSteps();
-    }, [entityType]);
+ 
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Status Menu ++++++++++++++++++++++++++++++++++++++++++++++  
