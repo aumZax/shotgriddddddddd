@@ -461,7 +461,7 @@ export default function Others_Shot() {
                 formData.append("fileName", fileToUpload.name);
                 formData.append("type", "note");
 
-                const uploadResponse = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                const uploadResponse = await fetch(ENDPOINTS.UPLOAD_SHOT, {
                     method: 'POST',
                     body: formData
                 });
@@ -497,7 +497,7 @@ export default function Others_Shot() {
 
             console.log('📝 Creating note with data:', noteData);
 
-            const createResponse = await fetch(ENDPOINTS.CREATE_ASSET_NOTE, {
+            const createResponse = await fetch(ENDPOINTS.CREATE_SHOT_NOTE, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1013,6 +1013,8 @@ export default function Others_Shot() {
                                                 formData.append("shotId", shotData.id.toString());
                                                 formData.append("file", file);
                                                 formData.append("oldImageUrl", shotData.thumbnail || "");
+                                                formData.append("fileName", file.name);
+                                                formData.append("type", file.type.split('/')[0]);
 
                                                 try {
                                                     const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {

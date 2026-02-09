@@ -487,7 +487,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                         {tasks.length === 0 ? (
                             <tr>
                                 <td colSpan={10} className="px-4 py-16">
-                                    <div className="flex flex-col items-center justify-center min-h-[400px]">
+                                    <div className="flex flex-col items-center justify-center ">
                                         <div className="text-center space-y-6">
                                             <div className="relative">
                                                 <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>

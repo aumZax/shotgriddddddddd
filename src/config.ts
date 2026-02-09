@@ -100,9 +100,11 @@ const ENDPOINTS = {
   CREATE_ASSET_NOTE: `${BASE_URL}/create-asset-note`,
   GET_NOTES: `${BASE_URL}/get-notes`,
   DELETE_NOTE: `${BASE_URL}/delete-note`,
+  
 
 
   ADD_TASK: `${BASE_URL}/add-task`,
+  CREATE_SHOT_NOTE: `${BASE_URL}/create-shot-note`,
 
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
