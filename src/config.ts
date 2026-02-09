@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://sociology-pointed-brothers-club.trycloudflare.com"; 
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://sociology-pointed-brothers-club.trycloudflare.com"; 
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -101,6 +101,8 @@ const ENDPOINTS = {
   GET_NOTES: `${BASE_URL}/get-notes`,
   DELETE_NOTE: `${BASE_URL}/delete-note`,
 
+
+  ADD_TASK: `${BASE_URL}/add-task`,
 
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ

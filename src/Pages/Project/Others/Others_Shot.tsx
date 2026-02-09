@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Eye, Image, Upload, } from 'lucide-react';
+import { Eye, Image, Upload, X, } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -156,10 +156,8 @@ export default function Others_Shot() {
     const [shotData, setShotData] = useState<ShotData>(getInitialShotData());
     const [editingField, setEditingField] = useState<string | null>(null);
 
-
-    const [showStatusMenu, setShowStatusMenu] = useState(false);
-
     const [showPreview, setShowPreview] = useState(false);
+    const [showStatusMenu, setShowStatusMenu] = useState(false);
 
 
     const [showCreateShot_Task, setShowCreateShot_Task] = useState(false);
@@ -205,8 +203,6 @@ export default function Others_Shot() {
     };
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
 
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -342,9 +338,6 @@ export default function Others_Shot() {
         setCommentText('');
     };
 
-
-
-
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -394,8 +387,6 @@ export default function Others_Shot() {
         return date.toLocaleDateString('th-TH', options);
     };
 
-
-
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     useEffect(() => {
@@ -411,66 +402,67 @@ export default function Others_Shot() {
         switch (activeTab) {
             case 'Activity':
                 return (
-                    <div className="space-y-4">
-                        {/* Comment Input Section */}
-                        <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                    <div className="space-y-6">
+                        {/* Comment Input Section - ปรับให้ compact และสวยขึ้น */}
+                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl p-5 border border-gray-600/50 shadow-xl">
+                            <div className="flex items-start gap-4">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-lg">
                                     {currentUser.charAt(0)}
                                 </div>
 
-                                <div className="flex-1">
+                                <div className="flex-1 space-y-3">
                                     <textarea
                                         value={commentText}
                                         onChange={(e) => setCommentText(e.target.value)}
                                         onKeyPress={handleKeyPress}
-                                        placeholder="Add a comment... (Press Enter to submit)"
-                                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-300 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+                                        placeholder="แสดงความคิดเห็น..."
+                                        className="w-full bg-gray-900/50 border border-gray-600/50 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
                                         rows={3}
                                     />
 
-                                    <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center justify-between">
                                         <p className="text-xs text-gray-500">
-                                            Press Enter to submit, Shift+Enter for new line
+                                            💡 กด Enter เพื่อส่ง • Shift+Enter เพื่อขึ้นบรรทัดใหม่
                                         </p>
                                         <button
                                             onClick={handleSubmitComment}
                                             disabled={!commentText.trim()}
-                                            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors font-medium"
+                                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-all font-medium shadow-lg hover:shadow-xl hover:scale-105"
                                         >
-                                            Comment
+                                            ส่งความคิดเห็น
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Activities List */}
+                        {/* Activities List - ปรับให้อ่านง่ายขึ้น */}
                         <div className="space-y-3">
                             {activities.map((activity) => {
                                 const isCurrentUser = activity.user === currentUser;
-                                const borderColor = isCurrentUser ? 'border-orange-500' : 'border-gray-600';
-                                const userColor = isCurrentUser ? 'text-orange-400' : 'text-gray-400';
+                                const borderColor = isCurrentUser ? 'border-orange-500/50' : 'border-gray-600/30';
+                                const bgColor = isCurrentUser ? 'bg-orange-500/5' : 'bg-gray-700/30';
+                                const userColor = isCurrentUser ? 'text-orange-400' : 'text-blue-400';
 
                                 return (
                                     <div
                                         key={activity.id}
-                                        className={`p-4 bg-gray-700/50 rounded-lg border-l-4 ${borderColor} transition-all hover:bg-gray-700/70`}
+                                        className={`p-4 ${bgColor} rounded-xl border-l-4 ${borderColor} transition-all hover:bg-gray-700/40 hover:shadow-md`}
                                     >
                                         <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                            <div className={`w-9 h-9 rounded-full ${isCurrentUser ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 'bg-gradient-to-br from-gray-600 to-gray-700'} flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 shadow-md`}>
                                                 {activity.user.charAt(0)}
                                             </div>
 
-                                            <div className="flex-1">
-                                                <p className="text-gray-300 text-sm">
-                                                    <span className={`font-semibold ${userColor}`}>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-gray-200 text-sm leading-relaxed">
+                                                    <span className={`font-bold ${userColor}`}>
                                                         {activity.user}
                                                     </span>{' '}
-                                                    {activity.action}
+                                                    <span className="text-gray-300">{activity.action}</span>
                                                 </p>
-                                                <p className="text-gray-500 text-xs mt-1">
-                                                    {formatTimeAgo(activity.timestamp)}
+                                                <p className="text-gray-500 text-xs mt-1.5 flex items-center gap-1">
+                                                    🕒 {formatTimeAgo(activity.timestamp)}
                                                 </p>
                                             </div>
                                         </div>
@@ -483,12 +475,14 @@ export default function Others_Shot() {
 
             case 'Shot Info':
                 return (
-                    <div className="space-y-4 text-gray-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InfoRow label="Shot Code" value={shotData.shotCode} />
                         <InfoRow label="Sequence" value={shotData.sequence} />
                         <InfoRow label="Status" value={statusConfig[shotData.status].label} />
                         <InfoRow label="Due Date" value={shotData.dueDate} />
-                        <InfoRow label="Description" value={shotData.description} />
+                        <div className="md:col-span-2">
+                            <InfoRow label="Description" value={shotData.description} />
+                        </div>
                     </div>
                 );
 
@@ -502,16 +496,27 @@ export default function Others_Shot() {
 
             case 'Notes':
                 return (
-                    <div className="bg-gray-700/30 p-4 rounded-lg text-gray-300">
-                        <p className="text-sm text-gray-400 mb-2">Notes</p>
-                        <p>- Camera should feel heavier</p>
-                        <p>- Add fog in background</p>
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="text-2xl">📝</span>
+                            <p className="text-sm text-gray-400 font-medium">บันทึกย่อ</p>
+                        </div>
+                        <div className="space-y-2 text-gray-300">
+                            <p className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-1">•</span>
+                                <span>Camera should feel heavier</span>
+                            </p>
+                            <p className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-1">•</span>
+                                <span>Add fog in background</span>
+                            </p>
+                        </div>
                     </div>
                 );
 
             case 'Versions':
                 return (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <VersionCard version="v001" />
                         <VersionCard version="v002" />
                     </div>
@@ -519,34 +524,70 @@ export default function Others_Shot() {
 
             case 'Assets':
                 return (
-                    <div className="space-y-2 text-gray-300">
-                        <p>🎥 CameraRig_v3.fbx</p>
-                        <p>🌲 Forest_Set.fbx</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
+                            <p className="flex items-center gap-3 text-gray-200">
+                                <span className="text-2xl">🎥</span>
+                                <span className="font-medium">CameraRig_v3.fbx</span>
+                            </p>
+                        </div>
+                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
+                            <p className="flex items-center gap-3 text-gray-200">
+                                <span className="text-2xl">🌲</span>
+                                <span className="font-medium">Forest_Set.fbx</span>
+                            </p>
+                        </div>
                     </div>
                 );
 
             case 'Publishes':
                 return (
-                    <div className="text-gray-300">
-                        <p>Last publish: v002</p>
-                        <p>Published by John Doe</p>
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
+                        <div className="space-y-3 text-gray-200">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">📤</span>
+                                <div>
+                                    <p className="font-medium">Last publish: v002</p>
+                                    <p className="text-sm text-gray-400 mt-1">Published by John Doe</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
 
             case 'Files':
                 return (
-                    <div className="space-y-2 text-gray-300">
-                        <p>📄 storyboard.pdf</p>
-                        <p>📄 reference.jpg</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
+                            <p className="flex items-center gap-3 text-gray-200">
+                                <span className="text-2xl">📄</span>
+                                <span className="font-medium">storyboard.pdf</span>
+                            </p>
+                        </div>
+                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
+                            <p className="flex items-center gap-3 text-gray-200">
+                                <span className="text-2xl">🖼️</span>
+                                <span className="font-medium">reference.jpg</span>
+                            </p>
+                        </div>
                     </div>
                 );
 
             case 'History':
                 return (
-                    <div className="space-y-2 text-gray-400 text-sm">
-                        <p>Shot created by John</p>
-                        <p>Status changed to In Progress</p>
-                        <p>Version v002 uploaded</p>
+                    <div className="space-y-2">
+                        <div className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg border-l-2 border-blue-500/50">
+                            <span className="text-sm text-gray-400">•</span>
+                            <p className="text-sm text-gray-300">Shot created by John</p>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg border-l-2 border-green-500/50">
+                            <span className="text-sm text-gray-400">•</span>
+                            <p className="text-sm text-gray-300">Status changed to In Progress</p>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg border-l-2 border-purple-500/50">
+                            <span className="text-sm text-gray-400">•</span>
+                            <p className="text-sm text-gray-300">Version v002 uploaded</p>
+                        </div>
                     </div>
                 );
 
@@ -556,351 +597,406 @@ export default function Others_Shot() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-900" onClick={handleClickOutside}
-
-            onMouseMove={handleMouseMove}  // ← เพิ่มตรงนี้
-            onMouseUp={() => setIsResizing(false)}  // ← เพิ่มตรงนี้ด้วย
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800" onClick={handleClickOutside}
+            onMouseMove={handleMouseMove}
+            onMouseUp={() => setIsResizing(false)}
         >
             <div className="pt-14">
                 <Navbar_Project activeTab="other" />
             </div>
 
             <div className="pt-12 flex-1">
-                <div className="p-6">
-                    <div className="w-full bg-gray-800 p-6 rounded-lg shadow-lg">
-                        <div className='p-2'>
-                            <span className='p-2 text-xl'>{shotData.sequence} </span>
-                            <span className='p-2 text-xl'>{'>'}</span>
-                            <span className='p-2 text-xl'>{shotData.shotCode}</span>
+                <div className="p-6 max-w-[1600px] mx-auto">
+                    {/* Header Card - ปรับให้สวยและอ่านง่ายขึ้น */}
+                    <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+                        {/* Breadcrumb */}
+                        <div className="mb-6 flex items-center gap-3 text-gray-400">
+                            <span className="text-lg font-medium hover:text-white cursor-pointer transition-colors">
+                                📁 {shotData.sequence}
+                            </span>
+                            <span className="text-gray-600">›</span>
+                            <span className="text-xl font-bold text-white">
+                                🎬 {shotData.shotCode}
+                            </span>
                         </div>
 
-                        <div className="flex gap-6 w-full items-start justify-between mb-6">
-                            <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                {shotData.thumbnail ? (
-                                    // ตรวจสอบว่าเป็นวิดีโอหรือรูปภาพ
-                                    shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                        // แสดงวิดีโอ
-                                        <div className="w-full h-full rounded-lg overflow-hidden">
+                        {/* Preview Modal */}
+                        {showPreview && shotData.thumbnail && (
+                            <div
+                                className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
+                                onClick={() => setShowPreview(false)}
+                            >
+                                <button
+                                    onClick={() => setShowPreview(false)}
+                                    className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all hover:scale-110"
+                                >
+                                    <X className="w-6 h-6 text-white" />
+                                </button>
+
+                                <div className="max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                    {shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                        <video
+                                            src={ENDPOINTS.image_url + shotData.thumbnail}
+                                            className="w-full h-full object-contain rounded-2xl shadow-2xl"
+                                            controls
+                                            autoPlay
+                                        />
+                                    ) : (
+                                        <img
+                                            src={ENDPOINTS.image_url + shotData.thumbnail}
+                                            alt="Preview"
+                                            className="w-full h-full object-contain rounded-2xl shadow-2xl"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Main Content Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Thumbnail Section - ขยายขนาดและปรับปรุง */}
+                            <div className="lg:col-span-1">
+                                <div className="relative w-full aspect-video rounded-xl bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 overflow-hidden shadow-2xl border border-gray-700/50">
+                                    {shotData.thumbnail ? (
+                                        shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
                                             <video
                                                 src={ENDPOINTS.image_url + shotData.thumbnail}
                                                 className="w-full h-full object-cover"
                                                 controls
                                                 muted
                                                 playsInline
-                                            >
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        </div>
+                                            />
+                                        ) : (
+                                            <img
+                                                src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                alt="Shot thumbnail"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )
                                     ) : (
-                                        // แสดงรูปภาพ
-                                        <img
-                                            src={ENDPOINTS.image_url + shotData.thumbnail}
-                                            alt="Shot thumbnail"
-                                            className="w-full h-full object-cover rounded-lg"
-                                        />
-                                    )
-                                ) : (
-                                    <div className="w-full h-full rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                        <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                            <Image className="w-8 h-8 text-gray-500" />
+                                        <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                                            <div className="w-20 h-20 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
+                                                <Image className="w-10 h-10 text-gray-500" />
+                                            </div>
+                                            <p className="text-gray-500 text-base font-medium">ยังไม่มีภาพตัวอย่าง</p>
+                                            <p className="text-gray-600 text-xs">คลิกเพื่ออัพโหลด</p>
                                         </div>
-                                        <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* ปุ่มเมนู - แสดงเมื่อมี thumbnail */}
-                                {showPreview && shotData.thumbnail && (
-                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setShowPreview(true);
-                                                }}
-                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                ดูไฟล์
-                                            </button>
-                                            <label className="px-4 py-2 bg-gradient-to-r from-green-800 to-green-800 hover:from-green-500 hover:to-green-500 text-white rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-                                                <Upload className="w-4 h-4" />
-                                                เปลี่ยนไฟล์
-                                                <input
-                                                    type="file"
-                                                    accept="image/*,video/*"
-                                                    className="hidden"
-                                                    onChange={async (e) => {
-                                                        if (!e.target.files?.[0]) return;
-
-                                                        const file = e.target.files[0];
-                                                        const formData = new FormData();
-
-                                                        formData.append("shotId", shotData.id.toString());
-                                                        formData.append("file", file);
-                                                        formData.append("fileName", file.name);
-                                                        formData.append("oldImageUrl", shotData.thumbnail || "");
-                                                        formData.append("type", file.type.split('/')[0]);
-
-                                                        try {
-                                                            const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                                                                method: "POST",
-                                                                body: formData,
-                                                            });
-
-                                                            const data = await res.json();
-                                                            console.log("📥 Upload Response:", data);
-
-                                                            if (res.ok) {
-                                                                const newFileUrl = data.file?.fileUrl || data.fileUrl;
-
-                                                                setShotData(prev => ({
-                                                                    ...prev,
-                                                                    thumbnail: newFileUrl
-                                                                }));
-
-                                                                const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                                const updated = {
-                                                                    ...stored,
-                                                                    thumbnail: newFileUrl,
-                                                                };
-                                                                localStorage.setItem("selectedShot", JSON.stringify(updated));
-
-                                                                console.log("✅ Upload success! New URL:", newFileUrl);
-
-                                                            } else {
-                                                                console.error("❌ Upload failed:", data.error);
-                                                                alert("Upload failed: " + (data.error || "Unknown error"));
-                                                            }
-                                                        } catch (err) {
-                                                            console.error("❌ Upload error:", err);
-                                                            alert("Upload error");
-                                                        }
+                                    {/* Hover Controls */}
+                                    {shotData.thumbnail && (
+                                        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-all bg-black/60 backdrop-blur-sm">
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setShowPreview(true);
                                                     }}
-                                                />
-                                            </label>
+                                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl hover:scale-105 font-medium"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    ดูเต็มหน้าจอ
+                                                </button>
+                                                <label className="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl flex items-center gap-2 cursor-pointer transition-all shadow-lg hover:shadow-xl hover:scale-105 font-medium">
+                                                    <Upload className="w-4 h-4" />
+                                                    เปลี่ยนไฟล์
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,video/*"
+                                                        className="hidden"
+                                                        onChange={async (e) => {
+                                                            if (!e.target.files?.[0]) return;
+
+                                                            const file = e.target.files[0];
+                                                            const formData = new FormData();
+
+                                                            formData.append("shotId", shotData.id.toString());
+                                                            formData.append("file", file);
+                                                            formData.append("fileName", file.name);
+                                                            formData.append("oldImageUrl", shotData.thumbnail || "");
+                                                            formData.append("type", file.type.split('/')[0]);
+
+                                                            try {
+                                                                const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
+                                                                    method: "POST",
+                                                                    body: formData,
+                                                                });
+
+                                                                const data = await res.json();
+                                                                console.log("📥 Upload Response:", data);
+
+                                                                if (res.ok) {
+                                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+
+                                                                    setShotData(prev => ({
+                                                                        ...prev,
+                                                                        thumbnail: newFileUrl
+                                                                    }));
+
+                                                                    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+                                                                    const updated = {
+                                                                        ...stored,
+                                                                        thumbnail: newFileUrl,
+                                                                    };
+                                                                    localStorage.setItem("selectedShot", JSON.stringify(updated));
+
+                                                                    console.log("✅ Upload success! New URL:", newFileUrl);
+
+                                                                } else {
+                                                                    console.error("❌ Upload failed:", data.error);
+                                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                                }
+                                                            } catch (err) {
+                                                                console.error("❌ Upload error:", err);
+                                                                alert("Upload error");
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Upload Input - แสดงเมื่อไม่มี thumbnail */}
-                                {!shotData.thumbnail && (
-                                    <input
-                                        type="file"
-                                        accept="image/*,video/*"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        onChange={async (e) => {
-                                            if (!e.target.files?.[0]) return;
+                                    {/* Upload Input for empty state */}
+                                    {!shotData.thumbnail && (
+                                        <input
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={async (e) => {
+                                                if (!e.target.files?.[0]) return;
 
-                                            const file = e.target.files[0];
-                                            const formData = new FormData();
-                                            formData.append("shotId", shotData.id.toString());
-                                            formData.append("file", file);
-                                            formData.append("oldImageUrl", shotData.thumbnail || "");
+                                                const file = e.target.files[0];
+                                                const formData = new FormData();
+                                                formData.append("shotId", shotData.id.toString());
+                                                formData.append("file", file);
+                                                formData.append("oldImageUrl", shotData.thumbnail || "");
 
-                                            try {
-                                                const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                                                    method: "POST",
-                                                    body: formData,
-                                                });
+                                                try {
+                                                    const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
+                                                        method: "POST",
+                                                        body: formData,
+                                                    });
 
-                                                const data = await res.json();
-                                                console.log("📥 Upload Response:", data);
+                                                    const data = await res.json();
+                                                    console.log("📥 Upload Response:", data);
 
-                                                if (res.ok) {
-                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+                                                    if (res.ok) {
+                                                        const newFileUrl = data.file?.fileUrl || data.fileUrl;
 
-                                                    setShotData(prev => ({
-                                                        ...prev,
-                                                        thumbnail: newFileUrl
-                                                    }));
+                                                        setShotData(prev => ({
+                                                            ...prev,
+                                                            thumbnail: newFileUrl
+                                                        }));
 
-                                                    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                    const updated = {
-                                                        ...stored,
-                                                        thumbnail: newFileUrl,
-                                                    };
-                                                    localStorage.setItem("selectedShot", JSON.stringify(updated));
+                                                        const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+                                                        const updated = {
+                                                            ...stored,
+                                                            thumbnail: newFileUrl,
+                                                        };
+                                                        localStorage.setItem("selectedShot", JSON.stringify(updated));
 
-                                                    console.log("✅ Upload success! New URL:", newFileUrl);
+                                                        console.log("✅ Upload success! New URL:", newFileUrl);
 
-                                                } else {
-                                                    console.error("❌ Upload failed:", data.error);
-                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                    } else {
+                                                        console.error("❌ Upload failed:", data.error);
+                                                        alert("Upload failed: " + (data.error || "Unknown error"));
+                                                    }
+                                                } catch (err) {
+                                                    console.error("❌ Upload error:", err);
+                                                    alert("Upload error");
                                                 }
-                                            } catch (err) {
-                                                console.error("❌ Upload error:", err);
-                                                alert("Upload error");
-                                            }
-                                        }}
-                                    />
-                                )}
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="flex-1 space-y-4">
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex items-center gap-8">
-                                        <div className="min-w-[200px]">
-                                            <span className="text-gray-400  font-medium block mb-1">Shot Code</span>
-                                            {editingField === 'shotCode' ? (
-                                                <input
-                                                    value={shotData.shotCode}
-                                                    autoFocus
-                                                    onChange={(e) =>
-                                                        setShotData(prev => ({ ...prev, shotCode: e.target.value }))
-                                                    }
-                                                    onBlur={() => {
+                            {/* Info Section - จัด Layout ใหม่ให้อ่านง่าย */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Row 1: Shot Code & Sequence */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                        <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                            <span>🎬</span>
+                                            Shot Code
+                                        </label>
+                                        {editingField === 'shotCode' ? (
+                                            <input
+                                                value={shotData.shotCode}
+                                                autoFocus
+                                                onChange={(e) =>
+                                                    setShotData(prev => ({ ...prev, shotCode: e.target.value }))
+                                                }
+                                                onBlur={() => {
+                                                    updateShotField("shotCode", shotData.shotCode);
+                                                    setEditingField(null);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
                                                         updateShotField("shotCode", shotData.shotCode);
                                                         setEditingField(null);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === "Enter") {
-                                                            updateShotField("shotCode", shotData.shotCode);
-                                                            setEditingField(null);
-                                                        }
-                                                        if (e.key === "Escape") {
-                                                            setEditingField(null);
-                                                        }
-                                                    }}
-                                                    className="bg-gray-700 border border-blue-500 rounded px-2 py-1 text-lg text-white w-full"
-                                                />
-                                            ) : (
-                                                <p
-                                                    className="text-gray-100 font-semibold text-lg cursor-text hover:bg-gray-700 px-2 py-1 rounded"
-                                                    onClick={() => setEditingField('shotCode')}
-                                                >
-                                                    🎬 {shotData.shotCode}
-                                                </p>
-                                            )}
-
-                                        </div>
-
-                                        <div className="min-w-[200px]">
-                                            <span className="text-gray-400  font-medium block mb-1">Sequence</span>
-                                            <p className="text-gray-100 font-medium flex items-center gap-2">
-                                                📁 {shotData.sequence}
+                                                    }
+                                                    if (e.key === "Escape") {
+                                                        setEditingField(null);
+                                                    }
+                                                }}
+                                                className="w-full bg-gray-700 border border-blue-500 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-blue-500/50"
+                                            />
+                                        ) : (
+                                            <p
+                                                className="text-white font-semibold text-lg cursor-pointer hover:bg-gray-700/50 px-3 py-2 rounded-lg transition-colors"
+                                                onClick={() => setEditingField('shotCode')}
+                                            >
+                                                {shotData.shotCode}
                                             </p>
-                                        </div>
+                                        )}
                                     </div>
 
-                                    <div className="flex items-center gap-8">
-                                        <div className="min-w-[200px] relative">
-                                            <span className="text-gray-400  font-medium block mb-1">Status</span>
-                                            <button
-                                                onClick={handleStatusClick}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-full font-medium transition-colors"
-                                            >
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                        <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                            <span>📁</span>
+                                            Sequence
+                                        </label>
+                                        <p className="text-white font-semibold text-lg px-3 py-2">
+                                            {shotData.sequence}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Status & Due Date */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 relative">
+                                        <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                            <span>🎯</span>
+                                            Status
+                                        </label>
+                                        <button
+                                            onClick={handleStatusClick}
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all w-full justify-between group"
+                                        >
+                                            <div className="flex items-center gap-2">
                                                 {statusConfig[shotData.status].icon === '-' ? (
                                                     <span className="text-gray-400 font-bold">-</span>
                                                 ) : (
-                                                    <div className={`w-2 h-2 rounded-full ${statusConfig[shotData.status].color}`}></div>
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[shotData.status].color}`}></div>
                                                 )}
                                                 <span>{statusConfig[shotData.status].label}</span>
-                                                <span className="text-xs ml-1">▼</span>
-                                            </button>
-
-                                            {showStatusMenu && (
-                                                <div className="absolute left-0 top-full mt-1 bg-gray-700 rounded-lg shadow-xl z-50 min-w-[180px] border border-gray-600">
-                                                    {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                        <button
-                                                            key={key}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleStatusChange(key);
-                                                            }}
-                                                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
-                                                        >
-                                                            {config.icon === '-' ? (
-                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                            ) : (
-                                                                <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-                                                            )}
-                                                            <span className="text-sm text-gray-200">{config.label}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-400 block mb-1 font-medium">Due Date</span>
-                                            <p className="text-gray-100">{shotData.dueDate}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-8">
-                                        <div className="min-w-[200px]">
-                                            <span className="text-gray-400  font-medium block mb-1">Tags</span>
-                                            {shotData.tags.length > 0 ? (
-                                                <div className="flex gap-2 flex-wrap">
-                                                    {shotData.tags.map((tag, index) => (
-                                                        <span key={index} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 text-sm italic">No tags</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-
-                                            <div className="flex-1">
-                                                <span className="text-gray-400 block mb-1 font-medium">Description</span>
-
-                                                {editingField === 'description' ? (
-                                                    <textarea
-                                                        value={shotData.description}
-                                                        autoFocus
-                                                        rows={3}
-                                                        onChange={(e) =>
-                                                            setShotData(prev => ({ ...prev, description: e.target.value }))
-                                                        }
-                                                        onBlur={() => {
-                                                            updateDescription({ description: shotData.description });
-                                                            setEditingField(null);
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter" && !e.shiftKey) {
-                                                                e.preventDefault();
-                                                                updateDescription({ description: shotData.description });
-                                                                setEditingField(null);
-                                                            }
-                                                            if (e.key === "Escape") {
-                                                                setEditingField(null);
-                                                            }
-                                                        }}
-                                                        className="w-full bg-gray-700 border border-blue-500 rounded px-3 py-2 text-sm text-white resize-none"
-                                                    />
-                                                ) : (
-                                                    <p
-                                                        className="text-gray-100 cursor-text hover:bg-gray-700 px-2 py-1 rounded"
-                                                        onClick={() => setEditingField('description')}
-                                                    >
-                                                        {shotData.description || (
-                                                            <span className="text-gray-500 italic">
-                                                                Click to add description
-                                                            </span>
-                                                        )}
-                                                    </p>
-                                                )}
                                             </div>
+                                            <span className="text-xs group-hover:translate-y-0.5 transition-transform">▼</span>
+                                        </button>
 
-                                        </div>
+                                        {showStatusMenu && (
+                                            <div className="absolute left-0 top-full mt-2 bg-gray-800 rounded-xl shadow-2xl z-50 w-full border border-gray-700">
+                                                {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                    <button
+                                                        key={key}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStatusChange(key);
+                                                        }}
+                                                        className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-700 first:rounded-t-xl last:rounded-b-xl text-left transition-colors"
+                                                    >
+                                                        {config.icon === '-' ? (
+                                                            <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                        ) : (
+                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                        )}
+                                                        <span className="text-sm text-gray-200">{config.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
+
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                        <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                            <span>📅</span>
+                                            Due Date
+                                        </label>
+                                        <p className="text-white font-semibold text-lg px-3 py-2">
+                                            {shotData.dueDate}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Row 3: Tags */}
+                                <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                    <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                        <span>🏷️</span>
+                                        Tags
+                                    </label>
+                                    {shotData.tags.length > 0 ? (
+                                        <div className="flex gap-2 flex-wrap">
+                                            {shotData.tags.map((tag, index) => (
+                                                <span key={index} className="px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 text-blue-300 text-sm rounded-lg font-medium">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-sm italic px-3 py-2">ยังไม่มีแท็ก</p>
+                                    )}
+                                </div>
+
+                                {/* Row 4: Description */}
+                                <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                    <label className="text-gray-400 text-sm font-medium block mb-2 flex items-center gap-2">
+                                        <span>📝</span>
+                                        Description
+                                    </label>
+                                    {editingField === 'description' ? (
+                                        <textarea
+                                            value={shotData.description}
+                                            autoFocus
+                                            rows={3}
+                                            onChange={(e) =>
+                                                setShotData(prev => ({ ...prev, description: e.target.value }))
+                                            }
+                                            onBlur={() => {
+                                                updateDescription({ description: shotData.description });
+                                                setEditingField(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    updateDescription({ description: shotData.description });
+                                                    setEditingField(null);
+                                                }
+                                                if (e.key === "Escape") {
+                                                    setEditingField(null);
+                                                }
+                                            }}
+                                            className="w-full bg-gray-700 border border-blue-500 rounded-lg px-3 py-2 text-white resize-none focus:ring-2 focus:ring-blue-500/50"
+                                        />
+                                    ) : (
+                                        <p
+                                            className="text-white cursor-pointer hover:bg-gray-700/50 px-3 py-2 rounded-lg transition-colors min-h-[3rem]"
+                                            onClick={() => setEditingField('description')}
+                                        >
+                                            {shotData.description || (
+                                                <span className="text-gray-500 italic">
+                                                    คลิกเพื่อเพิ่มคำอธิบาย...
+                                                </span>
+                                            )}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <nav className="flex items-center gap-6 border-t border-gray-700 pt-4">
+                        {/* Tabs Navigation - ปรับให้ทันสมัยขึ้น */}
+                        <nav className="flex items-center gap-3 border-t border-gray-700/50 pt-6 mt-8 overflow-x-auto pb-2">
                             {['Activity', 'Shot Info', 'Tasks', 'Notes', 'Versions', 'Assets', 'Publishes', 'Files', 'History'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`pb-2 rounded-xl bg-gray-700 transition-all ${activeTab === tab
-                                        ? 'text-white border-b-2 border-blue-500 font-medium bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-600 hover:shadow-blue-500/50 hover:scale-105'
-                                        : 'text-white-400 hover:text-white bg-gradient-to-r hover:from-gray-700 hover:to-gray-700 hover:scale-105'
-                                        }`}
+                                    className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${
+                                        activeTab === tab
+                                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-105'
+                                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white hover:scale-105'
+                                    }`}
                                 >
                                     {tab}
                                 </button>
@@ -908,54 +1004,60 @@ export default function Others_Shot() {
                         </nav>
                     </div>
 
-                    <div className="mt-6 p-6 bg-gray-800 rounded-lg shadow-lg">
-                        <h3 className="text-xl text-gray-200 mb-4 font-semibold flex items-center gap-2">
-                            <span className="w-1 h-6 bg-blue-500 rounded"></span>
-                            {activeTab}
+                    {/* Tab Content Section - ปรับให้เป็นส่วนแยก */}
+                    <div className="mt-6 p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700/50">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl text-white font-bold flex items-center gap-3">
+                                <span className="w-1.5 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></span>
+                                {activeTab}
+                            </h3>
 
-                            {/* Action button (per tab) */}
-                            {activeTab === 'Tasks' && (
-                                <button
-                                    onClick={() => setShowCreateShot_Task(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105"
-                                >
-                                    Add Task
-                                    <span className="text-xs">▼</span>
-                                </button>
-                            )}
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                {activeTab === 'Tasks' && (
+                                    <button
+                                        onClick={() => setShowCreateShot_Task(true)}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
+                                    >
+                                        <span className="text-lg">+</span>
+                                        Add Task
+                                    </button>
+                                )}
 
-                            {activeTab === 'Notes' && (
-                                <button
-                                    onClick={() => setShowCreateShot_Note(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105"
-                                >
-                                    Add Note
-                                    <span className="text-xs">▼</span>
-                                </button>
-                            )}
+                                {activeTab === 'Notes' && (
+                                    <button
+                                        onClick={() => setShowCreateShot_Note(true)}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
+                                    >
+                                        <span className="text-lg">+</span>
+                                        Add Note
+                                    </button>
+                                )}
 
-                            {activeTab === 'Versions' && (
-                                <button
-                                    onClick={() => setShowCreateShot_Versions(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105"
-                                >
-                                    Add Versions
-                                    <span className="text-xs">▼</span>
-                                </button>
-                            )}
+                                {activeTab === 'Versions' && (
+                                    <button
+                                        onClick={() => setShowCreateShot_Versions(true)}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
+                                    >
+                                        <span className="text-lg">+</span>
+                                        Add Version
+                                    </button>
+                                )}
 
-                            {activeTab === 'Assets' && (
-                                <button
-                                    onClick={() => setShowCreateShot_Assets(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105"
-                                >
-                                    Add Assets
-                                    <span className="text-xs">▼</span>
-                                </button>
-                            )}
-                        </h3>
+                                {activeTab === 'Assets' && (
+                                    <button
+                                        onClick={() => setShowCreateShot_Assets(true)}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
+                                    >
+                                        <span className="text-lg">+</span>
+                                        Add Asset
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
-                        <div className="mt-4">
+                        {/* Content */}
+                        <div>
                             {renderTabContent()}
                         </div>
                     </div>

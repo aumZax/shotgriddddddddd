@@ -90,6 +90,171 @@ export default function Project_Tasks() {
     const [editingDueDateTaskId, setEditingDueDateTaskId] = useState<number | null>(null);
 
 
+
+
+    // เพิ่ม state สำหรับ form
+    const [createTaskForm, setCreateTaskForm] = useState({
+        task_name: '',
+        entity_type: '',
+        entity_id: '',
+        status: 'wtg',
+        start_date: '',
+        due_date: '',
+        description: '',
+        file_url: '',
+    });
+
+    // เพิ่ม state สำหรับ entity options
+    // แก้ไข state structure
+    const [availableEntities, setAvailableEntities] = useState<{
+        assets: any[];
+        shots: any[];
+        sequences: any[];
+    }>({
+        assets: [],
+        shots: [],
+        sequences: []
+    });
+    // Fetch entities เมื่อเปิด modal
+    useEffect(() => {
+        if (showCreateMytask) {
+            console.log('Modal opened!'); // ⭐ Debug
+
+            fetchAvailableEntities();
+        }
+    }, [showCreateMytask]);
+
+    // ฟังก์ชัน fetch entities
+    const fetchAvailableEntities = async () => {
+        try {
+            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+            if (!projectId) return;
+
+            // Fetch assets - ต้อง flatten จาก grouped structure
+            const assetsRes = await axios.post(`${ENDPOINTS.ASSETLIST}`, { projectId });
+            const assetsFlat = assetsRes.data.flatMap((group: any) => group.assets || []);
+
+            // Fetch shots - ต้อง flatten จาก grouped structure
+            const shotsRes = await axios.post(`${ENDPOINTS.SHOTLIST}`, { projectId });
+            const shotsFlat = shotsRes.data.flatMap((group: any) => group.shots || []);
+
+            // Fetch sequences
+            const sequencesRes = await axios.post(`${ENDPOINTS.PROJECT_SEQUENCES}`, { projectId });
+
+            console.log('Assets:', assetsFlat); // ⭐ Debug
+            console.log('Shots:', shotsFlat); // ⭐ Debug
+            console.log('Sequences:', sequencesRes.data); // ⭐ Debug
+
+            setAvailableEntities({
+                assets: assetsFlat,
+                shots: shotsFlat,
+                sequences: sequencesRes.data || []
+            });
+        } catch (err) {
+            console.error("Fetch entities error:", err);
+        }
+    };
+
+
+    // ฟังก์ชัน handle input change
+    const handleFormChange = (field: string, value: any) => {
+        setCreateTaskForm(prev => ({
+            ...prev,
+            [field]: value
+        }));
+
+        // ถ้าเปลี่ยน entity_type ให้ reset entity_id
+        if (field === 'entity_type') {
+            setCreateTaskForm(prev => ({
+                ...prev,
+                entity_id: ''
+            }));
+        }
+    };
+
+    // ฟังก์ชันสร้าง Task
+    const handleCreateTask = async () => {
+        try {
+            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+            if (!projectId) {
+                alert("ไม่พบ Project ID");
+                return;
+            }
+
+            if (!createTaskForm.task_name.trim()) {
+                alert("กรุณากระบุชื่องาน");
+                return;
+            }
+
+            const payload = {
+                project_id: projectId,
+                task_name: createTaskForm.task_name.trim(),
+                entity_type: createTaskForm.entity_type || null,
+                entity_id: createTaskForm.entity_id ? Number(createTaskForm.entity_id) : null,
+                status: createTaskForm.status || 'wtg',
+                start_date: createTaskForm.start_date || null,
+                due_date: createTaskForm.due_date || null,
+                description: createTaskForm.description || null,
+                file_url: createTaskForm.file_url || null,
+                pipeline_step_id: null // ⭐ ส่งเป็น null
+            };
+
+            const res = await axios.post(`${ENDPOINTS.ADD_TASK}`, payload);
+
+            // รีเฟรชข้อมูล tasks
+            const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
+            setTaskGroups(tasksRes.data);
+
+            // รีเซ็ต form และปิด modal
+            setCreateTaskForm({
+                task_name: '',
+                entity_type: '',
+                entity_id: '',
+                status: 'wtg',
+                start_date: '',
+                due_date: '',
+                description: '',
+                file_url: ''
+                // ⭐ ลบ pipeline_step_id ออก
+            });
+
+            closeModal();
+            alert("สร้างงานสำเร็จ!");
+
+        } catch (err: any) {
+            console.error("Create task error:", err);
+            alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+        }
+    };
+
+    // ฟังก์ชันดึง entity options ตาม type
+    const getEntityOptions = () => {
+        switch (createTaskForm.entity_type) {
+            case 'asset':
+                return availableEntities.assets;
+            case 'shot':
+                return availableEntities.shots;
+            case 'sequence':
+                return availableEntities.sequences;
+            default:
+                return [];
+        }
+    };
+
+    // ฟังก์ชันแสดงชื่อ entity
+    const getEntityLabel = (entity: any) => {
+        if (createTaskForm.entity_type === 'asset') {
+            return entity.asset_name || 'Unnamed Asset';
+        }
+        if (createTaskForm.entity_type === 'shot') {
+            return entity.shot_name || 'Unnamed Shot';
+        }
+        if (createTaskForm.entity_type === 'sequence') {
+            return entity.sequence_name || 'Unnamed Sequence';
+        }
+        return '';
+    };
+
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown ASSIGNEE REVIEWER ++++++++++++++++++++++++++++++++++++++++++++++
     useEffect(() => {
         if (editingAssigneeTaskId && assigneeDropdownRef.current) {
@@ -475,7 +640,20 @@ export default function Project_Tasks() {
 
     const closeModal = () => {
         setShowCreateMytask(false);
-        setPosition({ x: 0, y: 0 }); // ⭐ reset ตำแหน่ง
+        setPosition({ x: 0, y: 0 });
+
+        // ⭐ Reset form
+        setCreateTaskForm({
+            task_name: '',
+            entity_type: '',
+            entity_id: '',
+            status: 'wtg',
+            start_date: '',
+            due_date: '',
+            description: '',
+            file_url: ''
+            // ⭐ ลบ pipeline_step_id ออก
+        });
     };
 
 
@@ -675,17 +853,25 @@ export default function Project_Tasks() {
 
 
     // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
+    // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
     const fetchPipelineStepsByType = async (entityType: 'asset' | 'shot') => {
         try {
             const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
                 entityType: entityType
             });
 
-            // ⭐ แก้ไขตรงนี้ - ใช้ prevState เพื่อรวม steps แทนการ replace
+            // ⭐ แก้ไขตรงนี้ - เก็บ entity_type ไว้ใน step object
+            const stepsWithType = res.data.map((step: PipelineStep) => ({
+                ...step,
+                entity_type: entityType // เพิ่ม entity_type เข้าไปใน object
+            }));
+
+            // ⭐ แทนที่จะรวม ให้ replace ข้อมูลของ type นั้นๆ เลย
             setAvailablePipelineSteps(prev => {
-                // กรองออก steps ของ type เดิมก่อน แล้วเพิ่ม steps ใหม่เข้าไป
+                // กรองเอาเฉพาะ steps ที่ไม่ใช่ type ที่กำลังจะอัพเดท
                 const otherTypeSteps = prev.filter(step => step.entity_type !== entityType);
-                return [...otherTypeSteps, ...res.data];
+                // รวมกับ steps ใหม่
+                return [...otherTypeSteps, ...stepsWithType];
             });
         } catch (err) {
             console.error("Failed to fetch pipeline steps:", err);
@@ -788,21 +974,21 @@ export default function Project_Tasks() {
                                             <Calendar className="w-3.5 h-3.5" />
                                             <span>เริ่มต้น</span>
                                         </div>
-                                       
+
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-3.5 h-3.5" />
                                             <span>สิ้นสุด</span>
                                         </div>
-                                      
+
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-3.5 h-3.5" />
                                             <span>ระยะเวลา (วัน)</span>
                                         </div>
-                                        
+
                                     </th>
                                     {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div>Worked</div>
@@ -1067,11 +1253,13 @@ export default function Project_Tasks() {
                                                                                 return;
                                                                             }
 
-                                                                            // ⭐ ถ้าไม่มี entity_type หรือเป็น unassigned ให้โหลดทั้ง shot และ asset
+                                                                            // ⭐ ปรับปรุงการจัดการ unassigned - รีเซ็ต availablePipelineSteps ก่อน
                                                                             if (!entityType || entityType === 'unassigned') {
+                                                                                setAvailablePipelineSteps([]); // ⭐ เคลียร์ก่อน
                                                                                 fetchPipelineStepsByType('shot');
                                                                                 fetchPipelineStepsByType('asset');
                                                                             } else {
+                                                                                setAvailablePipelineSteps([]); // ⭐ เคลียร์ก่อน
                                                                                 fetchPipelineStepsByType(entityType as 'asset' | 'shot');
                                                                             }
 
@@ -2026,169 +2214,168 @@ export default function Project_Tasks() {
                     <div
                         className="absolute inset-0 bg-black/60"
                         onClick={closeModal}
-
                     />
 
                     {/* Modal */}
                     <div
-                        className="absolute top-1/2 left-1/2 w-full max-w-2xl  bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden"
+                        className="absolute top-1/2 left-1/2 w-full max-w-2xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden"
                         style={{
                             transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`
                         }}
                     >
                         {/* Header */}
-                        <div onMouseDown={handleMouseDownnnnn} className="px-6 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 t flex items-center justify-between cursor-grab active:cursor-grabbing select-none">
+                        <div
+                            onMouseDown={handleMouseDownnnnn}
+                            className="px-6 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+                        >
                             <h2 className="text-lg text-gray-200 font-normal">
                                 Create a new Task <span className="text-gray-400 text-sm font-normal">- Global Form</span>
                             </h2>
-
                         </div>
 
                         {/* Body */}
                         <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+                            {/* Task Name - Required */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
-                                    Task Name:
+                                    Task Name: <span className="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     placeholder="Enter task name"
+                                    value={createTaskForm.task_name}
+                                    onChange={(e) => handleFormChange('task_name', e.target.value)}
                                     className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
                             </div>
 
+                            {/* Entity Type */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
-                                    Link:
+                                    Link to:
                                 </label>
-                                <input
-                                    type="text"
-                                    placeholder="https://example.com"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
+                                <select
+                                    value={createTaskForm.entity_type}
+                                    onChange={(e) => handleFormChange('entity_type', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="">-- ไม่เชื่อมโยง --</option>
+                                    <option value="asset">Asset</option>
+                                    <option value="shot">Shot</option>
+                                    <option value="sequence">Sequence</option>
+                                </select>
                             </div>
 
+                            {/* Entity Selection - แสดงเมื่อเลือก entity_type แล้ว */}
+                            {createTaskForm.entity_type && (
+                                <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right">
+                                        Select {createTaskForm.entity_type}:
+                                    </label>
+                                    <select
+                                        value={createTaskForm.entity_id}
+                                        onChange={(e) => handleFormChange('entity_id', e.target.value)}
+                                        className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="">-- เลือก {createTaskForm.entity_type} --</option>
+                                        {getEntityOptions().length === 0 ? (
+                                            <option disabled>ไม่มีข้อมูล</option>
+                                        ) : (
+                                            getEntityOptions().map((entity: any) => (
+                                                <option key={entity.id} value={entity.id}>
+                                                    {getEntityLabel(entity)}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Status */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
-                                    Pipeline Step:
+                                    Status:
                                 </label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g., In Progress, Review, Done"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
+                                <select
+                                    value={createTaskForm.status}
+                                    onChange={(e) => handleFormChange('status', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="wtg">Waiting to Start</option>
+                                    <option value="ip">In Progress</option>
+                                    <option value="fin">Final</option>
+                                </select>
                             </div>
 
+                            {/* ⭐ ลบส่วน Pipeline Step ออกทั้งหมด */}
+
+                            {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
                                     Start Date:
                                 </label>
                                 <input
                                     type="date"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded
-    text-gray-200 text-sm focus:outline-none focus:border-blue-500
-    placeholder:text-gray-500 [color-scheme:dark]"
+                                    value={createTaskForm.start_date}
+                                    onChange={(e) => handleFormChange('start_date', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
                                 />
-
                             </div>
 
+                            {/* Due Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
                                     Due Date:
                                 </label>
                                 <input
                                     type="date"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded
-    text-gray-200 text-sm focus:outline-none focus:border-blue-500
-    placeholder:text-gray-500 [color-scheme:dark]"
+                                    value={createTaskForm.due_date}
+                                    onChange={(e) => handleFormChange('due_date', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
                                 />
-
                             </div>
 
+                            {/* Description */}
+                            <div className="grid grid-cols-[140px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">
+                                    Description:
+                                </label>
+                                <textarea
+                                    placeholder="Enter task description (optional)"
+                                    value={createTaskForm.description}
+                                    onChange={(e) => handleFormChange('description', e.target.value)}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
+                                />
+                            </div>
+
+                            {/* File URL */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
-                                    Assigned To:
+                                    File URL:
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Enter assignee name"
+                                    placeholder="https://example.com/image.jpg"
+                                    value={createTaskForm.file_url}
+                                    onChange={(e) => handleFormChange('file_url', e.target.value)}
                                     className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
                             </div>
-
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Reviewer:
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter reviewer name"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
-                            </div>
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Entity Type:
-                                </label>
-                                <select
-                                    value={entityType}
-                                    onChange={(e) => setEntityType(e.target.value as 'asset' | 'shot')}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm"
-                                >
-                                    <option value="asset">Asset</option>
-                                    <option value="shot">Shot</option>
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Pipeline Step:
-                                </label>
-                                <select
-                                    value={selectedPipelineStep || ''}
-                                    onChange={(e) => setSelectedPipelineStep(Number(e.target.value))}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm"
-                                >
-                                    <option value="">Select step...</option>
-                                    {pipelineSteps.map(step => (
-                                        <option key={step.id} value={step.id}>
-                                            {step.step_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Project:
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter project name"
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
-                            </div>
-
-                            {/* <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <div></div>
-                                <button className="text-sm text-gray-400 hover:text-gray-200 text-left flex items-center gap-1">
-                                    More fields <span>▾</span>
-                                </button>
-                            </div> */}
                         </div>
 
                         {/* Footer */}
-                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420]  rounded-b flex justify-between items-center gap-3">
+                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] rounded-b flex justify-between items-center gap-3">
                             <button
                                 onClick={closeModal}
-
                                 className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center"
                             >
                                 Cancel
                             </button>
 
                             <button
-                                className="px-4 h-9  bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center justify-center"
+                                onClick={handleCreateTask}
+                                className="px-4 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center justify-center"
                             >
                                 Create Task
                             </button>

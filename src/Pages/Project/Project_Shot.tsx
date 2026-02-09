@@ -1020,15 +1020,26 @@ export default function ProjectShot() {
                                                                 }}
                                                             >
                                                                 {shot.thumbnail ? (
-                                                                    <img
-                                                                        src={ENDPOINTS.image_url + shot.thumbnail}
-                                                                        alt={shot.shot_name}
-                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                    />
+                                                                    shot.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                                                        <video
+                                                                            src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                            className="w-full h-full object-cover"
+                                                                            muted
+                                                                            loop
+                                                                            autoPlay
+
+                                                                        />
+
+                                                                    ) : (
+                                                                        <img
+                                                                            src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                            alt={shot.shot_name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    )
                                                                 ) : (
-                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                                        <Image className="w-4 h-4 text-gray-500" />
-                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-700/50">
+                                                                        <Image className="w-8 h-8 text-gray-500" />
                                                                     </div>
                                                                 )}
 
@@ -1116,14 +1127,14 @@ export default function ProjectShot() {
                                                                                 className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors  bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                                             >
                                                                                 {config.icon === '-' ? (
-                                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                                        ) : (
-                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                                        )}
-                                                                                        <div className="text-xs text-gray-200">
-                                                                                            <span className="px-4">{config.label}</span>
-                                                                                            <span>{config.fullLabel}</span>
-                                                                                        </div>
+                                                                                    <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                                ) : (
+                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                )}
+                                                                                <div className="text-xs text-gray-200">
+                                                                                    <span className="px-4">{config.label}</span>
+                                                                                    <span>{config.fullLabel}</span>
+                                                                                </div>
                                                                             </button>
                                                                         ))}
                                                                     </div>

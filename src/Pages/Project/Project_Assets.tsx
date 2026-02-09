@@ -1233,22 +1233,30 @@ export default function Project_Assets() {
                                                                 }}
                                                             >
                                                                 {asset.file_url ? (
-                                                                    <img
-                                                                        src={ENDPOINTS.image_url+asset.file_url}
-                                                                        alt={asset.asset_name}
-                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                        onError={(e) => {
-                                                                            console.error('Failed to load image:', asset.file_url);
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
+                                                                    asset.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                                                        <video
+                                                                            src={ENDPOINTS.image_url + asset.file_url}
+                                                                            className="w-full h-full object-cover"
+                                                                            muted
+                                                                            loop
+                                                                            autoPlay
+                                                                           
+                                                                        />
+                                                                    ) : (
+                                                                        <img
+                                                                            src={ENDPOINTS.image_url + asset.file_url}
+                                                                            alt={asset.asset_name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />  
+                                                                    )
                                                                 ) : (
-                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                                        <Image className="w-4 h-4 text-gray-500" />
-                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-700/50">
+                                                                        <Image className="w-10 h-10 text-gray-500" />
                                                                     </div>
-                                                                )}
+                                                                )}    
 
+                                                                
+                                  
                                                                 {/* Hover Overlay */}
                                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
                                                                     <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -1794,8 +1802,6 @@ export default function Project_Assets() {
                     >
                         🗑️ Delete Sequence
                     </button>
-
-
                 </div>
             )}
 

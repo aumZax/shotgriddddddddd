@@ -918,7 +918,7 @@ export default function Others_Asset() {
                                                         formData.append("file", file);
                                                         formData.append("fileName", file.name);
                                                         formData.append("oldImageUrl", assetData.thumbnail || "");
-                                                        formData.append("type", "thumbnail");
+                                                        formData.append("type", "image");
 
                                                         try {
                                                             const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
@@ -974,6 +974,7 @@ export default function Others_Asset() {
                                             formData.append("assetId", assetData.id.toString());
                                             formData.append("file", file);
                                             formData.append("oldImageUrl", assetData.thumbnail || "");
+                                            formData.append("type", file.type.split('/')[0]);
 
                                             try {
                                                 const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
