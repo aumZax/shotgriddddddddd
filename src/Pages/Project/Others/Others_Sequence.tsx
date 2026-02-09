@@ -603,7 +603,8 @@ export default function Others_Sequence() {
                                                         e.stopPropagation();
                                                         handleStatusChange(key);
                                                     }}
-                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
+                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+
                                                 >
                                                     {config.icon === '-' ? (
                                                         <span className="text-gray-400 font-bold w-2 text-center">-</span>
