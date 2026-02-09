@@ -34,13 +34,6 @@ interface Note {
     assigned_people?: string[];
 }
 
-interface Activity {
-    id: number;
-    user: string;
-    action: string;
-    timestamp: Date;
-}
-
 interface AssetData {
     id: number;
     asset_name: string;
@@ -132,26 +125,13 @@ const getSelectedAsset = (): AssetData | null => {
     }
 };
 
-const formatTimeAgo = (date: Date): string => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 2592000) return `${Math.floor(seconds / 86400)} days ago`;
-    return date.toLocaleDateString();
-};
-
 export default function Others_Asset() {
-    const [activeTab, setActiveTab] = useState('Activity');
+    const [activeTab, setActiveTab] = useState('Asset Info');
     const [assetData, setAssetData] = useState<AssetData | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showCreateAsset_Task, setShowCreateAsset_Task] = useState(false);
     const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
-    const [showCreateAsset_Versions, setShowCreateAsset_Versions] = useState(false);
     const [editingField, setEditingField] = useState<string | null>(null);
-    const [activities, setActivities] = useState<Activity[]>([]);
-    const [commentText, setCommentText] = useState('');
-    const [currentUser] = useState('Current User');
 
     const [showPreview, setShowPreview] = useState(false);
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
@@ -164,6 +144,7 @@ export default function Others_Asset() {
         RIG: false,
         TXT: false,
     });
+    const currentUser = localStorage.getItem('currentUser') || 'Unknown';
 
     const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
     const [query, setQuery] = useState('');
@@ -262,8 +243,6 @@ export default function Others_Asset() {
     const fetchNotes = async () => {
         if (!assetData?.id) return;
 
-
-
         setLoadingNotes(true);
         try {
             const response = await fetch(`${ENDPOINTS.GET_NOTES}`, {
@@ -306,8 +285,6 @@ export default function Others_Asset() {
             // optimistic update
             setNotes(prevNotes => prevNotes.filter(note => note.id !== noteId));
 
-            // show success alert ทันที
-
         } catch (err) {
             console.error("❌ DELETE FAILED:", err);
             alert(err instanceof Error ? err.message : "Failed to delete note");
@@ -322,7 +299,6 @@ export default function Others_Asset() {
         e.preventDefault();
         e.stopPropagation();
 
-        // just open context menu for this note (NoteTab already closes its own dropdown)
         setNoteContextMenu({
             visible: true,
             x: e.clientX,
@@ -350,15 +326,6 @@ export default function Others_Asset() {
             selectedAsset.status = newStatus;
             localStorage.setItem("selectedAsset", JSON.stringify(selectedAsset));
         }
-
-        const newActivity: Activity = {
-            // eslint-disable-next-line react-hooks/purity
-            id: Date.now(),
-            user: currentUser,
-            action: `updated status to "${statusConfig[newStatus].label}"`,
-            timestamp: new Date()
-        };
-        setActivities([newActivity, ...activities]);
 
         try {
             await axios.post(ENDPOINTS.UPDATEASSET, {
@@ -394,7 +361,6 @@ export default function Others_Asset() {
                 formData.append("fileName", fileToUpload.name);
                 formData.append("type", "note");
 
-
                 const uploadResponse = await fetch(ENDPOINTS.UPLOAD_ASSET, {
                     method: 'POST',
                     body: formData
@@ -420,7 +386,7 @@ export default function Others_Asset() {
                 subject: subject || '',
                 body: body || '',
                 fileUrl: uploadedFileUrl ?? null,
-                author: currentUser || 'Unknown',
+                author: currentUser,
                 status: 'opn',
                 visibility: type ?? null,
                 tasks: (selectedTasks && selectedTasks.length > 0) ? selectedTasks : null,
@@ -490,27 +456,6 @@ export default function Others_Asset() {
 
     const handleClickOutside = () => {
         if (showStatusMenu) setShowStatusMenu(false);
-    };
-
-    const handleSubmitComment = async () => {
-        if (!commentText.trim()) return;
-
-        const newComment: Activity = {
-            id: Date.now(),
-            user: currentUser,
-            action: `commented: "${commentText}"`,
-            timestamp: new Date()
-        };
-
-        setActivities([newComment, ...activities]);
-        setCommentText('');
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmitComment();
-        }
     };
 
     const handletaskChange = (type: FilterType) => {
@@ -644,6 +589,18 @@ export default function Others_Asset() {
         return date.toLocaleDateString('th-TH', options);
     };
 
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "-";
+
+        return new Date(dateStr).toLocaleString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    };
+
     const [isPanelOpen, setIsPanelOpen] = useState(false);
 
     useEffect(() => {
@@ -656,86 +613,15 @@ export default function Others_Asset() {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'Activity':
-                return (
-                    <div className="space-y-4">
-                        <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                                    {currentUser.charAt(0)}
-                                </div>
-                                <div className="flex-1">
-                                    <textarea
-                                        value={commentText}
-                                        onChange={(e) => setCommentText(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        placeholder="Add a comment... (Press Enter to submit)"
-                                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-300 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
-                                        rows={3}
-                                    />
-                                    <div className="flex items-center justify-between mt-2">
-                                        <p className="text-xs text-gray-500">
-                                            Press Enter to submit, Shift+Enter for new line
-                                        </p>
-                                        <button
-                                            onClick={handleSubmitComment}
-                                            disabled={!commentText.trim()}
-                                            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors font-medium"
-                                        >
-                                            Comment
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {activities.length === 0 ? (
-                                <div className="text-center text-gray-500 py-8">
-                                    No activities yet
-                                </div>
-                            ) : (
-                                activities.map((activity) => {
-                                    const isCurrentUser = activity.user === currentUser;
-                                    const borderColor = isCurrentUser ? 'border-orange-500' : 'border-gray-600';
-                                    const userColor = isCurrentUser ? 'text-orange-400' : 'text-gray-400';
-
-                                    return (
-                                        <div
-                                            key={activity.id}
-                                            className={`p-4 bg-gray-700/50 rounded-lg border-l-4 ${borderColor} transition-all hover:bg-gray-700/70`}
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                                                    {activity.user.charAt(0)}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-gray-300 text-sm">
-                                                        <span className={`font-semibold ${userColor}`}>
-                                                            {activity.user}
-                                                        </span>{' '}
-                                                        {activity.action}
-                                                    </p>
-                                                    <p className="text-gray-500 text-xs mt-1">
-                                                        {formatTimeAgo(activity.timestamp)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>
-                );
-
             case 'Asset Info':
                 return (
-                    <div className="space-y-4 text-gray-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InfoRow label="Asset Name" value={assetData?.asset_name || '-'} />
-                        <InfoRow label="Sequence" value={assetData?.sequence || '-'} />
                         <InfoRow label="Status" value={assetData?.status ? statusConfig[assetData.status].label : '-'} />
-                        <InfoRow label="Description" value={assetData?.description || '-'} />
+                        <InfoRow label="Due Date" value={formatDate(assetData?.dueDate || '')} />
+                        <div className="md:col-span-2">
+                            <InfoRow label="Description" value={assetData?.description || '-'} />
+                        </div>
                     </div>
                 );
 
@@ -745,20 +631,6 @@ export default function Others_Asset() {
                         tasks={tasks}
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                     />
-                );
-
-            case 'Versions':
-                return (
-                    <div className="text-center text-gray-500 py-8">
-                        No versions available
-                    </div>
-                );
-
-            case 'Sub Assets':
-                return (
-                    <div className="text-center text-gray-500 py-8">
-                        No sub assets available
-                    </div>
                 );
 
             case 'Notes':
@@ -783,10 +655,25 @@ export default function Others_Asset() {
                         }}
                     />
                 );
+
+            case 'Versions':
+                return (
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
+                        <p className="text-gray-300">Versions content will be displayed here</p>
+                    </div>
+                );
+
+            case 'Sub Assets':
+                return (
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
+                        <p className="text-gray-300">Sub Assets content will be displayed here</p>
+                    </div>
+                );
+
             case 'Publishes':
                 return (
-                    <div className="text-center text-gray-500 py-8">
-                        No publishes available
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
+                        <p className="text-gray-300">Publishes content will be displayed here</p>
                     </div>
                 );
 
@@ -797,7 +684,7 @@ export default function Others_Asset() {
 
     if (!assetData) {
         return (
-            <div className="min-h-screen flex flex-col bg-gray-900">
+            <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
                 <div className="pt-14">
                     <Navbar_Project activeTab="other" />
                 </div>
@@ -809,7 +696,8 @@ export default function Others_Asset() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-900" onClick={handleClickOutside}
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800" 
+            onClick={handleClickOutside}
             onMouseMove={handleMouseMove}
             onMouseUp={() => setIsResizing(false)}
         >
@@ -818,30 +706,34 @@ export default function Others_Asset() {
             </div>
 
             <div className="pt-12 flex-1">
-                <div className="p-6">
-                    <div className="w-full bg-gray-800 p-6 rounded-lg shadow-lg">
-                        <div className='p-2'>
-                            <span className='p-2 text-xl text-gray-200'>{assetData.sequence} </span>
-                            <span className='p-2 text-xl text-gray-200'>{'>'}</span>
-                            <span className='p-2 text-xl text-gray-200'>{assetData.asset_name}</span>
+                <div className="p-6 max-w-[1600px] mx-auto">
+                    {/* Header Card */}
+                    <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-xl border border-gray-700/50">
+                        {/* Breadcrumb */}
+                        <div className="mb-4 flex items-center gap-2 text-sm text-gray-400">
+                            <span className="hover:text-white cursor-pointer transition-colors">📁 Assets</span>
+                            <span className="text-gray-600">›</span>
+                            <span className="font-bold text-white">🎬 {assetData.asset_name}</span>
                         </div>
+
+                        {/* Preview Modal */}
                         {showPreview && assetData.thumbnail && (
                             <div
-                                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                                className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
                                 onClick={() => setShowPreview(false)}
                             >
                                 <button
                                     onClick={() => setShowPreview(false)}
-                                    className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                                    className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all hover:scale-110"
                                 >
                                     <X className="w-6 h-6 text-white" />
                                 </button>
 
-                                <div className="max-w-4xl max-h-[80vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                <div className="max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                     {assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
                                         <video
                                             src={ENDPOINTS.image_url + assetData.thumbnail}
-                                            className="w-full h-full object-contain rounded-lg"
+                                            className="w-full h-full object-contain rounded-2xl shadow-2xl"
                                             controls
                                             autoPlay
                                         />
@@ -849,303 +741,300 @@ export default function Others_Asset() {
                                         <img
                                             src={ENDPOINTS.image_url + assetData.thumbnail}
                                             alt="Preview"
-                                            className="w-full h-full object-contain rounded-lg"
+                                            className="w-full h-full object-contain rounded-2xl shadow-2xl"
                                         />
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex gap-6 w-full items-start justify-between mb-6">
-                            <div className="relative w-80 h-44 rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                {assetData.thumbnail ? (
-                                    assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                        <div className="w-full h-full rounded-lg overflow-hidden">
+                        {/* Main Content */}
+                        <div className="grid grid-cols-12 gap-4">
+                            {/* Thumbnail */}
+                            <div className="col-span-3">
+                                <div className="relative w-full aspect-video rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 overflow-hidden shadow-lg border border-gray-700/50">
+                                    {assetData.thumbnail ? (
+                                        assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
                                             <video
                                                 src={ENDPOINTS.image_url + assetData.thumbnail}
                                                 className="w-full h-full object-cover"
                                                 controls
                                                 muted
                                                 playsInline
-                                            >
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        </div>
+                                            />
+                                        ) : (
+                                            <img
+                                                src={ENDPOINTS.image_url + assetData.thumbnail}
+                                                alt="Asset thumbnail"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )
                                     ) : (
-                                        <img
-                                            src={ENDPOINTS.image_url + assetData.thumbnail}
-                                            alt="Asset thumbnail"
-                                            className="w-full h-full object-cover rounded-lg"
-                                        />
-                                    )
-                                ) : (
-                                    <div className="w-full h-full rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                        <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
+                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
                                             <Image className="w-8 h-8 text-gray-500" />
+                                            <p className="text-gray-500 text-xs">No preview</p>
                                         </div>
-                                        <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
-                                    </div>
-                                )}
+                                    )}
 
-                                {assetData.thumbnail && (
-                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setShowPreview(true);
-                                                }}
-                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg flex items-center gap-2 transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                ดูไฟล์
-                                            </button>
-                                            <label className="px-4 py-2 bg-gradient-to-r from-green-800 to-green-800 hover:from-green-500 hover:to-green-500 text-white rounded-lg flex items-center gap-2 cursor-pointer transition-colors">
-                                                <Upload className="w-4 h-4" />
-                                                เปลี่ยนไฟล์
-                                                <input
-                                                    type="file"
-                                                    accept="image/*,video/*"
-                                                    className="hidden"
-                                                    onChange={async (e) => {
-                                                        if (!e.target.files?.[0]) return;
-
-                                                        const file = e.target.files[0];
-                                                        const formData = new FormData();
-
-                                                        formData.append("assetId", assetData.id.toString());
-                                                        formData.append("file", file);
-                                                        formData.append("fileName", file.name);
-                                                        formData.append("oldImageUrl", assetData.thumbnail || "");
-                                                        formData.append("type", "image");
-
-                                                        try {
-                                                            const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
-                                                                method: "POST",
-                                                                body: formData,
-                                                            });
-
-                                                            const data = await res.json();
-                                                            console.log("📥 Upload Response:", data);
-
-                                                            if (res.ok) {
-                                                                const newFileUrl = data.file?.fileUrl || data.fileUrl;
-
-                                                                setAssetData(prev => prev ? {
-                                                                    ...prev,
-                                                                    thumbnail: newFileUrl
-                                                                } : null);
-
-                                                                const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-                                                                const updated = {
-                                                                    ...stored,
-                                                                    file_url: newFileUrl,
-                                                                };
-                                                                localStorage.setItem("selectedAsset", JSON.stringify(updated));
-
-                                                                console.log("✅ Upload success! New URL:", newFileUrl);
-
-                                                            } else {
-                                                                console.error("❌ Upload failed:", data.error);
-                                                                alert("Upload failed: " + (data.error || "Unknown error"));
-                                                            }
-                                                        } catch (err) {
-                                                            console.error("❌ Upload error:", err);
-                                                            alert("Upload error");
-                                                        }
+                                    {/* Hover Controls */}
+                                    {assetData.thumbnail && (
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-all bg-black/60">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setShowPreview(true);
                                                     }}
-                                                />
-                                            </label>
+                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-1.5 text-xs font-medium"
+                                                >
+                                                    <Eye className="w-3 h-3" />
+                                                    View
+                                                </button>
+                                                <label className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg flex items-center gap-1.5 cursor-pointer text-xs font-medium">
+                                                    <Upload className="w-3 h-3" />
+                                                    Change
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,video/*"
+                                                        className="hidden"
+                                                        onChange={async (e) => {
+                                                            if (!e.target.files?.[0]) return;
+
+                                                            const file = e.target.files[0];
+                                                            const formData = new FormData();
+
+                                                            formData.append("assetId", assetData.id.toString());
+                                                            formData.append("file", file);
+                                                            formData.append("fileName", file.name);
+                                                            formData.append("oldImageUrl", assetData.thumbnail || "");
+                                                            formData.append("type", "image");
+
+                                                            try {
+                                                                const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                                                                    method: "POST",
+                                                                    body: formData,
+                                                                });
+
+                                                                const data = await res.json();
+
+                                                                if (res.ok) {
+                                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+
+                                                                    setAssetData(prev => prev ? {
+                                                                        ...prev,
+                                                                        thumbnail: newFileUrl
+                                                                    } : null);
+
+                                                                    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+                                                                    const updated = {
+                                                                        ...stored,
+                                                                        file_url: newFileUrl,
+                                                                    };
+                                                                    localStorage.setItem("selectedAsset", JSON.stringify(updated));
+                                                                } else {
+                                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                                }
+                                                            } catch (err) {
+                                                                console.error("❌ Upload error:", err);
+                                                                alert("Upload error");
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {!assetData.thumbnail && (
-                                    <input
-                                        type="file"
-                                        accept="image/*,video/*"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        onChange={async (e) => {
-                                            if (!e.target.files?.[0]) return;
+                                    {!assetData.thumbnail && (
+                                        <input
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={async (e) => {
+                                                if (!e.target.files?.[0]) return;
 
-                                            const file = e.target.files[0];
-                                            const formData = new FormData();
-                                            formData.append("assetId", assetData.id.toString());
-                                            formData.append("file", file);
-                                            formData.append("oldImageUrl", assetData.thumbnail || "");
-                                            formData.append("type", file.type.split('/')[0]);
+                                                const file = e.target.files[0];
+                                                const formData = new FormData();
+                                                formData.append("assetId", assetData.id.toString());
+                                                formData.append("file", file);
+                                                formData.append("oldImageUrl", assetData.thumbnail || "");
+                                                formData.append("type", file.type.split('/')[0]);
 
-                                            try {
-                                                const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
-                                                    method: "POST",
-                                                    body: formData,
-                                                });
+                                                try {
+                                                    const res = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                                                        method: "POST",
+                                                        body: formData,
+                                                    });
 
-                                                const data = await res.json();
-                                                console.log("📥 Upload Response:", data);
+                                                    const data = await res.json();
 
-                                                if (res.ok) {
-                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
+                                                    if (res.ok) {
+                                                        const newFileUrl = data.file?.fileUrl || data.fileUrl;
 
-                                                    setAssetData(prev => prev ? {
-                                                        ...prev,
-                                                        thumbnail: newFileUrl
-                                                    } : null);
+                                                        setAssetData(prev => prev ? {
+                                                            ...prev,
+                                                            thumbnail: newFileUrl
+                                                        } : null);
 
-                                                    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-                                                    const updated = {
-                                                        ...stored,
-                                                        file_url: newFileUrl,
-                                                    };
-                                                    localStorage.setItem("selectedAsset", JSON.stringify(updated));
-
-                                                    console.log("✅ Upload success! New URL:", newFileUrl);
-
-                                                } else {
-                                                    console.error("❌ Upload failed:", data.error);
-                                                    alert("Upload failed: " + (data.error || "Unknown error"));
+                                                        const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+                                                        const updated = {
+                                                            ...stored,
+                                                            file_url: newFileUrl,
+                                                        };
+                                                        localStorage.setItem("selectedAsset", JSON.stringify(updated));
+                                                    }
+                                                } catch (err) {
+                                                    console.error("❌ Upload error:", err);
                                                 }
-                                            } catch (err) {
-                                                console.error("❌ Upload error:", err);
-                                                alert("Upload error");
-                                            }
-                                        }}
-                                    />
-                                )}
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="flex-1 space-y-4">
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex items-center gap-8">
-                                        <div className="min-w-[200px]">
-                                            <span className="text-gray-400 font-medium block mb-1">Asset Name</span>
-                                            {editingField === 'assetName' ? (
-                                                <input
-                                                    value={assetData.asset_name}
-                                                    autoFocus
-                                                    onChange={(e) =>
-                                                        setAssetData(prev => prev ? { ...prev, asset_name: e.target.value } : null)
-                                                    }
-                                                    onBlur={() => {
-                                                        updateAssetField("asset_name", assetData.asset_name);
-                                                        setEditingField(null);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === "Enter") {
-                                                            updateAssetField("asset_name", assetData.asset_name);
-                                                            setEditingField(null);
-                                                        }
-                                                        if (e.key === "Escape") {
-                                                            setEditingField(null);
-                                                        }
-                                                    }}
-                                                    className="bg-gray-700 border border-blue-500 rounded px-2 py-1 text-lg text-white w-full"
-                                                />
+                            {/* Info Grid */}
+                            <div className="col-span-9 grid grid-cols-3 gap-3">
+                                {/* Asset Name */}
+                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                                    <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
+                                        <span>🎬</span>
+                                        Asset Name
+                                    </label>
+                                    {editingField === 'assetName' ? (
+                                        <input
+                                            value={assetData.asset_name}
+                                            autoFocus
+                                            onChange={(e) =>
+                                                setAssetData(prev => prev ? { ...prev, asset_name: e.target.value } : null)
+                                            }
+                                            onBlur={() => {
+                                                updateAssetField("asset_name", assetData.asset_name);
+                                                setEditingField(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    updateAssetField("asset_name", assetData.asset_name);
+                                                    setEditingField(null);
+                                                }
+                                                if (e.key === "Escape") setEditingField(null);
+                                            }}
+                                            className="w-full bg-gray-700 border border-blue-500 rounded px-2 py-1.5 text-white text-sm font-semibold"
+                                        />
+                                    ) : (
+                                        <p
+                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors"
+                                            onClick={() => setEditingField('assetName')}
+                                        >
+                                            {assetData.asset_name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Status */}
+                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 relative">
+                                    <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
+                                        <span>🎯</span>
+                                        Status
+                                    </label>
+                                    <button
+                                        onClick={handleStatusClick}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded font-medium transition-all w-full justify-between text-sm"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {statusConfig[assetData.status].icon === '-' ? (
+                                                <span className="text-gray-400 font-bold">-</span>
                                             ) : (
-                                                <p
-                                                    className="text-gray-100 font-semibold text-lg cursor-text hover:bg-gray-700 px-2 py-1 rounded"
-                                                    onClick={() => setEditingField('assetName')}
-                                                >
-                                                    🎬 {assetData.asset_name}
-                                                </p>
+                                                <div className={`w-2 h-2 rounded-full ${statusConfig[assetData.status].color}`}></div>
                                             )}
+                                            <span className="text-sm">{statusConfig[assetData.status].label}</span>
                                         </div>
+                                        <span className="text-xs">▼</span>
+                                    </button>
 
-                                        <div className="min-w-[200px]">
-                                            <span className="text-gray-400 font-medium block mb-1">Type Name</span>
-                                            <p className="text-gray-100 font-medium flex items-center gap-2">
-                                                📁 {assetData.sequence}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-8">
-                                        <div className="min-w-[200px] relative">
-                                            <span className="text-gray-400 font-medium block mb-1">Status</span>
-                                            <button
-                                                onClick={handleStatusClick}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-full font-medium transition-colors"
-                                            >
-                                                {statusConfig[assetData.status].icon === '-' ? (
-                                                    <span className="text-gray-400 font-bold">-</span>
-                                                ) : (
-                                                    <div className={`w-2 h-2 rounded-full ${statusConfig[assetData.status].color}`}></div>
-                                                )}
-                                                <span>{statusConfig[assetData.status].label}</span>
-                                                <span className="text-xs ml-1">▼</span>
-                                            </button>
-
-                                            {showStatusMenu && (
-                                                <div className="absolute left-0 top-full mt-1 bg-gray-700 rounded-lg shadow-xl z-50 min-w-[180px] border border-gray-600">
-                                                    {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                        <button
-                                                            key={key}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleStatusChange(key);
-                                                            }}
-                                                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-600 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
-                                                        >
-                                                            {config.icon === '-' ? (
-                                                                <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                            ) : (
-                                                                <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-                                                            )}
-                                                            <span className="text-sm text-gray-200">{config.label}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1">
-                                            <span className="text-gray-400 block mb-1 font-medium">Description</span>
-                                            {editingField === 'description' ? (
-                                                <textarea
-                                                    value={assetData.description || ''}
-                                                    autoFocus
-                                                    onChange={(e) =>
-                                                        setAssetData(prev => prev ? { ...prev, description: e.target.value } : null)
-                                                    }
-                                                    onBlur={() => {
-                                                        updateAssetField("description", assetData.description);
-                                                        setEditingField(null);
+                                    {showStatusMenu && (
+                                        <div className="absolute left-0 top-full mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
+                                            {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                <button
+                                                    key={key}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleStatusChange(key);
                                                     }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === "Enter" && !e.shiftKey) {
-                                                            updateAssetField("description", assetData.description);
-                                                            setEditingField(null);
-                                                        }
-                                                        if (e.key === "Escape") {
-                                                            setEditingField(null);
-                                                        }
-                                                    }}
-                                                    className="bg-gray-700 border border-blue-500 rounded px-2 py-1 text-white w-full"
-                                                    rows={3}
-                                                />
-                                            ) : (
-                                                <p
-                                                    className="text-gray-100 cursor-text hover:bg-gray-700 px-2 py-1 rounded"
-                                                    onClick={() => setEditingField('description')}
+                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors"
                                                 >
-                                                    {assetData.description || 'No description'}
-                                                </p>
-                                            )}
+                                                    {config.icon === '-' ? (
+                                                        <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                    ) : (
+                                                        <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
+                                                    )}
+                                                    <span className="text-xs text-gray-200">{config.label}</span>
+                                                </button>
+                                            ))}
                                         </div>
-                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Type Name */}
+                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                                    <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
+                                        <span>📁</span>
+                                        Type
+                                    </label>
+                                    <p className="text-white font-semibold px-2 py-1.5 text-sm">{assetData.sequence}</p>
+                                </div>
+
+                                {/* Description - ใช้ 3 คอลัมน์ */}
+                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 col-span-3">
+                                    <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
+                                        <span>📝</span>
+                                        Description
+                                    </label>
+                                    {editingField === 'description' ? (
+                                        <textarea
+                                            value={assetData.description || ''}
+                                            autoFocus
+                                            rows={2}
+                                            onChange={(e) =>
+                                                setAssetData(prev => prev ? { ...prev, description: e.target.value } : null)
+                                            }
+                                            onBlur={() => {
+                                                updateAssetField("description", assetData.description);
+                                                setEditingField(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    updateAssetField("description", assetData.description);
+                                                    setEditingField(null);
+                                                }
+                                                if (e.key === "Escape") setEditingField(null);
+                                            }}
+                                            className="w-full bg-gray-700 border border-blue-500 rounded px-2 py-1.5 text-white text-xs resize-none"
+                                        />
+                                    ) : (
+                                        <p
+                                            className="text-white text-xs cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors line-clamp-2"
+                                            onClick={() => setEditingField('description')}
+                                        >
+                                            {assetData.description || <span className="text-gray-500 italic">Click to add...</span>}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <nav className="flex items-center gap-6 border-t border-gray-700 pt-4">
-                            {['Activity', 'Asset Info', 'Tasks', 'Notes', 'Versions', 'Sub Assets', 'Publishes'].map((tab) => (
+                        {/* Tabs */}
+                        <nav className="flex items-center gap-2 border-t border-gray-700/50 pt-4 mt-4 overflow-x-auto pb-1">
+                            {['Asset Info', 'Tasks', 'Notes', 'Versions', 'Sub Assets', 'Publishes'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`pb-2 rounded-xl bg-gray-700 transition-all ${activeTab === tab
-                                        ? 'text-white border-b-2 border-blue-500 font-medium bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-600'
-                                        : 'text-white-400 hover:text-white bg-gradient-to-r hover:from-gray-700 hover:to-gray-700 hover:scale-105'
-                                        }`}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                                        activeTab === tab
+                                            ? 'bg-blue-600 text-white shadow-lg'
+                                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white'
+                                    }`}
                                 >
                                     {tab}
                                 </button>
@@ -1153,314 +1042,47 @@ export default function Others_Asset() {
                         </nav>
                     </div>
 
-                    <div className="mt-6 p-6 bg-gray-800 rounded-lg shadow-lg">
-                        <h3 className="text-xl text-gray-200 font-semibold flex items-center gap-2">
-                            <span className="w-1 h-6 bg-blue-500 rounded"></span>
-                            {activeTab}
+                    {/* Tab Content Section */}
+                    <div className="mt-4 p-5 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-xl border border-gray-700/50">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg text-white font-bold flex items-center gap-2">
+                                <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
+                                {activeTab}
+                            </h3>
 
-                            {activeTab === 'Tasks' && (
-                                <button
-                                    onClick={() => setShowCreateAsset_Task(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                                >
-                                    Add Task
-                                    <span className="text-xs">▼</span>
-
-                                </button>
-                            )}
-
-                            {activeTab === 'Notes' && (
-                                <button
-                                    onClick={() => setShowCreateAsset_Note(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                                >
-                                    Add Note
-                                </button>
-
-                            )}
-
-                            {activeTab === 'Versions' && (
-                                <button
-                                    onClick={() => setShowCreateAsset_Versions(true)}
-                                    className="px-4 h-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200"
-                                >
-                                    Add Version
-                                </button>
-                            )}
-
-                        </h3>
-                        {showCreateAsset_Note && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-40 bg-black/60"
-                                    onClick={() => setShowCreateAsset_Note(false)}
-                                />
-
-                                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-                                    <div
-                                        style={{
-                                            transform: `translate(${noteModalPosition?.x || 0}px, ${noteModalPosition?.y || 0}px)`
-                                        }}
-                                        className="relative w-full max-w-xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden pointer-events-auto"
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                {activeTab === 'Tasks' && (
+                                    <button
+                                        onClick={() => setShowCreateAsset_Task(true)}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
                                     >
-                                        <div
-                                            onMouseDown={(e) => {
-                                                const startX = e.clientX;
-                                                const startY = e.clientY;
-                                                const startPos = noteModalPosition || { x: 0, y: 0 };
+                                        <span>+</span>
+                                        Add Task
+                                    </button>
+                                )}
 
-                                                const handleMouseMove = (moveEvent: MouseEvent) => {
-                                                    const deltaX = moveEvent.clientX - startX;
-                                                    const deltaY = moveEvent.clientY - startY;
-                                                    setNoteModalPosition({
-                                                        x: startPos.x + deltaX,
-                                                        y: startPos.y + deltaY
-                                                    });
-                                                };
+                                {activeTab === 'Notes' && (
+                                    <button
+                                        onClick={() => setShowCreateAsset_Note(true)}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
+                                    >
+                                        <span>+</span>
+                                        Add Note
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
-                                                const handleMouseUp = () => {
-                                                    document.removeEventListener('mousemove', handleMouseMove);
-                                                    document.removeEventListener('mouseup', handleMouseUp);
-                                                };
-
-                                                document.addEventListener('mousemove', handleMouseMove);
-                                                document.addEventListener('mouseup', handleMouseUp);
-                                            }}
-                                            className="px-5 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none"
-                                        >
-                                            <div className="flex items-baseline justify-between">
-                                                <div className="flex items-baseline gap-2">
-                                                    <h2 className="text-base font-semibold text-white">New Note</h2>
-                                                    <span className="text-xs text-blue-300/60">- Global Form</span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setShowCreateAsset_Note(false)}
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    className="text-gray-400 hover:text-white text-xl leading-none transition-colors"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="px-5 py-4 space-y-3">
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    Links
-                                                </label>
-                                                <input
-                                                    disabled
-                                                    type="text"
-                                                    defaultValue={assetData?.asset_name || ''}
-                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    📄 Tasks
-                                                </label>
-                                                <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg">
-                                                    <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-                                                        {(['All', 'ART', 'MDL', 'RIG', 'TXT'] as FilterType[]).map((t) => (
-                                                            <label key={t} className="flex items-center gap-1.5 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={checked[t]}
-                                                                    onChange={() => handletaskChange(t)}
-                                                                    className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
-                                                                />
-                                                                <span className="text-xs text-gray-300">{t}</span>
-                                                            </label>
-                                                        ))}
-
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    Attach files
-                                                </label>
-
-                                                <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-blue-500/30 bg-[#0a1018] text-blue-200 text-sm cursor-pointer hover:bg-blue-500/10 transition-all">
-                                                    <svg
-                                                        className="w-4 h-4"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        strokeWidth="2"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
-                                                    </svg>
-                                                    Upload file
-                                                    <input
-                                                        type="file"
-                                                        multiple
-                                                        onChange={handleFiletaskChange}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-
-                                                {files.length > 0 && (
-                                                    <div className="space-y-1 mt-1">
-                                                        {files.map((file, index) => (
-                                                            <div
-                                                                key={index}
-                                                                className="flex items-center justify-between px-2 py-1 text-xs bg-blue-500/10 border border-blue-500/20 rounded"
-                                                            >
-                                                                <span className="truncate text-blue-100">
-                                                                    {file.name}
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removetaskFile(index)}
-                                                                    className="text-blue-300 hover:text-red-400"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-1.5 relative">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    To
-                                                </label>
-
-                                                <div className="flex flex-wrap gap-1 mb-1">
-                                                    {selectedPeople.map((person) => (
-                                                        <span
-                                                            key={person.id}
-                                                            className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-200 rounded"
-                                                        >
-                                                            {person.name}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removePerson(person.id)}
-                                                                className="text-blue-300 hover:text-red-400"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-
-                                                <input
-                                                    type="text"
-                                                    value={query}
-                                                    onChange={(e) => {
-                                                        setQuery(e.target.value);
-                                                        setOpen(true);
-                                                    }}
-                                                    onFocus={() => setOpen(true)}
-                                                    onBlur={() => setTimeout(() => setOpen(false), 200)}
-                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
-                                                    placeholder={loading ? "Loading..." : "Add people..."}
-                                                    disabled={loading}
-                                                />
-
-                                                {open && filteredPeople.length > 0 && (
-                                                    <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                                        {filteredPeople.map((person) => (
-                                                            <div
-                                                                key={person.id}
-                                                                onClick={() => addPerson(person)}
-                                                                className="px-3 py-1.5 text-sm text-gray-200 hover:bg-blue-500/20 cursor-pointer"
-                                                            >
-                                                                <div className="font-medium">{person.name}</div>
-                                                                <div className="text-xs text-gray-400">{person.email}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {open && query && filteredPeople.length === 0 && !loading && (
-                                                    <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
-                                                        No people found
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    Subject
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={subject}
-                                                    onChange={(e) => setSubject(e.target.value)}
-                                                    className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    Type
-                                                </label>
-
-                                                <select
-                                                    value={type ?? ''}
-                                                    onChange={(e) => setType(e.target.value as NoteType)}
-                                                    className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
-                                                    ${type === null
-                                                            ? 'border-red-500/50 text-gray-400'
-                                                            : 'border-blue-500/30 text-blue-50'}
-                                                                focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
-                                                    `}
-                                                >
-                                                    <option value="" disabled hidden>
-                                                        — Please select —
-                                                    </option>
-                                                    <option value="Client">Client</option>
-                                                    <option value="Internal">Internal</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="block text-xs font-medium text-gray-300">
-                                                    Message
-                                                </label>
-                                                <textarea
-                                                    value={body}
-                                                    onChange={(e) => setBody(e.target.value)}
-                                                    placeholder="Write your note here..."
-                                                    rows={3}
-                                                    className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
-                                            <button
-                                                onClick={() => setShowCreateAsset_Note(false)}
-                                                className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
-                                            >
-                                                Cancel
-                                            </button>
-
-                                            <button
-                                                className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                                onClick={handleCreateNote}
-                                                disabled={uploading}
-                                            >
-                                                {uploading ? 'Creating...' : 'Create Note'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        <div className="mt-4">
+                        {/* Content */}
+                        <div className="max-h-[400px] overflow-y-auto">
                             {renderTabContent()}
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Create Task Modal */}
             {showCreateAsset_Task && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div
@@ -1476,7 +1098,7 @@ export default function Others_Asset() {
                                 onClick={() => setShowCreateAsset_Task(false)}
                                 className="text-gray-400 hover:text-white text-xl"
                             >
-                                ✕
+                                ⚙️
                             </button>
                         </div>
                         <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
@@ -1492,8 +1114,8 @@ export default function Others_Asset() {
                                 <input
                                     type="text"
                                     value={assetData?.asset_name || ''}
-                                    disabled
-                                    className="h-9 px-3 bg-gray-700 border border-gray-600 rounded text-gray-400 text-sm"
+                                    readOnly
+                                    className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
                                 />
                             </div>
                         </div>
@@ -1512,39 +1134,272 @@ export default function Others_Asset() {
                 </div>
             )}
 
-            {showCreateAsset_Versions && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Create Note Modal */}
+            {showCreateAsset_Note && (
+                <>
                     <div
-                        className="absolute inset-0 bg-black/60"
-                        onClick={() => setShowCreateAsset_Versions(false)}
+                        className="fixed inset-0 z-40 bg-black/60"
+                        onClick={() => setShowCreateAsset_Note(false)}
                     />
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-t flex items-center justify-between">
-                            <h2 className="text-lg text-gray-200 font-normal">
-                                Create a new Version
-                            </h2>
-                            <button
-                                onClick={() => setShowCreateAsset_Versions(false)}
-                                className="text-gray-400 hover:text-white text-xl"
+
+                    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                        <div
+                            style={{
+                                transform: `translate(${noteModalPosition?.x || 0}px, ${noteModalPosition?.y || 0}px)`
+                            }}
+                            className="relative w-full max-w-xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden pointer-events-auto"
+                        >
+                            <div
+                                onMouseDown={(e) => {
+                                    const startX = e.clientX;
+                                    const startY = e.clientY;
+                                    const startPos = noteModalPosition || { x: 0, y: 0 };
+
+                                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                                        const deltaX = moveEvent.clientX - startX;
+                                        const deltaY = moveEvent.clientY - startY;
+                                        setNoteModalPosition({
+                                            x: startPos.x + deltaX,
+                                            y: startPos.y + deltaY
+                                        });
+                                    };
+
+                                    const handleMouseUp = () => {
+                                        document.removeEventListener('mousemove', handleMouseMove);
+                                        document.removeEventListener('mouseup', handleMouseUp);
+                                    };
+
+                                    document.addEventListener('mousemove', handleMouseMove);
+                                    document.addEventListener('mouseup', handleMouseUp);
+                                }}
+                                className="px-5 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none"
                             >
-                                ✕
-                            </button>
-                        </div>
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
-                            <button
-                                onClick={() => setShowCreateAsset_Versions(false)}
-                                className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button className="px-4 h-9 bg-[#2d7a9e] hover:bg-[#3a8db5] text-white text-sm rounded">
-                                Create Version
-                            </button>
+                                <div className="flex items-baseline justify-between">
+                                    <div className="flex items-baseline gap-2">
+                                        <h2 className="text-base font-semibold text-white">New Note</h2>
+                                        <span className="text-xs text-blue-300/60">- Global Form</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowCreateAsset_Note(false)}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        className="text-gray-400 hover:text-white text-xl leading-none transition-colors"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="px-5 py-4 space-y-3">
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Links
+                                    </label>
+                                    <input
+                                        disabled
+                                        type="text"
+                                        defaultValue={assetData?.asset_name || ''}
+                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        📄 Tasks
+                                    </label>
+                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg">
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                                            {(['All', 'ART', 'MDL', 'RIG', 'TXT'] as FilterType[]).map((t) => (
+                                                <label key={t} className="flex items-center gap-1.5 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked[t]}
+                                                        onChange={() => handletaskChange(t)}
+                                                        className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
+                                                    />
+                                                    <span className="text-xs text-gray-300">{t}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Attach files
+                                    </label>
+
+                                    <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-blue-500/30 bg-[#0a1018] text-blue-200 text-sm cursor-pointer hover:bg-blue-500/10 transition-all">
+                                        <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
+                                        </svg>
+                                        Upload file
+                                        <input
+                                            type="file"
+                                            multiple
+                                            onChange={handleFiletaskChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    {files.length > 0 && (
+                                        <div className="space-y-1 mt-1">
+                                            {files.map((file, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center justify-between px-2 py-1 text-xs bg-blue-500/10 border border-blue-500/20 rounded"
+                                                >
+                                                    <span className="truncate text-blue-100">
+                                                        {file.name}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removetaskFile(index)}
+                                                        className="text-blue-300 hover:text-red-400"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1.5 relative">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        To
+                                    </label>
+
+                                    <div className="flex flex-wrap gap-1 mb-1">
+                                        {selectedPeople.map((person) => (
+                                            <span
+                                                key={person.id}
+                                                className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-200 rounded"
+                                            >
+                                                {person.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removePerson(person.id)}
+                                                    className="text-blue-300 hover:text-red-400"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        value={query}
+                                        onChange={(e) => {
+                                            setQuery(e.target.value);
+                                            setOpen(true);
+                                        }}
+                                        onFocus={() => setOpen(true)}
+                                        onBlur={() => setTimeout(() => setOpen(false), 200)}
+                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                                        placeholder={loading ? "Loading..." : "Add people..."}
+                                        disabled={loading}
+                                    />
+
+                                    {open && filteredPeople.length > 0 && (
+                                        <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                            {filteredPeople.map((person) => (
+                                                <div
+                                                    key={person.id}
+                                                    onClick={() => addPerson(person)}
+                                                    className="px-3 py-1.5 text-sm text-gray-200 hover:bg-blue-500/20 cursor-pointer"
+                                                >
+                                                    <div className="font-medium">{person.name}</div>
+                                                    <div className="text-xs text-gray-400">{person.email}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {open && query && filteredPeople.length === 0 && !loading && (
+                                        <div className="absolute z-10 mt-1 w-full bg-[#0a1018] border border-blue-500/30 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+                                            No people found
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Subject
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={subject}
+                                        onChange={(e) => setSubject(e.target.value)}
+                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Type
+                                    </label>
+
+                                    <select
+                                        value={type ?? ''}
+                                        onChange={(e) => setType(e.target.value as NoteType)}
+                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
+                                        ${type === null
+                                                ? 'border-red-500/50 text-gray-400'
+                                                : 'border-blue-500/30 text-blue-50'}
+                                            focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
+                                        `}
+                                    >
+                                        <option value="" disabled hidden>
+                                            — Please select —
+                                        </option>
+                                        <option value="Client">Client</option>
+                                        <option value="Internal">Internal</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Message
+                                    </label>
+                                    <textarea
+                                        value={body}
+                                        onChange={(e) => setBody(e.target.value)}
+                                        placeholder="Write your note here..."
+                                        rows={3}
+                                        className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
+                                <button
+                                    onClick={() => setShowCreateAsset_Note(false)}
+                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={handleCreateNote}
+                                    disabled={uploading}
+                                >
+                                    {uploading ? 'Creating...' : 'Create Note'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
 
+            {/* Context Menu for Notes */}
             {noteContextMenu && (
                 <div
                     className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
@@ -1570,6 +1425,7 @@ export default function Others_Asset() {
                 </div>
             )}
 
+            {/* Delete Confirmation Modal */}
             {deleteNoteConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
@@ -1578,7 +1434,7 @@ export default function Others_Asset() {
                     />
 
                     <div
-                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl animate-in fade-in zoom-in-95"
+                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6">
@@ -1622,11 +1478,7 @@ export default function Others_Asset() {
                                         e.stopPropagation();
                                         handleDeleteNote(deleteNoteConfirm.noteId);
                                         alert('ลบสำเร็จแล้ว');
-
-                                        // close modal
                                         setDeleteNoteConfirm(null);
-
-                                        // refresh server data (background)
                                         fetchNotes();
                                     }}
                                     className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
@@ -1639,30 +1491,33 @@ export default function Others_Asset() {
                 </div>
             )}
 
+            {/* Right Panel - Task Details */}
             {selectedTask && (
                 <div
                     className={`
-            fixed right-0 top-26 bottom-0
-            bg-[#2a2d35] shadow-2xl flex z-40
-            transform transition-transform duration-300 ease-out
-            ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
-        `}
+                        fixed right-0 top-26 bottom-0
+                        bg-[#2a2d35] shadow-2xl flex z-40
+                        transform transition-transform duration-300 ease-out
+                        ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+                    `}
                     style={{ width: `${rightPanelWidth}px` }}
                 >
-
+                    {/* Resize Handle */}
                     <div
                         className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
                         onMouseDown={handleMouseDown}
                     />
 
+                    {/* Panel Content */}
                     <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Header */}
                         <div className="bg-[#1a1d24] border-b border-gray-700">
                             <div className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                    <img src={selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
+                                    <img src={ENDPOINTS.image_url + selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
                                     <div>
                                         <div className="text-sm text-gray-400">
-                                            Napo (Animation demo) › C005 › {selectedTask.task_name.split('/')[0].trim()}
+                                            Asset › {selectedTask.task_name.split('/')[0].trim()}
                                         </div>
                                         <h2 className="text-xl text-white font-normal mt-1">
                                             {selectedTask?.task_name.split('/').pop()?.trim()}
@@ -1674,20 +1529,21 @@ export default function Others_Asset() {
                                         setIsPanelOpen(false);
                                         setTimeout(() => setSelectedTask(null), 300);
                                     }}
-
                                     className="text-gray-400 hover:text-white text-2xl"
                                 >
                                     ✕
                                 </button>
                             </div>
 
+                            {/* Status bar */}
                             <div className="flex items-center gap-4 px-4 py-3">
-                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
-                                    ? 'text-gray-400 bg-gray-500/20'
-                                    : selectedTask.status === 'ip'
-                                        ? 'text-blue-400 bg-blue-500/20'
-                                        : 'text-green-400 bg-green-500/20'
-                                    }`}>
+                                <span className={`px-3 py-1 rounded text-xs font-medium ${
+                                    selectedTask.status === 'wtg'
+                                        ? 'text-gray-400 bg-gray-500/20'
+                                        : selectedTask.status === 'ip'
+                                            ? 'text-blue-400 bg-blue-500/20'
+                                            : 'text-green-400 bg-green-500/20'
+                                }`}>
                                     {selectedTask.status}
                                 </span>
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -1696,23 +1552,26 @@ export default function Others_Asset() {
                                 </div>
                             </div>
 
+                            {/* Tabs */}
                             <div className="flex border-t border-gray-700">
                                 <button
                                     onClick={() => setRightPanelTab('notes')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
-                                        ? 'text-white border-b-2 border-blue-500'
-                                        : 'text-gray-400 hover:text-white'
-                                        }`}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
+                                        rightPanelTab === 'notes'
+                                            ? 'text-white border-b-2 border-blue-500'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
                                 >
                                     <span>📝</span>
                                     <span>NOTES</span>
                                 </button>
                                 <button
                                     onClick={() => setRightPanelTab('versions')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'versions'
-                                        ? 'text-white border-b-2 border-blue-500'
-                                        : 'text-gray-400 hover:text-white'
-                                        }`}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
+                                        rightPanelTab === 'versions'
+                                            ? 'text-white border-b-2 border-blue-500'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
                                 >
                                     <span>💎</span>
                                     <span>VERSIONS</span>
@@ -1720,6 +1579,7 @@ export default function Others_Asset() {
                             </div>
                         </div>
 
+                        {/* Content Area */}
                         <div className="flex-1 overflow-auto p-4">
                             {rightPanelTab === 'notes' && (
                                 <div>
@@ -1767,12 +1627,8 @@ export default function Others_Asset() {
                                             <label htmlFor="latestVersion">Latest version</label>
                                         </div>
                                         <div className="flex-1"></div>
-                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">
-                                            ⊞
-                                        </button>
-                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">
-                                            ☰
-                                        </button>
+                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">⊞</button>
+                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">☰</button>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -1780,7 +1636,7 @@ export default function Others_Asset() {
                                             <div key={v} className="bg-[#1a1d24] rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors">
                                                 <div className="relative aspect-video bg-gray-800">
                                                     <img
-                                                        src={selectedTask.file_url}
+                                                        src={ENDPOINTS.image_url + selectedTask.file_url}
                                                         alt=""
                                                         className="w-full h-full object-cover"
                                                     />
@@ -1789,10 +1645,10 @@ export default function Others_Asset() {
                                                     </div>
                                                 </div>
                                                 <div className="p-3">
-                                                    <div className="text-sm text-white mb-1">Animation v{v}</div>
+                                                    <div className="text-sm text-white mb-1">Version v{v}</div>
                                                     <div className="text-xs text-gray-400 mb-2">{selectedTask.task_name.split('/')[0].trim()}</div>
-                                                    <div className="text-xs text-gray-500 mb-2">Napo (Animation demo) / C...</div>
-                                                    <div className="text-xs text-gray-400">Animation</div>
+                                                    <div className="text-xs text-gray-500 mb-2">Asset task</div>
+                                                    <div className="text-xs text-gray-400">Task</div>
                                                     <div className={`mt-2 h-1 rounded ${v === 3 ? 'bg-emerald-500' : v === 2 ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
                                                 </div>
                                             </div>
@@ -1809,35 +1665,38 @@ export default function Others_Asset() {
                     </div>
                 </div>
             )}
+
+            {/* Right Panel - Note Details */}
             {selectedNote && (
                 <div
                     className={`
-            fixed right-0 top-26 bottom-0
-            bg-[#2a2d35] shadow-2xl flex z-40
-            transform transition-transform duration-300 ease-out
-            ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
-        `}
+                        fixed right-0 top-26 bottom-0
+                        bg-[#2a2d35] shadow-2xl flex z-40
+                        transform transition-transform duration-300 ease-out
+                        ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+                    `}
                     style={{ width: `${rightPanelWidth}px` }}
                 >
-
+                    {/* Resize Handle */}
                     <div
                         className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
                         onMouseDown={handleMouseDown}
                     />
 
+                    {/* Panel Content */}
                     <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Header */}
                         <div className="bg-[#1a1d24] border-b border-gray-700">
                             <div className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
                                     <div>
                                         <div className="text-sm text-gray-400">
-                                            Napo (Animation demo) › C005 › {selectedNote?.note_type}
+                                            Asset › {selectedNote?.note_type}
                                         </div>
                                         <h2 className="text-xl text-white font-normal mt-1">
                                             {selectedNote?.subject}
                                         </h2>
                                     </div>
-
                                 </div>
 
                                 <button
@@ -1845,32 +1704,30 @@ export default function Others_Asset() {
                                         setIsPanelOpen(false);
                                         setTimeout(() => setSelectedNote(null), 300);
                                     }}
-
                                     className="text-gray-400 hover:text-white text-2xl"
                                 >
                                     ✕
                                 </button>
                             </div>
+
                             <div className="flex items-center justify-center">
-                                         {selectedNote?.file_url? (
-                                
-                                <div className="flex items-center justify-center">
-                                    <img
-                                        src={ENDPOINTS.image_url + selectedNote?.file_url || ''} 
-                                        alt=""
-                                        className="w-80 h-80 object-cover rounded"
-                                    />
-                                </div>
-                                ):(
+                                {selectedNote?.file_url ? (
+                                    <div className="flex items-center justify-center">
+                                        <img
+                                            src={ENDPOINTS.image_url + selectedNote?.file_url || ''}
+                                            alt=""
+                                            className="w-80 h-80 object-cover rounded"
+                                        />
+                                    </div>
+                                ) : (
                                     <div className="w-80 h-80 rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                            <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                                <Image className="w-8 h-8 text-gray-500" />
-                                            </div>
-                                            <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
+                                        <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
+                                            <Image className="w-8 h-8 text-gray-500" />
                                         </div>
-                                    )}
+                                        <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
+                                    </div>
+                                )}
                             </div>
-                           
 
                             <div className="flex items-center gap-4 px-4 py-3">
                                 <span className={`px-3 py-1 rounded text-xs font-medium ${selectedNote?.status === 'wtg'
@@ -1884,17 +1741,15 @@ export default function Others_Asset() {
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
                                     <span>📅</span>
                                     <span>วันที่สร้าง {formatDateThai(selectedNote?.created_at)}</span>
-                                    
                                 </div>
-                                 <User className="w-4 h-4 text-gray-400" />
-                                        <span>ผู้รับผิดชอบ : {selectedNote?.assigned_people?.map((person, index) => (
-                                            <span key={index}>{person}{index < (selectedNote.assigned_people?.length || 0) - 1 ? ' , ' : ''}</span>
-                                        ))}</span>
+                                <User className="w-4 h-4 text-gray-400" />
+                                <span>ผู้รับผิดชอบ : {selectedNote?.assigned_people?.map((person, index) => (
+                                    <span key={index}>{person}{index < (selectedNote.assigned_people?.length || 0) - 1 ? ' , ' : ''}</span>
+                                ))}</span>
                             </div>
 
                             <div className="flex border-t border-gray-700">
                                 <button
-
                                     onClick={() => setRightPanelTab('notes')}
                                     className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
                                         ? 'text-white border-b-2 border-blue-500'
@@ -1904,10 +1759,10 @@ export default function Others_Asset() {
                                     <span>📝</span>
                                     <span>NOTES</span>
                                 </button>
-
                             </div>
                         </div>
 
+                        {/* Content Area */}
                         <div className="flex-1 overflow-auto p-4">
                             {rightPanelTab === 'notes' && (
                                 <div>
@@ -1920,20 +1775,15 @@ export default function Others_Asset() {
                                                 setSelectedNote({ ...selectedNote, body: e.target.value });
                                             }
                                         }}
-
                                         className="w-full px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500 mb-4"
                                     />
-
                                 </div>
                             )}
-
-
                         </div>
                     </div>
                 </div>
             )}
         </div>
-
     );
 }
 
