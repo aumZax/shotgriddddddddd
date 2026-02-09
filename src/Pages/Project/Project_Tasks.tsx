@@ -89,6 +89,9 @@ export default function Project_Tasks() {
     const [editingStartDateTaskId, setEditingStartDateTaskId] = useState<number | null>(null);
     const [editingDueDateTaskId, setEditingDueDateTaskId] = useState<number | null>(null);
 
+    // เพิ่ม state สำหรับ loading สร้าง task ++++++++++++++++++++++++++++++++++++++++++++++++
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+
 
 
 
@@ -174,58 +177,72 @@ export default function Project_Tasks() {
 
     // ฟังก์ชันสร้าง Task
     const handleCreateTask = async () => {
-    try {
-        const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-        if (!projectId) {
-            alert("ไม่พบ Project ID");
-            return;
+        // ป้องกันการกดซ้ำ
+        if (isCreatingTask) return;
+
+        try {
+            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+            if (!projectId) {
+                alert("ไม่พบ Project ID");
+                return;
+            }
+
+            if (!createTaskForm.task_name.trim()) {
+                alert("กรุณากระบุชื่องาน");
+                return;
+            }
+
+            // ⭐ เพิ่มการตรวจสอบว่าถ้าเลือก entity_type แล้วต้องเลือก entity_id ด้วย
+            if (createTaskForm.entity_type && !createTaskForm.entity_id) {
+                alert(`กรุณาเลือก ${createTaskForm.entity_type} ที่ต้องการเชื่อมโยง`);
+                return;
+            }
+
+            // ⭐ เริ่ม loading
+            setIsCreatingTask(true);
+
+            const payload = {
+                project_id: projectId,
+                task_name: createTaskForm.task_name.trim(),
+                entity_type: createTaskForm.entity_type || null,
+                entity_id: createTaskForm.entity_id ? Number(createTaskForm.entity_id) : null,
+                status: createTaskForm.status || 'wtg',
+                start_date: createTaskForm.start_date || null,
+                due_date: createTaskForm.due_date || null,
+                description: createTaskForm.description || null,
+                file_url: createTaskForm.file_url || null,
+                pipeline_step_id: null
+            };
+
+            await axios.post(`${ENDPOINTS.ADD_TASK}`, payload);
+
+            // รีเฟรชข้อมูล tasks
+            const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
+            setTaskGroups(tasksRes.data);
+
+            // รีเซ็ต form และปิด modal
+            setCreateTaskForm({
+                task_name: '',
+                entity_type: '',
+                entity_id: '',
+                status: 'wtg',
+                start_date: '',
+                due_date: '',
+                description: '',
+                file_url: ''
+            });
+
+            closeModal();
+            alert("สร้างงานสำเร็จ!");
+
+        } catch (err: any) {
+            console.error("Create task error:", err);
+            alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+        } finally {
+            // ⭐ สิ้นสุด loading
+            setIsCreatingTask(false);
         }
-
-        if (!createTaskForm.task_name.trim()) {
-            alert("กรุณากระบุชื่องาน");
-            return;
-        }
-
-        const payload = {
-            project_id: projectId,
-            task_name: createTaskForm.task_name.trim(),
-            entity_type: createTaskForm.entity_type || null,
-            entity_id: createTaskForm.entity_id ? Number(createTaskForm.entity_id) : null,
-            status: createTaskForm.status || 'wtg',
-            start_date: createTaskForm.start_date || null,
-            due_date: createTaskForm.due_date || null,
-            description: createTaskForm.description || null,
-            file_url: createTaskForm.file_url || null,
-            pipeline_step_id: null
-        };
-
-        await axios.post(`${ENDPOINTS.ADD_TASK}`, payload); // ✅ ลบ const res
-
-        // รีเฟรชข้อมูล tasks
-        const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
-        setTaskGroups(tasksRes.data);
-
-        // รีเซ็ต form และปิด modal
-        setCreateTaskForm({
-            task_name: '',
-            entity_type: '',
-            entity_id: '',
-            status: 'wtg',
-            start_date: '',
-            due_date: '',
-            description: '',
-            file_url: ''
-        });
-
-        closeModal();
-        alert("สร้างงานสำเร็จ!");
-
-    } catch (err: any) {
-        console.error("Create task error:", err);
-        alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
-    }
-};
-
+    };
     // ฟังก์ชันดึง entity options ตาม type
     const getEntityOptions = () => {
         switch (createTaskForm.entity_type) {
@@ -738,7 +755,7 @@ export default function Project_Tasks() {
     const totalTasks = taskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
 
 
- 
+
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Status Menu ++++++++++++++++++++++++++++++++++++++++++++++  
@@ -1460,12 +1477,11 @@ export default function Project_Tasks() {
 
 
                                                         {/* Column #7: สถานะ */}
-
                                                         <td className="px-4 py-4">
                                                             <div className="w-20 flex-shrink-0 relative">
                                                                 <button
                                                                     onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
-                                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-lg"
+                                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                 >
                                                                     {statusConfig[task.status as StatusType].icon === '-' ? (
                                                                         <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -1518,6 +1534,8 @@ export default function Project_Tasks() {
                                                                     )}
                                                             </div>
                                                         </td>
+
+
                                                         {/* ============= Column: Assigned To (Assignees) ============= */}
                                                         <td className="px-4 py-4">
                                                             <div className="relative inline-block" ref={assigneeDropdownRef}>
@@ -2345,19 +2363,29 @@ export default function Project_Tasks() {
                         </div>
 
                         {/* Footer */}
+                        {/* Footer */}
                         <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] rounded-b flex justify-between items-center gap-3">
                             <button
                                 onClick={closeModal}
-                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center"
+                                disabled={isCreatingTask}
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
 
                             <button
                                 onClick={handleCreateTask}
-                                className="px-4 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center justify-center"
+                                disabled={isCreatingTask}
+                                className="px-4 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Create Task
+                                {isCreatingTask ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>กำลังสร้าง...</span>
+                                    </>
+                                ) : (
+                                    'Create Task'
+                                )}
                             </button>
                         </div>
                     </div>

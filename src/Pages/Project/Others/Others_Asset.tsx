@@ -610,6 +610,82 @@ export default function Others_Asset() {
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // Create Task Form States
+const [isCreatingTask, setIsCreatingTask] = useState(false);
+const [createTaskForm, setCreateTaskForm] = useState({
+    task_name: '',
+    status: 'wtg',
+    start_date: '',
+    due_date: '',
+    description: '',
+    file_url: '',
+});
+// Handle form input changes
+const handleFormChange = (field: string, value: any) => {
+    setCreateTaskForm(prev => ({
+        ...prev,
+        [field]: value
+    }));
+};
+
+// Handle create task submission
+const handleCreateTask = async () => {
+    if (isCreatingTask) return;
+
+    try {
+        if (!createTaskForm.task_name.trim()) {
+            alert("กรุณากระบุชื่องาน");
+            return;
+        }
+
+        setIsCreatingTask(true);
+
+        const payload = {
+            project_id: projectId,
+            task_name: createTaskForm.task_name.trim(),
+            entity_type: 'asset',
+            entity_id: AssetID,
+            status: createTaskForm.status || 'wtg',
+            start_date: createTaskForm.start_date || null,
+            due_date: createTaskForm.due_date || null,
+            description: createTaskForm.description || null,
+            file_url: createTaskForm.file_url || null,
+            pipeline_step_id: null
+        };
+
+        // สร้าง task
+        await axios.post(`${ENDPOINTS.ADD_TASK}`, payload);
+
+        // รีเฟรช tasks
+        const tasksRes = await axios.post(ENDPOINTS.SEQUENCE_TASK, {
+            project_id: projectId,
+            entity_type: "asset",
+            entity_id: AssetID
+        });
+        setTasks(tasksRes.data);
+
+        // รีเซ็ต form
+        setCreateTaskForm({
+            task_name: '',
+            status: 'wtg',
+            start_date: '',
+            due_date: '',
+            description: '',
+            file_url: ''
+        });
+        setShowCreateAsset_Task(false);
+
+        alert("สร้างงานสำเร็จ!");
+
+    } catch (err: any) {
+        console.error("Create task error:", err);
+        alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+    } finally {
+        setIsCreatingTask(false);
+    }
+};
+// 
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -696,7 +772,7 @@ export default function Others_Asset() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800" 
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
             onClick={handleClickOutside}
             onMouseMove={handleMouseMove}
             onMouseUp={() => setIsResizing(false)}
@@ -711,7 +787,7 @@ export default function Others_Asset() {
                     <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-xl border border-gray-700/50">
                         {/* Breadcrumb */}
                         <div className="mb-4 flex items-center gap-2 text-sm text-gray-400">
-                            <span className="hover:text-white cursor-pointer transition-colors">📁 Assets</span>
+                            <span className="hover:text-white cursor-pointer transition-colors">📁 {assetData.sequence}</span>
                             <span className="text-gray-600">›</span>
                             <span className="font-bold text-white">🎬 {assetData.asset_name}</span>
                         </div>
@@ -758,9 +834,10 @@ export default function Others_Asset() {
                                             <video
                                                 src={ENDPOINTS.image_url + assetData.thumbnail}
                                                 className="w-full h-full object-cover"
-                                                controls
                                                 muted
-                                                playsInline
+                                                loop
+                                                autoPlay
+
                                             />
                                         ) : (
                                             <img
@@ -939,7 +1016,7 @@ export default function Others_Asset() {
                                     </label>
                                     <button
                                         onClick={handleStatusClick}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded font-medium transition-all w-full justify-between text-sm"
+                                        className="flex items-center gap-2 px-3 py-1.5 text-white rounded-xl font-medium transition-all w-full justify-between text-sm bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
                                     >
                                         <div className="flex items-center gap-2">
                                             {statusConfig[assetData.status].icon === '-' ? (
@@ -1030,11 +1107,10 @@ export default function Others_Asset() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                                        activeTab === tab
-                                            ? 'bg-blue-600 text-white shadow-lg'
-                                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab
+                                              ? 'text-white shadow-lg bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-700 hover:to-blue-600'
+                                        : 'text-gray-300 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600'
+                                        }`}
                                 >
                                     {tab}
                                 </button>
@@ -1055,7 +1131,7 @@ export default function Others_Asset() {
                                 {activeTab === 'Tasks' && (
                                     <button
                                         onClick={() => setShowCreateAsset_Task(true)}
-                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
+                                        className="px-3 py-1.5  text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
                                         <span>+</span>
                                         Add Task
@@ -1065,7 +1141,7 @@ export default function Others_Asset() {
                                 {activeTab === 'Notes' && (
                                     <button
                                         onClick={() => setShowCreateAsset_Note(true)}
-                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
                                         <span>+</span>
                                         Add Note
@@ -1075,7 +1151,7 @@ export default function Others_Asset() {
                         </div>
 
                         {/* Content */}
-                        <div className="max-h-[400px] overflow-y-auto">
+                        <div className="relative">
                             {renderTabContent()}
                         </div>
                     </div>
@@ -1537,13 +1613,12 @@ export default function Others_Asset() {
 
                             {/* Status bar */}
                             <div className="flex items-center gap-4 px-4 py-3">
-                                <span className={`px-3 py-1 rounded text-xs font-medium ${
-                                    selectedTask.status === 'wtg'
+                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
                                         ? 'text-gray-400 bg-gray-500/20'
                                         : selectedTask.status === 'ip'
                                             ? 'text-blue-400 bg-blue-500/20'
                                             : 'text-green-400 bg-green-500/20'
-                                }`}>
+                                    }`}>
                                     {selectedTask.status}
                                 </span>
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -1556,22 +1631,20 @@ export default function Others_Asset() {
                             <div className="flex border-t border-gray-700">
                                 <button
                                     onClick={() => setRightPanelTab('notes')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                                        rightPanelTab === 'notes'
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
                                             ? 'text-white border-b-2 border-blue-500'
                                             : 'text-gray-400 hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <span>📝</span>
                                     <span>NOTES</span>
                                 </button>
                                 <button
                                     onClick={() => setRightPanelTab('versions')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                                        rightPanelTab === 'versions'
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'versions'
                                             ? 'text-white border-b-2 border-blue-500'
                                             : 'text-gray-400 hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <span>💎</span>
                                     <span>VERSIONS</span>

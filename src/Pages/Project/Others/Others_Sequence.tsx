@@ -167,6 +167,84 @@ export default function Others_Sequence() {
         }
     }, [selectedTask]);
 
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // เพิ่ม states สำหรับ Create Task
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const [createTaskForm, setCreateTaskForm] = useState({
+        task_name: '',
+        status: 'wtg',
+        start_date: '',
+        due_date: '',
+        description: '',
+        file_url: '',
+    });
+
+    // Handle form change
+    const handleFormChange = (field: string, value: any) => {
+        setCreateTaskForm(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    // Handle create task
+    const handleCreateTask = async () => {
+        if (isCreatingTask) return;
+
+        try {
+            if (!createTaskForm.task_name.trim()) {
+                alert("กรุณากระบุชื่องาน");
+                return;
+            }
+
+            setIsCreatingTask(true);
+
+            const payload = {
+                project_id: projectId,
+                task_name: createTaskForm.task_name.trim(),
+                entity_type: 'sequence',
+                entity_id: sequenceId,
+                status: createTaskForm.status || 'wtg',
+                start_date: createTaskForm.start_date || null,
+                due_date: createTaskForm.due_date || null,
+                description: createTaskForm.description || null,
+                file_url: createTaskForm.file_url || null,
+                pipeline_step_id: null
+            };
+
+            // สร้าง task
+            await axios.post(`${ENDPOINTS.ADD_TASK}`, payload);
+
+            // รีเฟรชข้อมูล tasks
+            const tasksRes = await axios.post(ENDPOINTS.SEQUENCE_TASK, {
+                project_id: projectId,
+                entity_type: "sequence",
+                entity_id: sequenceId
+            });
+            setTasks(tasksRes.data);
+
+            // รีเซ็ต form
+            setCreateTaskForm({
+                task_name: '',
+                status: 'wtg',
+                start_date: '',
+                due_date: '',
+                description: '',
+                file_url: ''
+            });
+            setShowCreateSequence_Task(false);
+
+            alert("สร้างงานสำเร็จ!");
+
+        } catch (err: any) {
+            console.error("Create task error:", err);
+            alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+        } finally {
+            setIsCreatingTask(false);
+        }
+    };
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 'Sequence Info':
@@ -304,7 +382,7 @@ export default function Others_Sequence() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800" 
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
             onClick={handleClickOutside}
             onMouseMove={handleMouseMove}
             onMouseUp={() => setIsResizing(false)}
@@ -319,8 +397,6 @@ export default function Others_Sequence() {
                     <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-xl border border-gray-700/50">
                         {/* Breadcrumb */}
                         <div className="mb-4 flex items-center gap-2 text-sm text-gray-400">
-                            <span className="hover:text-white cursor-pointer transition-colors">📁 Sequences</span>
-                            <span className="text-gray-600">›</span>
                             <span className="font-bold text-white">🎬 {shotData.sequence}</span>
                         </div>
 
@@ -504,7 +580,8 @@ export default function Others_Sequence() {
                                     </label>
                                     <button
                                         onClick={handleStatusClick}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded font-medium transition-all w-full justify-between text-sm"
+                                        className="flex items-center gap-2 px-3 py-1.5 text-white rounded-xl font-medium transition-all w-full justify-between text-sm bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+
                                     >
                                         <div className="flex items-center gap-2">
                                             {statusConfig[shotData.status].icon === '-' ? (
@@ -593,11 +670,10 @@ export default function Others_Sequence() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                                        activeTab === tab
-                                            ? 'bg-blue-600 text-white shadow-lg'
-                                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab
+                                        ? 'text-white shadow-lg bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-700 hover:to-blue-600'
+                                        : 'text-gray-300 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600'
+                                        }`}
                                 >
                                     {tab}
                                 </button>
@@ -618,7 +694,7 @@ export default function Others_Sequence() {
                                 {activeTab === 'Tasks' && (
                                     <button
                                         onClick={() => setShowCreateSequence_Task(true)}
-                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
                                         <span>+</span>
                                         Add Task
@@ -628,7 +704,7 @@ export default function Others_Sequence() {
                                 {activeTab === 'Notes' && (
                                     <button
                                         onClick={() => setShowCreateSequence_Note(true)}
-                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
                                         <span>+</span>
                                         Add Note
@@ -638,7 +714,7 @@ export default function Others_Sequence() {
                         </div>
 
                         {/* Content */}
-                        <div className="max-h-[400px] overflow-y-auto">
+                        <div className="relative">
                             {renderTabContent()}
                         </div>
                     </div>
@@ -646,72 +722,147 @@ export default function Others_Sequence() {
             </div>
 
             {/* Create Task Modal */}
+            {/* Create Task Modal */}
             {showCreateSequence_Task && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateSequence_Task(false)} />
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-t flex items-center justify-between">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60"
+                        onClick={() => !isCreatingTask && setShowCreateSequence_Task(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative w-full max-w-2xl bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
+                        {/* Header */}
+                        <div className="px-6 py-3 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between">
                             <h2 className="text-lg text-gray-200 font-normal">
-                                Create a new Task <span className="text-gray-400 text-sm font-normal">- Global Form</span>
+                                Create a new Task <span className="text-gray-400 text-sm font-normal">for {shotData.sequence}</span>
                             </h2>
-                            <button onClick={() => setShowCreateSequence_Task(false)} className="text-gray-400 hover:text-white text-xl">⚙️</button>
                         </div>
 
+                        {/* Body */}
                         <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+                            {/* Task Name - Required */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Task Name:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                                <label className="text-sm text-gray-300 text-right">
+                                    Task Name: <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter task name"
+                                    value={createTaskForm.task_name}
+                                    onChange={(e) => handleFormChange('task_name', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
+                                />
                             </div>
 
+                            {/* Link to Sequence (Read-only) */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Link:</label>
-                                <input type="text" value={shotData.sequence} readOnly className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                                <label className="text-sm text-gray-300 text-right">
+                                    Link to:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={`Sequence: ${shotData.sequence}`}
+                                    readOnly
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
+                                />
                             </div>
 
+                            {/* Status */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Pipeline Step:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                                <label className="text-sm text-gray-300 text-right">
+                                    Status:
+                                </label>
+                                <select
+                                    value={createTaskForm.status}
+                                    onChange={(e) => handleFormChange('status', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="wtg">Waiting to Start</option>
+                                    <option value="ip">In Progress</option>
+                                    <option value="fin">Final</option>
+                                </select>
                             </div>
 
+                            {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Start Date:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                                <label className="text-sm text-gray-300 text-right">
+                                    Start Date:
+                                </label>
+                                <input
+                                    type="date"
+                                    value={createTaskForm.start_date}
+                                    onChange={(e) => handleFormChange('start_date', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                />
                             </div>
 
+                            {/* Due Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Due Date:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                                <label className="text-sm text-gray-300 text-right">
+                                    Due Date:
+                                </label>
+                                <input
+                                    type="date"
+                                    value={createTaskForm.due_date}
+                                    onChange={(e) => handleFormChange('due_date', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                />
                             </div>
 
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Assigned To:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
+                            {/* Description */}
+                            <div className="grid grid-cols-[140px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">
+                                    Description:
+                                </label>
+                                <textarea
+                                    placeholder="Enter task description (optional)"
+                                    value={createTaskForm.description}
+                                    onChange={(e) => handleFormChange('description', e.target.value)}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
+                                />
                             </div>
 
+                            {/* File URL */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Reviewer:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
-                            </div>
-
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">Project:</label>
-                                <input type="text" className="h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" />
-                            </div>
-
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <div></div>
-                                <button className="text-sm text-gray-400 hover:text-gray-200 text-left flex items-center gap-1">
-                                    More fields <span>▾</span>
-                                </button>
+                                <label className="text-sm text-gray-300 text-right">
+                                    File URL:
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="https://example.com/image.jpg"
+                                    value={createTaskForm.file_url}
+                                    onChange={(e) => handleFormChange('file_url', e.target.value)}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
+                                />
                             </div>
                         </div>
 
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
-                            <button onClick={() => setShowCreateSequence_Task(false)} className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded flex items-center justify-center">
+                        {/* Footer */}
+                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] rounded-b flex justify-between items-center gap-3">
+                            <button
+                                onClick={() => setShowCreateSequence_Task(false)}
+                                disabled={isCreatingTask}
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 Cancel
                             </button>
-                            <button className="px-4 h-9 bg-[#2d7a9e] hover:bg-[#3a8db5] text-white text-sm rounded flex items-center justify-center">
-                                Create Task
+
+                            <button
+                                onClick={handleCreateTask}
+                                disabled={isCreatingTask}
+                                className="px-4 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCreatingTask ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>กำลังสร้าง...</span>
+                                    </>
+                                ) : (
+                                    'Create Task'
+                                )}
                             </button>
                         </div>
                     </div>
@@ -783,13 +934,12 @@ export default function Others_Sequence() {
 
                             {/* Status bar */}
                             <div className="flex items-center gap-4 px-4 py-3">
-                                <span className={`px-3 py-1 rounded text-xs font-medium ${
-                                    selectedTask.status === 'wtg'
-                                        ? 'text-gray-400 bg-gray-500/20'
-                                        : selectedTask.status === 'ip'
-                                            ? 'text-blue-400 bg-blue-500/20'
-                                            : 'text-green-400 bg-green-500/20'
-                                }`}>
+                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
+                                    ? 'text-gray-400 bg-gray-500/20'
+                                    : selectedTask.status === 'ip'
+                                        ? 'text-blue-400 bg-blue-500/20'
+                                        : 'text-green-400 bg-green-500/20'
+                                    }`}>
                                     {selectedTask.status}
                                 </span>
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -802,22 +952,20 @@ export default function Others_Sequence() {
                             <div className="flex border-t border-gray-700">
                                 <button
                                     onClick={() => setRightPanelTab('notes')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                                        rightPanelTab === 'notes'
-                                            ? 'text-white border-b-2 border-blue-500'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
+                                        ? 'text-white border-b-2 border-blue-500'
+                                        : 'text-gray-400 hover:text-white'
+                                        }`}
                                 >
                                     <span>📝</span>
                                     <span>NOTES</span>
                                 </button>
                                 <button
                                     onClick={() => setRightPanelTab('versions')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                                        rightPanelTab === 'versions'
-                                            ? 'text-white border-b-2 border-blue-500'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'versions'
+                                        ? 'text-white border-b-2 border-blue-500'
+                                        : 'text-gray-400 hover:text-white'
+                                        }`}
                                 >
                                     <span>💎</span>
                                     <span>VERSIONS</span>
