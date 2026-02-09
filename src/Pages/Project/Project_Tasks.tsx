@@ -174,58 +174,57 @@ export default function Project_Tasks() {
 
     // ฟังก์ชันสร้าง Task
     const handleCreateTask = async () => {
-        try {
-            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-            if (!projectId) {
-                alert("ไม่พบ Project ID");
-                return;
-            }
-
-            if (!createTaskForm.task_name.trim()) {
-                alert("กรุณากระบุชื่องาน");
-                return;
-            }
-
-            const payload = {
-                project_id: projectId,
-                task_name: createTaskForm.task_name.trim(),
-                entity_type: createTaskForm.entity_type || null,
-                entity_id: createTaskForm.entity_id ? Number(createTaskForm.entity_id) : null,
-                status: createTaskForm.status || 'wtg',
-                start_date: createTaskForm.start_date || null,
-                due_date: createTaskForm.due_date || null,
-                description: createTaskForm.description || null,
-                file_url: createTaskForm.file_url || null,
-                pipeline_step_id: null // ⭐ ส่งเป็น null
-            };
-
-            const res = await axios.post(`${ENDPOINTS.ADD_TASK}`, payload);
-
-            // รีเฟรชข้อมูล tasks
-            const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
-            setTaskGroups(tasksRes.data);
-
-            // รีเซ็ต form และปิด modal
-            setCreateTaskForm({
-                task_name: '',
-                entity_type: '',
-                entity_id: '',
-                status: 'wtg',
-                start_date: '',
-                due_date: '',
-                description: '',
-                file_url: ''
-                // ⭐ ลบ pipeline_step_id ออก
-            });
-
-            closeModal();
-            alert("สร้างงานสำเร็จ!");
-
-        } catch (err: any) {
-            console.error("Create task error:", err);
-            alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+    try {
+        const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+        if (!projectId) {
+            alert("ไม่พบ Project ID");
+            return;
         }
-    };
+
+        if (!createTaskForm.task_name.trim()) {
+            alert("กรุณากระบุชื่องาน");
+            return;
+        }
+
+        const payload = {
+            project_id: projectId,
+            task_name: createTaskForm.task_name.trim(),
+            entity_type: createTaskForm.entity_type || null,
+            entity_id: createTaskForm.entity_id ? Number(createTaskForm.entity_id) : null,
+            status: createTaskForm.status || 'wtg',
+            start_date: createTaskForm.start_date || null,
+            due_date: createTaskForm.due_date || null,
+            description: createTaskForm.description || null,
+            file_url: createTaskForm.file_url || null,
+            pipeline_step_id: null
+        };
+
+        await axios.post(`${ENDPOINTS.ADD_TASK}`, payload); // ✅ ลบ const res
+
+        // รีเฟรชข้อมูล tasks
+        const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
+        setTaskGroups(tasksRes.data);
+
+        // รีเซ็ต form และปิด modal
+        setCreateTaskForm({
+            task_name: '',
+            entity_type: '',
+            entity_id: '',
+            status: 'wtg',
+            start_date: '',
+            due_date: '',
+            description: '',
+            file_url: ''
+        });
+
+        closeModal();
+        alert("สร้างงานสำเร็จ!");
+
+    } catch (err: any) {
+        console.error("Create task error:", err);
+        alert(err.response?.data?.message || "ไม่สามารถสร้างงานได้");
+    }
+};
 
     // ฟังก์ชันดึง entity options ตาม type
     const getEntityOptions = () => {
