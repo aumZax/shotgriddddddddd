@@ -1,6 +1,6 @@
 // endpoints.ts
-// const BASE_URL = "https://sociology-pointed-brothers-club.trycloudflare.com"; 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "https://sociology-pointed-brothers-club.trycloudflare.com"; 
+// const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
