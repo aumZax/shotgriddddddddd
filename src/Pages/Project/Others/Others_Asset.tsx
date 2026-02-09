@@ -828,48 +828,53 @@ export default function Others_Asset() {
                         <div className="grid grid-cols-12 gap-4">
                             {/* Thumbnail */}
                             <div className="col-span-3">
-                                <div className="relative w-full aspect-video rounded-lg bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 overflow-hidden shadow-lg border border-gray-700/50">
+                                <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-gray-600/30 group">
+                                    {/* Background gradient - animated */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black animate-pulse"></div>
+
                                     {assetData.thumbnail ? (
                                         assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
                                             <video
                                                 src={ENDPOINTS.image_url + assetData.thumbnail}
-                                                className="w-full h-full object-cover"
+                                                className="relative w-full h-full object-cover z-10"
                                                 muted
                                                 loop
                                                 autoPlay
-
                                             />
                                         ) : (
                                             <img
                                                 src={ENDPOINTS.image_url + assetData.thumbnail}
                                                 alt="Asset thumbnail"
-                                                className="w-full h-full object-cover"
+                                                className="relative w-full h-full object-cover z-10"
                                             />
                                         )
                                     ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                                            <Image className="w-8 h-8 text-gray-500" />
-                                            <p className="text-gray-500 text-xs">No preview</p>
+                                        <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 z-10">
+                                            <div className="p-4 rounded-full bg-gray-800/50 backdrop-blur-sm">
+                                                <Image className="w-10 h-10 text-gray-400" />
+                                            </div>
+                                            <p className="text-gray-400 text-sm font-medium">No preview available</p>
+                                            <p className="text-gray-500 text-xs">Click to upload</p>
                                         </div>
                                     )}
 
-                                    {/* Hover Controls */}
+                                    {/* Hover Controls - ปรับปรุง */}
                                     {assetData.thumbnail && (
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-all bg-black/60">
-                                            <div className="flex gap-2">
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
+                                            <div className="flex gap-3">
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         setShowPreview(true);
                                                     }}
-                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-1.5 text-xs font-medium"
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-blue-500/50 transition-all duration-200"
                                                 >
-                                                    <Eye className="w-3 h-3" />
+                                                    <Eye className="w-4 h-4" />
                                                     View
                                                 </button>
-                                                <label className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg flex items-center gap-1.5 cursor-pointer text-xs font-medium">
-                                                    <Upload className="w-3 h-3" />
+                                                <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-lg flex items-center gap-2 cursor-pointer text-sm font-medium shadow-lg hover:shadow-emerald-500/50 transition-all duration-200">
+                                                    <Upload className="w-4 h-4" />
                                                     Change
                                                     <input
                                                         type="file"
@@ -923,11 +928,12 @@ export default function Others_Asset() {
                                         </div>
                                     )}
 
+                                    {/* Upload zone when no thumbnail */}
                                     {!assetData.thumbnail && (
                                         <input
                                             type="file"
                                             accept="image/*,video/*"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                                             onChange={async (e) => {
                                                 if (!e.target.files?.[0]) return;
 

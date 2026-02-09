@@ -1250,8 +1250,9 @@ export default function Project_Assets() {
                                                                         />  
                                                                     )
                                                                 ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-700/50">
-                                                                        <Image className="w-10 h-10 text-gray-500" />
+                                                                   <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                        <Image className="w-4 h-4 text-gray-500" />
+                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
                                                                     </div>
                                                                 )}    
 
