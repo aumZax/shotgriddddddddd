@@ -297,64 +297,79 @@ export default function Project_Detail() {
             </div>
             <div className="h-10"></div>
             <div className="max-w-7xl mx-auto p-5">
-                {/* Project Header - Compact */}
-                <div className="mb-6 bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
-                    <div className="relative h-48 lg:h-64 flex items-center justify-center overflow-hidden">
-                        <div className="relative w-full h-full overflow-hidden rounded-xl">
+                {/* Project Header */}
+                <div className="mb-6 bg-gradient-to-br from-gray-800 via-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl">
+                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 lg:min-h-auto"> 
+                        {/* Left: Thumbnail */}
+                        <div className="lg:col-span-2 relative h-72 lg:h-auto items-center justify-center overflow-hidden bg-gray-900/50">
                             {projectThumbnail ? (
-                                <>
-                                    {/* Background blur */}
+                                <div className="relative w-full h-full p-6">
+                                    {/* Decorative corners */}
+                                    <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-purple-500/40"></div>
+                                    <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-purple-500/40"></div>
+                                    <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-500/40"></div>
+                                    <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-purple-500/40"></div>
+                                    
+                                    {/* Background blur effect */}
                                     <img
                                         src={ENDPOINTS.image_url+projectThumbnail}
-                                        className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-40"
+                                        className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-20"
                                         alt=""
                                     />
-
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60" />
-
-                                    {/* Main image */}
-                                    <img
-                                        src={ENDPOINTS.image_url+projectThumbnail}
-                                        alt={projectName}
-                                        className="relative z-10 mx-auto h-full object-contain opacity-90"
-                                    />
-                                </>
-                            ) : (
-                                <div
-                                    className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                    <div className="w-20 h-20 rounded-full bg-gray-700/50 flex items-center justify-center">
-                                        <Image className="w-10 h-10 text-gray-500" />
+                                    
+                                    {/* Main image with proper sizing */}
+                                    <div className="relative z-10 w-full h-full flex items-center justify-center">
+                                        <img
+                                            src={ENDPOINTS.image_url+projectThumbnail}
+                                            alt={projectName}
+                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+                                        />
                                     </div>
-                                    <p className="text-gray-300 text-lg font-medium">
-                                        No Thumbnail
-                                    </p>
+                                </div>
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
+                                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg border border-gray-600/30">
+                                        <Image className="w-12 h-12 text-gray-500" />
+                                    </div>
+                                    <p className="text-gray-400 text-sm font-medium">No Thumbnail</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Text container with strong backdrop */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent">
-                            <h1 className="text-3xl font-bold text-white mb-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                                {projectName}
-                            </h1>
-                            <div className="flex flex-wrap justify-between items-center gap-3 text-xs">
-                                {/* ซ้าย - ผู้กำกับและโปรดิวเซอร์ */}
-                                <div className="flex flex-wrap gap-3">
-                                    <span className="text-gray-300">•</span>
-                                    <span className="text-gray-200 font-medium bg-black/30 px-2 py-1 rounded backdrop-blur-sm">
-                                        สร้าง โปรเจกต์โดย: {projectCreatedBy}
-                                    </span>
+                        {/* Right: Info */}
+                        <div className="lg:col-span-3 p-8 lg:p-10 flex flex-col justify-center space-y-6 bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm">
+                            {/* Title with underline effect */}
+                            <div className="space-y-2">
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight break-words">
+                                    {projectName}
+                                </h1>
+                                <div className="h-1 w-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                            </div>
+                            
+                            {/* Info badges */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 group">
+                                    <div className="flex flex-wrap items-center gap-3 px-5 py-3 bg-gradient-to-r from-gray-700/80 to-gray-700/50 rounded-xl border border-gray-600/50 hover:border-purple-500/50 transition-all duration-300 shadow-lg backdrop-blur-sm">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 animate-pulse flex-shrink-0"></div>
+                                        <span className="text-gray-400 text-sm whitespace-nowrap">สร้างโดย:</span>
+                                        <span className="text-white font-semibold break-words">{projectCreatedBy}</span>
+                                    </div>
                                 </div>
-
-                                {/* ขวา - วันที่ */}
-                                <div className="flex flex-wrap gap-3">
-                                    <span className="text-gray-200 font-medium bg-black/30 px-2 py-1 rounded backdrop-blur-sm">
-                                        วันที่สร้าง โปรเจกต์: {formatDate(projectCreatedAt)}
-                                    </span>
-                                    <span className="text-gray-300">•</span>
-
+                                
+                                <div className="flex items-center gap-3 group">
+                                    <div className="flex flex-wrap items-center gap-3 px-5 py-3 bg-gradient-to-r from-gray-700/80 to-gray-700/50 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all duration-300 shadow-lg backdrop-blur-sm">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 animate-pulse flex-shrink-0"></div>
+                                        <span className="text-gray-400 text-sm whitespace-nowrap">วันที่สร้าง:</span>
+                                        <span className="text-white font-semibold break-words">{formatDate(projectCreatedAt)}</span>
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Decorative element */}
+                            <div className="flex gap-2 pt-2">
+                                <div className="h-1 w-12 bg-purple-500/50 rounded-full"></div>
+                                <div className="h-1 w-8 bg-blue-500/50 rounded-full"></div>
+                                <div className="h-1 w-6 bg-pink-500/50 rounded-full"></div>
                             </div>
                         </div>
                     </div>
