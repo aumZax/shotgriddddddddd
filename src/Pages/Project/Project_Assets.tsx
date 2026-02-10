@@ -1437,24 +1437,7 @@ export default function Project_Assets() {
                                                                                     <span className="text-gray-500 text-xs">...</span>
                                                                                 </div>
 
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        setSelectedAssetForDetail(asset);
-                                                                                        fetchAssetDetail(asset.id);
-                                                                                        fetchAssetSequences(asset.id);
-                                                                                        fetchAssetShots(asset.id);
-                                                                                        setShowAssetDetailPanel(true);
-                                                                                    }}
-
-                                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
-                                                                                    title="View all shots"
-                                                                                >
-                                                                                    <span className="text-xs text-gray-200 group-hover:text-green-400 font-medium transition-colors">
-                                                                                        View
-                                                                                    </span>
-                                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all" />
-                                                                                </button>
+                                                                               
                                                                             </>
                                                                         )}
                                                                     </div>
@@ -1732,23 +1715,11 @@ export default function Project_Assets() {
                                 </div>
                             </div>
 
-                            {/* More fields button */}
-                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
-                                <span>Show more fields</span>
-                                <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button> */}
+
                         </div>
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                <span className="group-hover:underline">Bulk Import</span>
-                            </button> */}
 
                             <button
                                 onClick={handleAssetModalClose}

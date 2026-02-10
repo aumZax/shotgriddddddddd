@@ -1083,24 +1083,7 @@ export default function Project_Sequence() {
                                                                     <span className="text-gray-500 text-xs">...</span>
                                                                 </div>
 
-                                                                {/* View All Button */}
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setExpandedSequenceId(sequence.dbId);
-                                                                        fetchSequenceDetail(sequence.dbId);
-                                                                        setShowExpandedPanel(true);
-                                                                    }}
-                                                                    className="flex-shrink-0 px-3 py-1.5 transition-all group flex items-center gap-1.5 bg-gradient-to-r from-green-600/50 to-gray-800 border border-gray-700 hover:border-purple-500 rounded-lg"
-
-                                                                    title="View all assets"
-                                                                >
-                                                                    <span className="text-xs text-gray-400 group-hover:text-green-400 font-medium transition-colors">
-                                                                        View
-                                                                    </span>
-                                                                    <ChevronUp className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 group-hover:translate-x-0.5 rotate-90 transition-all" />
-
-                                                                </button>
+                                                              
                                                             </>
                                                         )}
                                                     </div>
@@ -1216,21 +1199,10 @@ export default function Project_Sequence() {
                                 </div>
                             </div>
 
-                            {/* More fields expandable */}
-                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 group transition-colors">
-                                <span>Show more fields</span>
-                                <ChevronDown />
-                            </button> */}
                         </div>
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                            {/* <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-2 transition-colors group">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                <span className="group-hover:underline">Bulk Import</span>
-                            </button> */}
 
                                 <button
                                     onClick={closeModal}
