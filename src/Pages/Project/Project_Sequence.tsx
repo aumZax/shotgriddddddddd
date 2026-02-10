@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import {  ChevronUp, FolderClosed, Image, Lock } from 'lucide-react';
+import {  FolderClosed, Image, Lock } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";

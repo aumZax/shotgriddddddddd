@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, ChevronUp, Box } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box } from 'lucide-react';
 import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
