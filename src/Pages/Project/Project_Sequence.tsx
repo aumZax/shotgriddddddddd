@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import {  FolderClosed, Image, Lock } from 'lucide-react';
+import { FolderClosed, Image, Lock } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";
@@ -908,7 +908,7 @@ export default function Project_Sequence() {
                                                 >
                                                     {sequence.thumbnail ? (
                                                         <img
-                                                            src={ENDPOINTS.image_url+sequence.thumbnail}
+                                                            src={ENDPOINTS.image_url + sequence.thumbnail}
                                                             alt={`${sequence.id}`}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                         />
@@ -934,7 +934,7 @@ export default function Project_Sequence() {
                                             {/* Sequence Name */}
                                             <div
                                                 onClick={(e) => handleFieldClick('id', index, e)}
-                                                className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4"
                                             >
                                                 {editingField?.index === index && editingField?.field === 'id' ? (
                                                     <input
@@ -948,7 +948,10 @@ export default function Project_Sequence() {
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
                                                 ) : (
-                                                    <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                    <h3 className="text-sm font-medium text-gray-100 truncate px-2.5 py-1
+                                                                    border border-gray-500/20
+                                                                    hover:bg-gray-700
+                                                                    rounded-md">
                                                         {sequence.id}
                                                     </h3>
                                                 )}
@@ -983,14 +986,14 @@ export default function Project_Sequence() {
                                                                 className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
                                                             >
                                                                 {config.icon === '-' ? (
-                                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                                        ) : (
-                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                                        )}
-                                                                                        <div className="text-xs text-gray-200">
-                                                                                            <span className="px-4">{config.label}</span>
-                                                                                            <span>{config.fullLabel}</span>
-                                                                                        </div>
+                                                                    <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                ) : (
+                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                )}
+                                                                <div className="text-xs text-gray-200">
+                                                                    <span className="px-4">{config.label}</span>
+                                                                    <span>{config.fullLabel}</span>
+                                                                </div>
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1000,7 +1003,7 @@ export default function Project_Sequence() {
                                             {/* Description */}
                                             <div
                                                 onClick={(e) => handleFieldClick('description', index, e)}
-                                                className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                className="flex-1 min-w-0 px-2 py-1 cursor-text border-r border-gray-700/50 pr-4"
                                             >
                                                 {editingField?.index === index && editingField?.field === 'description' ? (
                                                     <textarea
@@ -1016,7 +1019,8 @@ export default function Project_Sequence() {
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
                                                 ) : (
-                                                    <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={sequence.description}>
+                                                    <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed border border-gray-500/20 p-1 rounded
+                                                                                hover:bg-gray-700" title={sequence.description}>
                                                         {sequence.description || '\u00A0'}
                                                     </p>
                                                 )}
@@ -1083,7 +1087,7 @@ export default function Project_Sequence() {
                                                                     <span className="text-gray-500 text-xs">...</span>
                                                                 </div>
 
-                                                              
+
                                                             </>
                                                         )}
                                                     </div>
@@ -1145,7 +1149,7 @@ export default function Project_Sequence() {
                                     </h2>
                                     <p className="text-xs text-blue-300/70 mt-0.5">Global Form</p>
                                 </div>
-              
+
                             </div>
                         </div>
 
@@ -1204,19 +1208,19 @@ export default function Project_Sequence() {
                         {/* Footer */}
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
 
-                                <button
-                                    onClick={closeModal}
-                                    className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-blue-100 transition-all font-medium"
-                                >
-                                    Cancel
-                                </button>
+                            <button
+                                onClick={closeModal}
+                                className="px-6 h-10 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-sm rounded-lg text-blue-100 transition-all font-medium"
+                            >
+                                Cancel
+                            </button>
 
-                                <button
-                                    onClick={handleCreateSequence}
-                                    className="px-6 h-10 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium"
-                                >
-                                    Create Sequence
-                                </button>
+                            <button
+                                onClick={handleCreateSequence}
+                                className="px-6 h-10 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium"
+                            >
+                                Create Sequence
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1621,7 +1625,7 @@ export default function Project_Sequence() {
                                                                 handleRemoveShotFromSequence(shot.id);
                                                             }}
                                                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${expandedItem?.type === "shot" && expandedItem?.id === shot.id
-                                                               ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
+                                                                ? "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-500 hover:to-gray-500"
                                                                 : "hover:rotate-90 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-red-500 hover:to-red-500"
                                                                 }`}
                                                             title="Remove from sequence"

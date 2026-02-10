@@ -1038,7 +1038,7 @@ export default function ProjectShot() {
                                                                         />
                                                                     )
                                                                 ) : (
-                                                                     <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
                                                                         <Image className="w-4 h-4 text-gray-500" />
                                                                         <p className="text-gray-500 text-[9px]">No Image</p>
                                                                     </div>
@@ -1058,7 +1058,7 @@ export default function ProjectShot() {
                                                         {/* Shot Name */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('shot_name', categoryIndex, shotIndex, e)}
-                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.shotIndex === shotIndex &&
@@ -1074,16 +1074,21 @@ export default function ProjectShot() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                                <h3 className="text-sm font-medium text-gray-100 truncate
+                                                                    px-2.5 py-1
+                                                                    border border-gray-500/20
+                                                                    hover:bg-gray-700
+                                                                    rounded-md">
                                                                     {shot.shot_name}
                                                                 </h3>
+
                                                             )}
                                                         </div>
                                                         {/* Sequence */}
                                                         <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
                                                             {shot.sequence ? (
-                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                                                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
+                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md">
+                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
                                                                         {shot.sequence.sequence_name}
                                                                     </span>
                                                                     {shot.sequence.status === 'fin' && (
@@ -1099,10 +1104,10 @@ export default function ProjectShot() {
                                                         </div>
 
                                                         {/* Status */}
-                                                        <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4 ">
+                                                        <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
                                                             <button
                                                                 onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
-                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md transition-colors  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-lg"
+                                                                className="flex w-full items-center gap-2 px-3 py-1.5 transition-colors  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-xl"
                                                             >
                                                                 {statusConfig[shot.status as StatusType].icon === '-' ? (
                                                                     <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -1145,7 +1150,7 @@ export default function ProjectShot() {
                                                         {/* Description */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('description', categoryIndex, shotIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                            className="flex-1 min-w-0 px-2 py-1 cursor-text pr-4 border-r border-gray-700/50"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.shotIndex === shotIndex &&
@@ -1161,7 +1166,7 @@ export default function ProjectShot() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={shot.description}>
+                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed p-1 border border-gray-500/20 rounded hover:bg-gray-700" title={shot.description}>
                                                                     {shot.description || '\u00A0'}
                                                                 </p>
                                                             )}
@@ -1227,7 +1232,7 @@ export default function ProjectShot() {
                                                                                     <span className="text-gray-500 text-xs">...</span>
                                                                                 </div>
 
-                                                                              
+
                                                                             </>
                                                                         )}
                                                                     </div>
@@ -1434,11 +1439,11 @@ export default function ProjectShot() {
                                 </div>
                             </div>
 
-                          
+
                         </div>
 
                         <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center">
-                         
+
 
                             <button
                                 onClick={handleModalClose}

@@ -92,9 +92,21 @@ export default function Project_Tasks() {
     // เพิ่ม state สำหรับ loading สร้าง task ++++++++++++++++++++++++++++++++++++++++++++++++
     const [isCreatingTask, setIsCreatingTask] = useState(false);
 
+  // ⭐ เพิ่มตรงนี้ หลังบรรทัด 60
+    const useLoadingState = () => {
+        const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
 
+        const setLoading = (key: string, value: boolean) => {
+            setLoadingStates(prev => ({ ...prev, [key]: value }));
+        };
 
+        const isLoading = (key: string) => loadingStates[key] || false;
 
+        return { setLoading, isLoading };
+    };
+
+    const { setLoading, isLoading } = useLoadingState(); // ⭐ เพิ่มบรรทัดนี้
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Create Task ++++++++++++++++++++++++++++++++++++++++++++++
     // เพิ่ม state สำหรับ form
     const [createTaskForm, setCreateTaskForm] = useState({
         task_name: '',
@@ -218,7 +230,22 @@ export default function Project_Tasks() {
 
             // รีเฟรชข้อมูล tasks
             const tasksRes = await axios.post(`${ENDPOINTS.PROJECT_TASKS_GROUPED}`, { projectId });
-            setTaskGroups(tasksRes.data);
+            // ⭐ เพิ่มการเรียงลำดับตรงนี้ด้วย
+            const sortedGroups = tasksRes.data.sort((a: TaskGroup, b: TaskGroup) => {
+                const order: { [key: string]: number } = {
+                    'asset': 1,
+                    'shot': 2,
+                    'sequence': 3,
+                    'unassigned': 4
+                };
+
+                const orderA = order[a.entity_type] || 999;
+                const orderB = order[b.entity_type] || 999;
+
+                return orderA - orderB;
+            });
+
+            setTaskGroups(sortedGroups);
 
             // รีเซ็ต form และปิด modal
             setCreateTaskForm({
@@ -296,6 +323,8 @@ export default function Project_Tasks() {
         action: 'add' | 'remove',
         type: 'assignee' | 'reviewer'
     ) => {
+         const loadingKey = `${type}-${taskId}-${action}-${userId}`;
+    setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             const endpoint = type === 'assignee'
                 ? (action === 'add' ? ENDPOINTS.ADD_TASK_ASSIGNEE : ENDPOINTS.REMOVE_TASK_ASSIGNEE)
@@ -340,7 +369,9 @@ export default function Project_Tasks() {
         } catch (err: any) {
             console.error(`${action} ${type} error:`, err);
             alert(err.response?.data?.message || `ไม่สามารถ${action === 'add' ? 'เพิ่ม' : 'ลบ'}${type === 'assignee' ? 'Assigned' : 'Reviewer'}ได้`);
-        }
+        }finally {
+        setLoading(loadingKey, false); // ⭐ เพิ่ม
+    }
     };
 
     // แทนที่ฟังก์ชัน addAssignee, removeAssignee, addReviewer, removeReviewer
@@ -571,15 +602,31 @@ export default function Project_Tasks() {
                 if (!projectId) return;
 
                 const res = await axios.post(
-                    `${ENDPOINTS.PROJECT_TASKS_GROUPED}`, // เปลี่ยน endpoint
+                    `${ENDPOINTS.PROJECT_TASKS_GROUPED}`,
                     { projectId }
                 );
                 console.log("GROUPED TASKS:", res.data);
-                setTaskGroups(res.data);
+
+                // ⭐ เพิ่มการเรียงลำดับตรงนี้
+                const sortedGroups = res.data.sort((a: TaskGroup, b: TaskGroup) => {
+                    const order: { [key: string]: number } = {
+                        'asset': 1,
+                        'shot': 2,
+                        'sequence': 3,
+                        'unassigned': 4
+                    };
+
+                    const orderA = order[a.entity_type] || 999;
+                    const orderB = order[b.entity_type] || 999;
+
+                    return orderA - orderB;
+                });
+
+                setTaskGroups(sortedGroups);
 
                 // เปิด group แรกโดยอัตโนมัติ
-                if (res.data.length > 0) {
-                    const firstKey = `${res.data[0].entity_type}_${res.data[0].entity_id}`;
+                if (sortedGroups.length > 0) {
+                    const firstKey = `${sortedGroups[0].entity_type}_${sortedGroups[0].entity_id}`;
                     setExpandedGroups(new Set([firstKey]));
                 }
             } catch (err) {
@@ -645,6 +692,10 @@ export default function Project_Tasks() {
         shotIndex: number,
         newStatus: StatusType
     ) => {
+            const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
+    const loadingKey = `status-${taskId}`;
+    
+    setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
 
@@ -670,12 +721,16 @@ export default function Project_Tasks() {
             console.error('Failed to update status:', err);
             // ✅ แสดง error message ให้ user ทราบ
             alert('ไม่สามารถอัพเดทสถานะได้ กรุณาลองใหม่อีกครั้ง');
-        }
+        }finally {
+        setLoading(loadingKey, false); // ⭐ เพิ่ม
+    }
     };
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Update Task ++++++++++++++++++++++++++++++++++++++++++++++
     // ฟังก์ชันสำหรับอัพเดท task
     const updateTask = async (taskId: number, field: string, value: any) => {
+        const loadingKey = `update-${taskId}-${field}`;
+        setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             await axios.post(`${ENDPOINTS.UPDATE_TASK}`, {
                 taskId,
@@ -700,6 +755,8 @@ export default function Project_Tasks() {
         } catch (err) {
             console.error('Failed to update task:', err);
             return false;
+        } finally {
+            setLoading(loadingKey, false); // ⭐ เพิ่ม
         }
     };
 
@@ -707,6 +764,8 @@ export default function Project_Tasks() {
     // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
     // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
     const fetchPipelineStepsByType = async (entityType: 'asset' | 'shot') => {
+        const loadingKey = `pipeline-${entityType}`;
+        setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
                 entityType: entityType
@@ -727,7 +786,10 @@ export default function Project_Tasks() {
             });
         } catch (err) {
             console.error("Failed to fetch pipeline steps:", err);
+        } finally {
+            setLoading(loadingKey, false); // ⭐ เพิ่ม
         }
+
     };
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown PIPLINE STEP ++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -735,31 +797,31 @@ export default function Project_Tasks() {
 
     // ⭐ Custom Hook สำหรับคำนวณตำแหน่ง dropdown
     // ⭐ วิธีที่ 2: ใช้ Generic Type ที่ยืดหยุ่นกว่า
-  // ⭐ แก้ไข type ของ parameter ให้รับ null ได้
-const useDropdownPosition = (
-    isOpen: boolean,
-    dropdownRef: React.RefObject<HTMLDivElement | null>, // เพิ่ม | null
-    dropdownHeight: number = 384
-) => {
-    const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
+    // ⭐ แก้ไข type ของ parameter ให้รับ null ได้
+    const useDropdownPosition = (
+        isOpen: boolean,
+        dropdownRef: React.RefObject<HTMLDivElement | null>, // เพิ่ม | null
+        dropdownHeight: number = 384
+    ) => {
+        const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
 
-    useEffect(() => {
-        if (isOpen && dropdownRef.current) {
-            const rect = dropdownRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
+        useEffect(() => {
+            if (isOpen && dropdownRef.current) {
+                const rect = dropdownRef.current.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
 
-            setPosition(
-                spaceBelow < dropdownHeight && spaceAbove > dropdownHeight 
-                    ? 'top' 
-                    : 'bottom'
-            );
-        }
-    }, [isOpen, dropdownHeight]);
+                setPosition(
+                    spaceBelow < dropdownHeight && spaceAbove > dropdownHeight
+                        ? 'top'
+                        : 'bottom'
+                );
+            }
+        }, [isOpen, dropdownHeight]);
 
-    return position;
-};
+        return position;
+    };
 
     // ใช้งาน - แทนที่ state และ useEffect ทั้ง 3 ตัว
     const assigneeDropdownPosition = useDropdownPosition(
@@ -775,61 +837,9 @@ const useDropdownPosition = (
         pipelineDropdownRef
     );
 
-    // // เพิ่ม useEffect สำหรับคำนวณตำแหน่ง
-    // useEffect(() => {
-    //     if (editingPipelineTaskId && pipelineDropdownRef.current) {
-    //         const rect = pipelineDropdownRef.current.getBoundingClientRect();
-    //         const viewportHeight = window.innerHeight;
-    //         const spaceBelow = viewportHeight - rect.bottom;
-    //         const dropdownHeight = 384; // max-h-96 = 384px
-
-    //         // ถ้าพื้นที่ด้านล่างไม่พอ ให้เปิดขึ้นด้านบน
-    //         if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-    //             setPipelineDropdownPosition('top');
-    //         } else {
-    //             setPipelineDropdownPosition('bottom');
-    //         }
-    //     }
-    // }, [editingPipelineTaskId]);
-    // // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown ASSIGNEE REVIEWER ++++++++++++++++++++++++++++++++++++++++++++++
-    // useEffect(() => {
-    //     if (editingAssigneeTaskId && assigneeDropdownRef.current) {
-    //         const rect = assigneeDropdownRef.current.getBoundingClientRect();
-    //         const viewportHeight = window.innerHeight;
-    //         const dropdownHeight = 384; // max-h-96 = 384px
-
-    //         const spaceBelow = viewportHeight - rect.bottom;
-    //         const spaceAbove = rect.top;
-
-    //         // ถ้าพื้นที่ด้านล่างไม่พอ และด้านบนมีพื้นที่มากกว่า
-    //         if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-    //             setAssigneeDropdownPosition('top');
-    //         } else {
-    //             setAssigneeDropdownPosition('bottom');
-    //         }
-    //     }
-    // }, [editingAssigneeTaskId]);
-
-    // useEffect(() => {
-    //     if (editingReviewerTaskId && reviewerDropdownRef.current) {
-    //         const rect = reviewerDropdownRef.current.getBoundingClientRect();
-    //         const viewportHeight = window.innerHeight;
-    //         const dropdownHeight = 384;
-
-    //         const spaceBelow = viewportHeight - rect.bottom;
-    //         const spaceAbove = rect.top;
-
-    //         if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-    //             setReviewerDropdownPosition('top');
-    //         } else {
-    //             setReviewerDropdownPosition('bottom');
-    //         }
-    //     }
-    // }, [editingReviewerTaskId]);
-
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+  
 
     return (
         <div
@@ -872,23 +882,10 @@ const useDropdownPosition = (
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         Pipeline Step
                                     </th>
-                                    {/* ⭐ เพิ่มคอลัมน์ Description ตรงนี้ */}
-                                    {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center gap-1">
-                                            <span>Description</span>
-                                        </div>
-                                    </th> */}
 
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div>สถานะ</div>
-                                        {/* <div className="mt-2 text-xs text-gray-500 normal-case">
-                                            <div className="flex items-center gap-2">
-                                                <span>เสร็จ:</span>
-                                                <span className="px-2 py-0.5 rounded-md bg-green-500/20 text-green-400 font-semibold">
-                                                    63.64%
-                                                </span>
-                                            </div>
-                                        </div> */}
+
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                                         Assigned To
@@ -918,24 +915,7 @@ const useDropdownPosition = (
                                         </div>
 
                                     </th>
-                                    {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <div>Worked</div>
-                                        <div className="mt-2 text-xs text-gray-500 normal-case">
-                                            <div className="flex items-center gap-2">
-                                                <span>รวม:</span>
-                                                <span className="text-purple-400 font-semibold">29.31</span>
-                                            </div>
-                                        </div>
-                                    </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <div>+/- days</div>
-                                        <div className="mt-2 text-xs text-gray-500 normal-case">
-                                            <div className="flex items-center gap-2">
-                                                <span>รวม:</span>
-                                                <span className="text-amber-400 font-semibold">25.94</span>
-                                            </div>
-                                        </div>
-                                    </th> */}
+
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800/50">
@@ -1348,7 +1328,15 @@ const useDropdownPosition = (
 
                                                                             <div className="max-h-72 overflow-y-auto">
                                                                                 <div className="p-2">
+                                                                                    {(isLoading('pipeline-shot') || isLoading('pipeline-asset')) && (
+                                                                                        <div className="flex items-center justify-center py-8">
+                                                                                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                                                            <span className="ml-2 text-sm text-gray-400">กำลังโหลด...</span>
+                                                                                        </div>
+                                                                                    )}
                                                                                     {/* Option: ไม่ระบุ */}
+                                                                                     {!(isLoading('pipeline-shot') || isLoading('pipeline-asset')) && (
+            <>
                                                                                     <button
                                                                                         onClick={async () => {
                                                                                             const success = await updateTask(task.id, 'pipeline_step_id', null);
@@ -1437,6 +1425,8 @@ const useDropdownPosition = (
                                                                                             )}
                                                                                         </button>
                                                                                     ))}
+                                                                                    </>
+                                                                                      )}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1496,19 +1486,22 @@ const useDropdownPosition = (
                                                         {/* Column #7: สถานะ */}
                                                         <td className="px-4 py-4">
                                                             <div className="w-20 flex-shrink-0 relative">
-                                                                <button
-                                                                    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
-                                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                                                >
-                                                                    {statusConfig[task.status as StatusType].icon === '-' ? (
-                                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
-                                                                    ) : (
-                                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
-                                                                    )}
-                                                                    <span className="text-xs text-gray-300 font-medium truncate">
-                                                                        {statusConfig[task.status as StatusType].label}
-                                                                    </span>
-                                                                </button>
+                                                               <button
+    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
+    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+    disabled={isLoading(`status-${task.id}`)} // ⭐ เพิ่ม
+>
+    {isLoading(`status-${task.id}`) ? ( // ⭐ เพิ่ม
+        <div className="w-2.5 h-2.5 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+    ) : statusConfig[task.status as StatusType].icon === '-' ? (
+        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+    ) : (
+        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
+    )}
+    <span className="text-xs text-gray-300 font-medium truncate">
+        {statusConfig[task.status as StatusType].label}
+    </span>
+</button>
 
                                                                 {/* Status Dropdown */}
                                                                 {showStatusMenu?.categoryIndex === taskGroups.findIndex(g => g.tasks.includes(task)) &&

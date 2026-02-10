@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://wagner-healthcare-east-belkin.trycloudflare.com"; 
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://wagner-healthcare-east-belkin.trycloudflare.com";
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -74,7 +74,7 @@ const ENDPOINTS = {
   REMOVE_SHOT_FROM_SEQUENCE: `${BASE_URL}/remove-shot-from-sequence`,
   ADD_SEQUENCE_TO_SHOT: `${BASE_URL}/add-sequence-to-shot`,
   REMOVE_SEQUENCE_FROM_SHOT: `${BASE_URL}/remove-sequence-from-shot`,
-  
+
   ADD_ASSET_TO_SHOT: `${BASE_URL}/add-asset-to-shot`,
   REMOVE_ASSET_FROM_SHOT: `${BASE_URL}/remove-asset-from-shot`,
   GET_ASSET_SHOT: `${BASE_URL}/get-asset-shot`,
@@ -100,11 +100,12 @@ const ENDPOINTS = {
   CREATE_ASSET_NOTE: `${BASE_URL}/create-asset-note`,
   GET_NOTES: `${BASE_URL}/get-notes`,
   DELETE_NOTE: `${BASE_URL}/delete-note`,
-  
+
 
 
   ADD_TASK: `${BASE_URL}/add-task`,
   CREATE_SHOT_NOTE: `${BASE_URL}/create-shot-note`,
+  CREATE_SEQUENCE_NOTE: `${BASE_URL}/create-sequence-note`,
 
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ

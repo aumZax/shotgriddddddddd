@@ -1270,7 +1270,7 @@ export default function Project_Assets() {
                                                         {/* Asset Name */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('asset_name', categoryIndex, assetIndex, e)}
-                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50 pr-4"
+                                                            className="w-44 flex-shrink-0 px-2 py-1 cursor-text border-r border-gray-700/50 pr-4"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.assetIndex === assetIndex &&
@@ -1286,7 +1286,9 @@ export default function Project_Assets() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <h3 className="text-sm font-medium text-gray-100 truncate">
+                                                                <h3 className="text-sm font-medium text-gray-100 truncate  border border-gray-500/20
+                                                                    hover:bg-gray-700
+                                                                    rounded">
                                                                     {asset.asset_name}
                                                                 </h3>
                                                             )}
@@ -1310,7 +1312,7 @@ export default function Project_Assets() {
                                                         <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
                                                             <button
                                                                 onClick={(e) => handleFieldClick('status', categoryIndex, assetIndex, e)}
-                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                             >
                                                                 {statusConfig[asset.status].icon === '-' ? (
                                                                     <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -1353,7 +1355,7 @@ export default function Project_Assets() {
                                                         {/* Description */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1 rounded hover:bg-gray-700/40 cursor-text border-r border-gray-700/50"
+                                                            className="flex-1 min-w-0 px-2 py-1  cursor-text border-r border-gray-700/50"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.assetIndex === assetIndex &&
@@ -1369,7 +1371,10 @@ export default function Project_Assets() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed" title={asset.description}>
+                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed  border border-gray-500/20
+                                                                    hover:bg-gray-700
+                                                                    rounded
+                                                                " title={asset.description}>
                                                                     {asset.description || '\u00A0'}
                                                                 </p>
                                                             )}
