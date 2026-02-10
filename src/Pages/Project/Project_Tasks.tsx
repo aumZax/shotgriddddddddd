@@ -82,8 +82,8 @@ export default function Project_Tasks() {
     // เพิ่มใกล้ๆ บรรทัด 50-60
     const assigneeDropdownRef = useRef<HTMLDivElement>(null);
     const reviewerDropdownRef = useRef<HTMLDivElement>(null);
-    const [assigneeDropdownPosition, setAssigneeDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-    const [reviewerDropdownPosition, setReviewerDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+    const pipelineDropdownRef = useRef<HTMLDivElement>(null);
+
 
     // เพิ่ม states ใหม่ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const [editingStartDateTaskId, setEditingStartDateTaskId] = useState<number | null>(null);
@@ -271,41 +271,6 @@ export default function Project_Tasks() {
         return '';
     };
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown ASSIGNEE REVIEWER ++++++++++++++++++++++++++++++++++++++++++++++
-    useEffect(() => {
-        if (editingAssigneeTaskId && assigneeDropdownRef.current) {
-            const rect = assigneeDropdownRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const dropdownHeight = 384; // max-h-96 = 384px
-
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
-
-            // ถ้าพื้นที่ด้านล่างไม่พอ และด้านบนมีพื้นที่มากกว่า
-            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-                setAssigneeDropdownPosition('top');
-            } else {
-                setAssigneeDropdownPosition('bottom');
-            }
-        }
-    }, [editingAssigneeTaskId]);
-
-    useEffect(() => {
-        if (editingReviewerTaskId && reviewerDropdownRef.current) {
-            const rect = reviewerDropdownRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const dropdownHeight = 384;
-
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
-
-            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-                setReviewerDropdownPosition('top');
-            } else {
-                setReviewerDropdownPosition('bottom');
-            }
-        }
-    }, [editingReviewerTaskId]);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Fetch Project Users ++++++++++++++++++++++++++++++++++++++++++++++
     // Fetch project users
@@ -324,173 +289,65 @@ export default function Project_Tasks() {
         fetchProjectUsers();
     }, []);
 
-    // ฟังก์ชันเพิ่ม Assignee
-    const addAssignee = async (taskId: number, userId: number) => {
+    // ⭐ รวมฟังก์ชันที่ใช้ร่วมกันสำหรับ Assignee และ Reviewer
+    const manageTaskUser = async (
+        taskId: number,
+        userId: number,
+        action: 'add' | 'remove',
+        type: 'assignee' | 'reviewer'
+    ) => {
         try {
-            const res = await axios.post(`${ENDPOINTS.ADD_TASK_ASSIGNEE}`, {
-                taskId,
-                userId
-            });
+            const endpoint = type === 'assignee'
+                ? (action === 'add' ? ENDPOINTS.ADD_TASK_ASSIGNEE : ENDPOINTS.REMOVE_TASK_ASSIGNEE)
+                : (action === 'add' ? ENDPOINTS.ADD_TASK_REVIEWER : ENDPOINTS.REMOVE_TASK_REVIEWER);
 
-            const newAssignee = res.data.user;
+            const res = await axios.post(endpoint, { taskId, userId });
 
-            // ✅ อัพเดท state ทีละตัวอย่างระมัดระวัง
-            setTaskGroups(prev => {
-                const updated = prev.map(group => ({
-                    ...group,
-                    tasks: group.tasks.map(task => {
-                        if (task.id === taskId) {
-                            // ⭐ ป้องกันการเพิ่มซ้ำ - เช็คว่ามีอยู่แล้วหรือไม่
-                            const exists = task.assignees.some(a => a.id === newAssignee.id);
-                            if (exists) return task;
+            const userField = type === 'assignee' ? 'assignees' : 'reviewers';
 
-                            return {
-                                ...task,
-                                assignees: [...task.assignees, newAssignee]
-                            };
-                        }
-                        return task;
-                    })
-                }));
-                return updated;
-            });
+            setTaskGroups(prev => prev.map(group => ({
+                ...group,
+                tasks: group.tasks.map(task => {
+                    if (task.id !== taskId) return task;
 
-            // ✅ อัพเดท selectedTask แยกต่างหาก
-            setSelectedTask(prev => {
-                if (!prev || prev.id !== taskId) return prev;
+                    if (action === 'add') {
+                        const newUser = res.data.user;
+                        const exists = task[userField].some((u: any) => u.id === newUser.id);
+                        if (exists) return task;
+                        return { ...task, [userField]: [...task[userField], newUser] };
+                    }
 
-                // ⭐ ป้องกันการเพิ่มซ้ำ
-                const exists = prev.assignees.some(a => a.id === newAssignee.id);
-                if (exists) return prev;
-
-                return {
-                    ...prev,
-                    assignees: [...prev.assignees, newAssignee]
-                };
-            });
-
-            setSearchAssignee("");
-        } catch (err: any) {
-            console.error("Add assignee error:", err);
-            alert(err.response?.data?.message || "ไม่สามารถเพิ่มAssignedได้");
-        }
-    };
-
-    // ฟังก์ชันลบ Assignee
-    const removeAssignee = async (taskId: number, userId: number) => {
-        try {
-            await axios.post(`${ENDPOINTS.REMOVE_TASK_ASSIGNEE}`, {
-                taskId,
-                userId
-            });
-
-            // อัพเดท state
-            setTaskGroups(prev => {
-                const updated = [...prev];
-                updated.forEach(group => {
-                    group.tasks.forEach(task => {
-                        if (task.id === taskId) {
-                            task.assignees = task.assignees.filter(a => a.id !== userId);
-                        }
-                    });
-                });
-                return updated;
-            });
-
-            // อัพเดท selectedTask
-            if (selectedTask && selectedTask.id === taskId) {
-                setSelectedTask(prev => prev ? {
-                    ...prev,
-                    assignees: prev.assignees.filter(a => a.id !== userId)
-                } : null);
-            }
-        } catch (err) {
-            console.error("Remove assignee error:", err);
-            alert("ไม่สามารถลบAssignedได้");
-        }
-    };
-
-    // ฟังก์ชันเพิ่ม Reviewer
-    const addReviewer = async (taskId: number, userId: number) => {
-        try {
-            const res = await axios.post(`${ENDPOINTS.ADD_TASK_REVIEWER}`, {
-                taskId,
-                userId
-            });
-
-            const newReviewer = res.data.user;
-
-            setTaskGroups(prev => {
-                const updated = prev.map(group => ({
-                    ...group,
-                    tasks: group.tasks.map(task => {
-                        if (task.id === taskId) {
-                            // ⭐ ป้องกันการเพิ่มซ้ำ
-                            const exists = task.reviewers.some(r => r.id === newReviewer.id);
-                            if (exists) return task;
-
-                            return {
-                                ...task,
-                                reviewers: [...task.reviewers, newReviewer]
-                            };
-                        }
-                        return task;
-                    })
-                }));
-                return updated;
-            });
+                    return { ...task, [userField]: task[userField].filter((u: any) => u.id !== userId) };
+                })
+            })));
 
             setSelectedTask(prev => {
                 if (!prev || prev.id !== taskId) return prev;
 
-                // ⭐ ป้องกันการเพิ่มซ้ำ
-                const exists = prev.reviewers.some(r => r.id === newReviewer.id);
-                if (exists) return prev;
+                if (action === 'add') {
+                    const newUser = res.data.user;
+                    const exists = prev[userField].some((u: any) => u.id === newUser.id);
+                    if (exists) return prev;
+                    return { ...prev, [userField]: [...prev[userField], newUser] };
+                }
 
-                return {
-                    ...prev,
-                    reviewers: [...prev.reviewers, newReviewer]
-                };
+                return { ...prev, [userField]: prev[userField].filter((u: any) => u.id !== userId) };
             });
 
-            setSearchReviewer("");
-        } catch (err: any) {
-            console.error("Add reviewer error:", err);
-            alert(err.response?.data?.message || "ไม่สามารถเพิ่ม Reviewer ได้");
-        }
-    };
-
-    // ฟังก์ชันลบ Reviewer
-    const removeReviewer = async (taskId: number, userId: number) => {
-        try {
-            await axios.post(`${ENDPOINTS.REMOVE_TASK_REVIEWER}`, {
-                taskId,
-                userId
-            });
-
-            setTaskGroups(prev => {
-                const updated = [...prev];
-                updated.forEach(group => {
-                    group.tasks.forEach(task => {
-                        if (task.id === taskId) {
-                            task.reviewers = task.reviewers.filter(r => r.id !== userId);
-                        }
-                    });
-                });
-                return updated;
-            });
-
-            if (selectedTask && selectedTask.id === taskId) {
-                setSelectedTask(prev => prev ? {
-                    ...prev,
-                    reviewers: prev.reviewers.filter(r => r.id !== userId)
-                } : null);
+            if (action === 'add') {
+                type === 'assignee' ? setSearchAssignee("") : setSearchReviewer("");
             }
-        } catch (err) {
-            console.error("Remove reviewer error:", err);
-            alert("ไม่สามารถลบ Reviewer ได้");
+        } catch (err: any) {
+            console.error(`${action} ${type} error:`, err);
+            alert(err.response?.data?.message || `ไม่สามารถ${action === 'add' ? 'เพิ่ม' : 'ลบ'}${type === 'assignee' ? 'Assigned' : 'Reviewer'}ได้`);
         }
     };
+
+    // แทนที่ฟังก์ชัน addAssignee, removeAssignee, addReviewer, removeReviewer
+    const addAssignee = (taskId: number, userId: number) => manageTaskUser(taskId, userId, 'add', 'assignee');
+    const removeAssignee = (taskId: number, userId: number) => manageTaskUser(taskId, userId, 'remove', 'assignee');
+    const addReviewer = (taskId: number, userId: number) => manageTaskUser(taskId, userId, 'add', 'reviewer');
+    const removeReviewer = (taskId: number, userId: number) => manageTaskUser(taskId, userId, 'remove', 'reviewer');
 
     // Filter users ที่ยังไม่ได้เป็น assignee
     const getAvailableAssignees = (task: Task) => {
@@ -629,28 +486,26 @@ export default function Project_Tasks() {
         };
     };
 
-    const handleMouseMoveeeeee = (e: MouseEvent) => {
+
+    // ⭐ รวมทั้ง listener และ cleanup ในที่เดียว
+    useEffect(() => {
         if (!isDragging) return;
 
-        setPosition({
-            x: e.clientX - dragStart.current.x,
-            y: e.clientY - dragStart.current.y,
-        });
-    };
+        const handleMove = (e: MouseEvent) => {
+            setPosition({
+                x: e.clientX - dragStart.current.x,
+                y: e.clientY - dragStart.current.y,
+            });
+        };
 
-    const handleMouseUpppp = () => {
-        setIsDragging(false);
-    };
+        const handleUp = () => setIsDragging(false);
 
-    useEffect(() => {
-        if (isDragging) {
-            window.addEventListener("mousemove", handleMouseMoveeeeee);
-            window.addEventListener("mouseup", handleMouseUpppp);
-        }
+        window.addEventListener("mousemove", handleMove);
+        window.addEventListener("mouseup", handleUp);
 
         return () => {
-            window.removeEventListener("mousemove", handleMouseMoveeeeee);
-            window.removeEventListener("mouseup", handleMouseUpppp);
+            window.removeEventListener("mousemove", handleMove);
+            window.removeEventListener("mouseup", handleUp);
         };
     }, [isDragging]);
 
@@ -876,28 +731,104 @@ export default function Project_Tasks() {
     };
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown PIPLINE STEP ++++++++++++++++++++++++++++++++++++++++++++++
 
-    // เพิ่ม useRef ที่ด้านบนของ component
-    const pipelineDropdownRef = useRef<HTMLDivElement>(null);
 
-    // เพิ่ม state สำหรับเช็คตำแหน่ง
-    const [pipelineDropdownPosition, setPipelineDropdownPosition] = useState<'bottom' | 'top'>('bottom');
 
-    // เพิ่ม useEffect สำหรับคำนวณตำแหน่ง
+    // ⭐ Custom Hook สำหรับคำนวณตำแหน่ง dropdown
+    // ⭐ วิธีที่ 2: ใช้ Generic Type ที่ยืดหยุ่นกว่า
+  // ⭐ แก้ไข type ของ parameter ให้รับ null ได้
+const useDropdownPosition = (
+    isOpen: boolean,
+    dropdownRef: React.RefObject<HTMLDivElement | null>, // เพิ่ม | null
+    dropdownHeight: number = 384
+) => {
+    const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
+
     useEffect(() => {
-        if (editingPipelineTaskId && pipelineDropdownRef.current) {
-            const rect = pipelineDropdownRef.current.getBoundingClientRect();
+        if (isOpen && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
             const spaceBelow = viewportHeight - rect.bottom;
-            const dropdownHeight = 384; // max-h-96 = 384px
+            const spaceAbove = rect.top;
 
-            // ถ้าพื้นที่ด้านล่างไม่พอ ให้เปิดขึ้นด้านบน
-            if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-                setPipelineDropdownPosition('top');
-            } else {
-                setPipelineDropdownPosition('bottom');
-            }
+            setPosition(
+                spaceBelow < dropdownHeight && spaceAbove > dropdownHeight 
+                    ? 'top' 
+                    : 'bottom'
+            );
         }
-    }, [editingPipelineTaskId]);
+    }, [isOpen, dropdownHeight]);
+
+    return position;
+};
+
+    // ใช้งาน - แทนที่ state และ useEffect ทั้ง 3 ตัว
+    const assigneeDropdownPosition = useDropdownPosition(
+        editingAssigneeTaskId !== null,
+        assigneeDropdownRef
+    );
+    const reviewerDropdownPosition = useDropdownPosition(
+        editingReviewerTaskId !== null,
+        reviewerDropdownRef
+    );
+    const pipelineDropdownPosition = useDropdownPosition(
+        editingPipelineTaskId !== null,
+        pipelineDropdownRef
+    );
+
+    // // เพิ่ม useEffect สำหรับคำนวณตำแหน่ง
+    // useEffect(() => {
+    //     if (editingPipelineTaskId && pipelineDropdownRef.current) {
+    //         const rect = pipelineDropdownRef.current.getBoundingClientRect();
+    //         const viewportHeight = window.innerHeight;
+    //         const spaceBelow = viewportHeight - rect.bottom;
+    //         const dropdownHeight = 384; // max-h-96 = 384px
+
+    //         // ถ้าพื้นที่ด้านล่างไม่พอ ให้เปิดขึ้นด้านบน
+    //         if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+    //             setPipelineDropdownPosition('top');
+    //         } else {
+    //             setPipelineDropdownPosition('bottom');
+    //         }
+    //     }
+    // }, [editingPipelineTaskId]);
+    // // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown ASSIGNEE REVIEWER ++++++++++++++++++++++++++++++++++++++++++++++
+    // useEffect(() => {
+    //     if (editingAssigneeTaskId && assigneeDropdownRef.current) {
+    //         const rect = assigneeDropdownRef.current.getBoundingClientRect();
+    //         const viewportHeight = window.innerHeight;
+    //         const dropdownHeight = 384; // max-h-96 = 384px
+
+    //         const spaceBelow = viewportHeight - rect.bottom;
+    //         const spaceAbove = rect.top;
+
+    //         // ถ้าพื้นที่ด้านล่างไม่พอ และด้านบนมีพื้นที่มากกว่า
+    //         if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+    //             setAssigneeDropdownPosition('top');
+    //         } else {
+    //             setAssigneeDropdownPosition('bottom');
+    //         }
+    //     }
+    // }, [editingAssigneeTaskId]);
+
+    // useEffect(() => {
+    //     if (editingReviewerTaskId && reviewerDropdownRef.current) {
+    //         const rect = reviewerDropdownRef.current.getBoundingClientRect();
+    //         const viewportHeight = window.innerHeight;
+    //         const dropdownHeight = 384;
+
+    //         const spaceBelow = viewportHeight - rect.bottom;
+    //         const spaceAbove = rect.top;
+
+    //         if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+    //             setReviewerDropdownPosition('top');
+    //         } else {
+    //             setReviewerDropdownPosition('bottom');
+    //         }
+    //     }
+    // }, [editingReviewerTaskId]);
+
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
     return (
@@ -1187,21 +1118,22 @@ export default function Project_Tasks() {
 
 
                                                         {/* ⭐ Entity Name */}
+                                                        {/* ⭐ Entity Name */}
                                                         <td className="px-4 py-4">
                                                             {/* ⭐ เช็คว่าเป็น unassigned หรือไม่ */}
                                                             {group.entity_type === 'unassigned' ? (
                                                                 <span className="text-gray-600 italic text-sm">ไม่ได้กำหนด</span>
                                                             ) : task.entity_type ? (
                                                                 <span
-                                                                    onClick={async () => {
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+
                                                                         if (group.entity_type === 'sequence') {
                                                                             try {
-                                                                                // Fetch sequence detail
                                                                                 const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, {
                                                                                     projectId: JSON.parse(localStorage.getItem("projectId") || "null")
                                                                                 });
 
-                                                                                // หา sequence ที่ตรงกับ entity_id
                                                                                 const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
 
                                                                                 if (sequence) {
@@ -1223,7 +1155,92 @@ export default function Project_Tasks() {
                                                                                 console.error("Failed to fetch sequence:", err);
                                                                             }
                                                                         }
-                                                                        // ⭐ เพิ่มการจัดการสำหรับ asset และ shot ได้ที่นี่
+                                                                        // ⭐ เพิ่มการจัดการสำหรับ shot
+                                                                        // ⭐ เพิ่มการจัดการสำหรับ shot
+                                                                        else if (group.entity_type === 'shot') {
+                                                                            try {
+                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                                                                                const res = await axios.post(ENDPOINTS.SHOTLIST, { projectId });
+
+                                                                                // ค้นหา shot ที่ตรงกับ entity_id
+                                                                                let foundShot = null;
+                                                                                for (const group of res.data) {
+                                                                                    const shot = group.shots?.find((s: any) => s.id === task.entity_id);
+                                                                                    if (shot) {
+                                                                                        foundShot = {
+                                                                                            ...shot,
+                                                                                            sequence: group.category,
+                                                                                            sequenceDetail: shot.sequence || null,
+                                                                                            assets: shot.assets || []
+                                                                                        };
+                                                                                        break;
+                                                                                    }
+                                                                                }
+
+                                                                                if (foundShot) {
+                                                                                    localStorage.setItem(
+                                                                                        "selectedShot",
+                                                                                        JSON.stringify({
+                                                                                            id: foundShot.id,
+                                                                                            shot_name: foundShot.shot_name,
+                                                                                            description: foundShot.description,
+                                                                                            status: foundShot.status,
+                                                                                            // ⭐ แก้ไขตรงนี้ - ลองใช้ทั้ง thumbnail และ file_url
+                                                                                            thumbnail: foundShot.thumbnail || foundShot.file_url || "",
+                                                                                            sequence: foundShot.sequence,
+                                                                                            sequenceDetail: foundShot.sequenceDetail,
+                                                                                            assets: foundShot.assets
+                                                                                        })
+                                                                                    );
+                                                                                    navigate("/Project_Shot/Others_Shot");
+                                                                                } else {
+                                                                                    alert("ไม่พบข้อมูล Shot");
+                                                                                }
+                                                                            } catch (err) {
+                                                                                console.error("Failed to fetch shot:", err);
+                                                                                alert("ไม่สามารถโหลดข้อมูล Shot ได้");
+                                                                            }
+                                                                        }
+                                                                        // ⭐ เพิ่มการจัดการสำหรับ asset
+                                                                        else if (group.entity_type === 'asset') {
+                                                                            try {
+                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                                                                                const res = await axios.post(ENDPOINTS.ASSETLIST, { projectId });
+
+                                                                                // ค้นหา asset ที่ตรงกับ entity_id
+                                                                                let foundAsset = null;
+                                                                                for (const group of res.data) {
+                                                                                    const asset = group.assets?.find((a: any) => a.id === task.entity_id);
+                                                                                    if (asset) {
+                                                                                        foundAsset = {
+                                                                                            ...asset,
+                                                                                            category: group.category
+                                                                                        };
+                                                                                        break;
+                                                                                    }
+                                                                                }
+
+                                                                                if (foundAsset) {
+                                                                                    localStorage.setItem(
+                                                                                        "selectedAsset",
+                                                                                        JSON.stringify({
+                                                                                            id: foundAsset.id,
+                                                                                            asset_name: foundAsset.asset_name,
+                                                                                            description: foundAsset.description,
+                                                                                            status: foundAsset.status,
+                                                                                            file_url: foundAsset.file_url || "",
+                                                                                            sequence: foundAsset.category
+                                                                                        })
+                                                                                    );
+                                                                                    navigate('/Project_Assets/Others_Asset');
+                                                                                } else {
+                                                                                    alert("ไม่พบข้อมูล Asset");
+                                                                                }
+                                                                            } catch (err) {
+                                                                                console.error("Failed to fetch asset:", err);
+                                                                                alert("ไม่สามารถโหลดข้อมูล Asset ได้");
+                                                                            }
+                                                                        }
                                                                     }}
                                                                     className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
                                                                 >
