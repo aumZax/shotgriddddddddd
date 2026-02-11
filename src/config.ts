@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "https://wagner-healthcare-east-belkin.trycloudflare.com";
+const BASE_URL = "https://shelter-vintage-please-birds.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
@@ -22,7 +22,7 @@ const ENDPOINTS = {
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
   UPLOAD_AVATAR: `${BASE_URL}/upload/avatar`,
-  image_url: "https://wagner-healthcare-east-belkin.trycloudflare.com/",
+  image_url: "https://shelter-vintage-please-birds.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
@@ -100,8 +100,12 @@ const ENDPOINTS = {
   CREATE_ASSET_NOTE: `${BASE_URL}/create-asset-note`,
   GET_NOTES: `${BASE_URL}/get-notes`,
   DELETE_NOTE: `${BASE_URL}/delete-note`,
+  UPDATE_ASSET_TABS: `${BASE_URL}/updateassettab`,
 
-
+  SECRET_VERIFY: `${BASE_URL}/verify-secret`,
+  SECRET_EXECUTE: `${BASE_URL}/execute`,
+  SECRET_TABLES: `${BASE_URL}/tables`,
+  SECRET_LOGS: `${BASE_URL}/logs`,
 
   ADD_TASK: `${BASE_URL}/add-task`,
   CREATE_SHOT_NOTE: `${BASE_URL}/create-shot-note`,

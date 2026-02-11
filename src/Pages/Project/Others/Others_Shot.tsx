@@ -6,6 +6,7 @@ import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
+import AssetTab from '../../../components/AssetTab';
 
 
 // Status configuration
@@ -109,6 +110,16 @@ type TaskAssignee = {
     username: string;
 };
 
+// ⭐ เพิ่ม Asset type
+interface Asset {
+    id: number;
+    asset_name: string;
+    status: string;
+    description: string;
+    created_at: string;
+    asset_shot_id?: number;
+}
+
 
 
 // Get data from localStorage
@@ -172,6 +183,9 @@ export default function Others_Shot() {
     const [subject, setSubject] = useState(
         shotData?.shotCode ? `Note on ${shotData.shotCode}` : ""
     );
+    // +++++++++++++++++++++++++++++++++++++++ shot assets +++++++++++++++++++++++++++++++
+    const [shotAssets, setShotAssets] = useState<Asset[]>([]);
+    const [loadingAssets, setLoadingAssets] = useState(false);
 
     // ++++++++++++++++++++++++++++++++++++++ storage +++++++++++++++++++++++++++++++
 
@@ -321,6 +335,44 @@ export default function Others_Shot() {
             setLoadingNotes(false);
         }
     };
+
+    // +++++++++++++++++++++++++++++++ fetch shot assets ++++++++++++++++++++++++++++++
+    const fetchShotAssets = async () => {
+        if (!shotData?.id) return;
+
+        setLoadingAssets(true);
+        try {
+            const response = await fetch(ENDPOINTS.GET_ASSET_SHOT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shotId: shotData.id })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                setShotAssets(result.data || []);
+            } else {
+                setShotAssets([]);
+            }
+        } catch (error) {
+            console.error('Error fetching shot assets:', error);
+            setShotAssets([]);
+        } finally {
+            setLoadingAssets(false);
+        }
+    };
+    // เพิ่ม useEffect นี้หลัง useEffect อื่นๆ
+    useEffect(() => {
+        if (activeTab === 'Assets') {
+            fetchShotAssets();
+        }
+    }, [activeTab, shotData?.id]);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ status ++++++++++++++++++++++++++++++++++++++++++
 
     const handleStatusChange = async (newStatus: StatusType) => {
         try {
@@ -777,20 +829,11 @@ export default function Others_Shot() {
 
             case 'Assets':
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
-                            <p className="flex items-center gap-3 text-gray-200">
-                                <span className="text-2xl">🎥</span>
-                                <span className="font-medium">CameraRig_v3.fbx</span>
-                            </p>
-                        </div>
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
-                            <p className="flex items-center gap-3 text-gray-200">
-                                <span className="text-2xl">🌲</span>
-                                <span className="font-medium">Forest_Set.fbx</span>
-                            </p>
-                        </div>
-                    </div>
+                    <AssetTab
+                        shotAssets={shotAssets}
+                        loadingAssets={loadingAssets}
+                        formatDateThai={formatDateThai}
+                    />
                 );
 
             case 'Publishes':
@@ -1109,7 +1152,7 @@ export default function Others_Shot() {
                                     </button>
 
                                     {showStatusMenu && (
-                                        <div className="absolute left-0 top-full mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
+                                        <div className="absolute left-0 mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
                                             {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
                                                 <button
                                                     key={key}

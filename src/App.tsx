@@ -18,13 +18,12 @@ import Project_Assets from "./Pages/Project/Project_Assets";
 import Project_Tasks from "./Pages/Project/Project_Tasks";
 import Project_Sequence from "./Pages/Project/Project_Sequence";
 import Project_Media from "./Pages/Project/Project_Media";
+import SecretSQLConsole from './Pages/SecretSQLConsole';
 
 //Others
 import Others_Shot from "./Pages/Project/Others/Others_Shot";
 import Others_Asset from "./Pages/Project/Others/Others_Asset";
 import Others_Sequence from "./Pages/Project/Others/Others_Sequence";
-import Others_Video from "./Pages/Project/Others/Others_Video";
-
 
 
 import Profile from "./Pages/Profile";
@@ -42,7 +41,7 @@ function MainLayout() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const location = useLocation(); // เพิ่มบรรทัดนี้
+  const location = useLocation();
 
   // ดึงข้อมูล user จาก localStorage แบบ lazy initialization
   const [authUser] = useState<{
@@ -80,7 +79,32 @@ function MainLayout() {
     // นำทางไปยังหน้า Login
     navigate("/");
   };
+  useEffect(() => {
+    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+      // Ctrl + Alt + D = เปิด Secret Console
+      if (e.ctrlKey && e.altKey && e.key === 'M') {
+        e.preventDefault();
 
+        // ถ้าไม่ได้อยู่ที่หน้า secret console แล้ว ให้ไป
+        if (!location.pathname.includes('/secret-sql-console')) {
+          navigate('/secret-sql-console-2024');
+
+          // รอ navigate เสร็จแล้ว focus input
+          setTimeout(() => {
+            const input = document.getElementById('secret-password');
+            if (input) input.focus();
+          }, 100);
+        } else {
+          // ถ้าอยู่ที่หน้านั้นแล้ว แค่ focus
+          const input = document.getElementById('secret-password');
+          if (input) input.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyPress);
+    return () => document.removeEventListener('keydown', handleGlobalKeyPress);
+  }, [navigate, location]);
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -116,36 +140,18 @@ function MainLayout() {
           </div>
 
           <div className="flex items-center gap-6 text-sm">
-            <Link
-              className={`hover:text-blue-400 text-xl font-medium transition-all duration-300 hover:scale-105 relative group ${location.pathname === '/Inbox' ? 'text-blue-400' : 'text-gray-300'
-                }`}
-              to="/Inbox"
-            >
+            <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group" to="/Inbox">
               Inbox
-              <span className={`absolute bottom-0 left-0 h-0.5 bg-blue-400 transition-all duration-300 ${location.pathname === '/Inbox' ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
-
-            <Link
-              className={`hover:text-blue-400 text-xl font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap ${location.pathname === '/Mytask' ? 'text-blue-400' : 'text-gray-300'
-                }`}
-              to="/Mytask"
-            >
+            <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/Mytask">
               My Task
-              <span className={`absolute bottom-0 left-0 h-0.5 bg-blue-400 transition-all duration-300 ${location.pathname === '/Mytask' ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
-
-            <Link
-              className={`hover:text-blue-400 text-xl font-medium transition-all duration-300 hover:scale-105 relative group ${location.pathname === '/media' ? 'text-blue-400' : 'text-gray-300'
-                }`}
-              to="/media"
-            >
+            <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group" to="/media">
               Media
-              <span className={`absolute bottom-0 left-0 h-0.5 bg-blue-400 transition-all duration-300 ${location.pathname === '/media' ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
-
 
             <div className="relative group">
               <span className="
@@ -181,15 +187,9 @@ function MainLayout() {
               </div>
             </div>
 
-
-            <Link
-              className={`hidden md:inline-block hover:text-blue-400 text-xl font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap ${location.pathname === '/people' ? 'text-blue-400' : 'text-gray-300'
-                }`}
-              to="/people"
-            >
+            <Link className="hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/people">
               People
-              <span className={`absolute bottom-0 left-0 h-0.5 bg-blue-400 transition-all duration-300 ${location.pathname === '/people' ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
             <Link
               to="/apps"
@@ -280,8 +280,6 @@ export default function App() {
       {/* Routes ที่ไม่มี Header */}
       <Route element={<AuthLayout />}>
         <Route path="/" element={<Login />} />
-        <Route path="/Others_Video" element={<Others_Video />} />
-
 
         <Route path="/register" element={<Register />} />
       </Route>
@@ -302,6 +300,7 @@ export default function App() {
         <Route path="/Project_Assets" element={<Project_Assets />} />
         <Route path="/Project_Sequence" element={<Project_Sequence />} />
         <Route path="/Project_Media" element={<Project_Media />} />
+        <Route path="/secret-sql-console-2024" element={<SecretSQLConsole />} />
 
 
         <Route path="/Project_Tasks" element={<Project_Tasks />} />
@@ -314,8 +313,6 @@ export default function App() {
         <Route path="/Project_Assets/Others_Asset" element={<Others_Asset />} />
         <Route path="/Project_Shot/Others_Shot" element={<Others_Shot />} />
         <Route path="/Project_Sequence/Others_Sequence" element={<Others_Sequence />} />
-
-
 
         <Route path="/Others_People" element={<Others_People />} />
 
