@@ -259,7 +259,7 @@ export default function Project_Assets() {
                 )
                 .map((category: Category) => category.category);
 
-            setExpandedCategories(categoriesToExpand.length > 0 ? [categoriesToExpand[0]] : []); // เปิดแค่ตัวแรก
+            setExpandedCategories(categoriesToExpand);
 
             // Sync selected asset
             syncSelectedAssetThumbnail(data);

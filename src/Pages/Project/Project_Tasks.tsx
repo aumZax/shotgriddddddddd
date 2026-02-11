@@ -301,19 +301,19 @@ export default function Project_Tasks() {
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Fetch Project Users ++++++++++++++++++++++++++++++++++++++++++++++
     // Fetch project users
-  // ใน useEffect ของ Project_Tasks.tsx
-useEffect(() => {
-    const fetchProjectUsers = async () => {
-        try {
-            // ⭐ ไม่ต้องส่ง projectId ก็ได้
-            const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
-            setProjectUsers(res.data);
-        } catch (err) {
-            console.error("Fetch project users error:", err);
-        }
-    };
-    fetchProjectUsers();
-}, []);
+    // ใน useEffect ของ Project_Tasks.tsx
+    useEffect(() => {
+        const fetchProjectUsers = async () => {
+            try {
+                // ⭐ ไม่ต้องส่ง projectId ก็ได้
+                const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
+                setProjectUsers(res.data);
+            } catch (err) {
+                console.error("Fetch project users error:", err);
+            }
+        };
+        fetchProjectUsers();
+    }, []);
 
     // ⭐ รวมฟังก์ชันที่ใช้ร่วมกันสำหรับ Assignee และ Reviewer
     const manageTaskUser = async (
@@ -624,10 +624,10 @@ useEffect(() => {
                 setTaskGroups(sortedGroups);
 
                 // เปิด group แรกโดยอัตโนมัติ
-                if (sortedGroups.length > 0) {
-                    const firstKey = `${sortedGroups[0].entity_type}_${sortedGroups[0].entity_id}`;
-                    setExpandedGroups(new Set([firstKey]));
-                }
+                const allGroupKeys = sortedGroups.map((group: TaskGroup) =>
+                    `${group.entity_type}_${group.entity_id}`
+                );
+                setExpandedGroups(new Set(allGroupKeys));
             } catch (err) {
                 console.error("Fetch tasks error:", err);
             } finally {

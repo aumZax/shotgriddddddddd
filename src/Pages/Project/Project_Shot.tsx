@@ -374,7 +374,7 @@ export default function ProjectShot() {
             );
 
             setShotData(mappedData);
-            setExpandedCategories(mappedData.length > 0 ? [mappedData[0].category] : []);
+            setExpandedCategories(mappedData.map(category => category.category));
             syncSelectedShotThumbnail(mappedData);
 
         } catch (err) {

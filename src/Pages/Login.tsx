@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import ENDPOINTS from "../config";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    navigate("/Home");
+  }
+}, []);
 
     const handleLogin = async () => {
     if (!identifier || !password) {
@@ -25,16 +33,16 @@ export default function Login() {
         password,
       });
 
-      console.log("✅ Login response:", data);
+      // 
+      // console.log("✅ Login response:", data);
 
       // เก็บข้อมูล user
       const user = data.user;
       if (!user) throw new Error("Invalid login response");
-      console.log("✅ Logged in user:", user);
+      // console.log("✅ Logged in user:", user);
 
       localStorage.clear();
-
-
+      
       localStorage.setItem("authUser", JSON.stringify({
         id: user.id,
         username: user.username,
@@ -43,11 +51,12 @@ export default function Login() {
         imageURL: user.imageURL, 
       }));
 
-      console.log("✅ Login successful, navigating to /Home");
+      localStorage.setItem("token", data.token);
+      // console.log("✅ Login successful, navigating to /Home");
       navigate("/Home");
 
     } catch (err) {
-      console.error("❌ Login error:", err);
+      // console.error("❌ Login error:", err);
       if (axios.isAxiosError(err)) {
         // API ส่ง error message กลับมา
         const errorMsg = err.response?.data?.message || "Login failed";
