@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Lock, Play, History, AlertTriangle, Eye, EyeOff, Terminal } from 'lucide-react';
 import ENDPOINTS from "../config";
-import { useNavigate } from "react-router-dom";
 
 interface QueryResult {
     success: boolean;
@@ -27,7 +26,6 @@ interface QueryLog {
 export default function SecretSQLConsole() {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const navigate = useNavigate();
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
