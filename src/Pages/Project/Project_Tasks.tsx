@@ -301,20 +301,19 @@ export default function Project_Tasks() {
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Fetch Project Users ++++++++++++++++++++++++++++++++++++++++++++++
     // Fetch project users
-    useEffect(() => {
-        const fetchProjectUsers = async () => {
-            try {
-                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                if (!projectId) return;
-
-                const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, { projectId });
-                setProjectUsers(res.data);
-            } catch (err) {
-                console.error("Fetch project users error:", err);
-            }
-        };
-        fetchProjectUsers();
-    }, []);
+  // ใน useEffect ของ Project_Tasks.tsx
+useEffect(() => {
+    const fetchProjectUsers = async () => {
+        try {
+            // ⭐ ไม่ต้องส่ง projectId ก็ได้
+            const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
+            setProjectUsers(res.data);
+        } catch (err) {
+            console.error("Fetch project users error:", err);
+        }
+    };
+    fetchProjectUsers();
+}, []);
 
     // ⭐ รวมฟังก์ชันที่ใช้ร่วมกันสำหรับ Assignee และ Reviewer
     const manageTaskUser = async (

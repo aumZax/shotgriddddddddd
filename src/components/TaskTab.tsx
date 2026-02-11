@@ -129,20 +129,18 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     }, [initialTasks]);
 
     // ⭐ Fetch project users
-    useEffect(() => {
-        const fetchProjectUsers = async () => {
-            try {
-                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                if (!projectId) return;
-
-                const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, { projectId });
-                setProjectUsers(res.data);
-            } catch (err) {
-                console.error("Fetch project users error:", err);
-            }
-        };
-        fetchProjectUsers();
-    }, []);
+   useEffect(() => {
+    const fetchProjectUsers = async () => {
+        try {
+            // ⭐ ไม่ต้องส่ง projectId ก็ได้
+            const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
+            setProjectUsers(res.data);
+        } catch (err) {
+            console.error("Fetch project users error:", err);
+        }
+    };
+    fetchProjectUsers();
+}, []);
 
     // ⭐ Dropdown position calculation for Assignee
     useEffect(() => {
