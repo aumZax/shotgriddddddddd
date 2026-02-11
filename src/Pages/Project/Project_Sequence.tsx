@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import { FolderClosed, Image, Lock } from 'lucide-react';
+import { FolderClosed, Image, Lock, Video } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";
@@ -1056,9 +1056,8 @@ export default function Project_Sequence() {
                                                             <>
                                                                 {/* Shot Counter Badge */}
                                                                 <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-md">
-                                                                    <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                                    </svg>
+                                                                      <Video className="w-3.5 h-3.5 text-blue-400"/>
+                                                                  
                                                                     <span className="text-xs font-semibold text-blue-300">
                                                                         {sequenceShots[sequence.dbId].length}
                                                                     </span>

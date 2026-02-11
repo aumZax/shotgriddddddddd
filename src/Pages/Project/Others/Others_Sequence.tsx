@@ -7,6 +7,7 @@ import { Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
+import ShotTab from '../../../components/ShotTab';
 
 
 // Status configuration
@@ -86,6 +87,15 @@ type TaskAssignee = {
     username: string;
 };
 
+interface Shot {
+    shot_id: number;
+    shot_name: string;
+    shot_status: string;
+    shot_description: string;
+    shot_created_at: string;
+    shot_thumbnail?: string;
+}
+
 export default function Others_Sequence() {
     const [activeTab, setActiveTab] = useState('Sequence Info');
     const [SequenceData, setSequenceData] = useState({
@@ -139,8 +149,50 @@ export default function Others_Sequence() {
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
 
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ shots
+     const [shots, setShots] = useState<Shot[]>([]);
+    const [loadingShots, setLoadingShots] = useState(false);
+    useEffect(() => {
+    if (!sequenceId) return;
+
+    const fetchSequenceDetail = async () => {
+        try {
+            setLoadingShots(true);
+            const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                sequenceId: sequenceId
+            });
+
+            console.log('✅ Sequence detail:', response.data);
+
+            // กรอง shots ที่ซ้ำออก (เพราะ JOIN กับ assets อาจทำให้ shots ซ้ำ)
+            const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
+                if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
+                    acc.push({
+                        shot_id: item.shot_id,
+                        shot_name: item.shot_name,
+                        shot_status: item.shot_status,
+                        shot_description: item.shot_description,
+                        shot_created_at: item.shot_created_at,
+                        shot_thumbnail: item.shot_thumbnail
+                    });
+                }
+                return acc;
+            }, []);
+
+            setShots(uniqueShots);
+        } catch (error) {
+            console.error('❌ Failed to fetch sequence detail:', error);
+            setShots([]);
+        } finally {
+            setLoadingShots(false);
+        }
+    };
+
+    fetchSequenceDetail();
+}, [sequenceId]);
 
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ resize panel
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
         e.preventDefault();
@@ -248,10 +300,10 @@ export default function Others_Sequence() {
     }, []);
 
     useEffect(() => {
-    if (activeTab === 'Notes' && SequenceData?.id) {
-        fetchNotes();
-    }
-}, [activeTab, SequenceData?.id]);
+        if (activeTab === 'Notes' && SequenceData?.id) {
+            fetchNotes();
+        }
+    }, [activeTab, SequenceData?.id]);
 
     const [checked, setChecked] = useState<CheckedState>({
         All: false,
@@ -595,12 +647,35 @@ export default function Others_Sequence() {
                     />
                 );
 
-            case 'Shots':
-                return (
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
-                        <p className="text-gray-300">Shots content will be displayed here</p>
-                    </div>
-                );
+           case 'Shots':
+            return (
+                <ShotTab
+                    shots={shots}
+                    loadingShots={loadingShots}
+                    formatDateThai={formatDateThai}
+                    onShotUpdate={() => {
+                        // Refresh shots data when updated
+                        axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                            sequenceId: sequenceId
+                        }).then(response => {
+                            const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
+                                if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
+                                    acc.push({
+                                        shot_id: item.shot_id,
+                                        shot_name: item.shot_name,
+                                        shot_status: item.shot_status,
+                                        shot_description: item.shot_description,
+                                        shot_created_at: item.shot_created_at,
+                                        shot_thumbnail: item.shot_thumbnail
+                                    });
+                                }
+                                return acc;
+                            }, []);
+                            setShots(uniqueShots);
+                        }).catch(console.error);
+                    }}
+                />
+            );
 
             case 'Assets':
                 return (
@@ -806,7 +881,7 @@ export default function Others_Sequence() {
                                                             formData.append("file", e.target.files[0]);
                                                             formData.append("sequenceId", String(SequenceData.id));
                                                             formData.append("oldImageUrl", SequenceData.thumbnail || "");
-                                                            formData.append("type", e.target.files[0].type.split('/')[0]); 
+                                                            formData.append("type", e.target.files[0].type.split('/')[0]);
 
 
                                                             try {

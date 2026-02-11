@@ -5,7 +5,7 @@ import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 
 import Home from "./Pages/Home";
-import Inbox from "./Pages/Inbox";
+// import Inbox from "./Pages/Inbox";
 import Mytask from "./Pages/Mytask";
 import ENDPOINTS from "./config";
 
@@ -297,7 +297,7 @@ export default function App() {
 
 
         <Route path="/Home" element={<Home />} />
-        <Route path="/Inbox" element={<Inbox />} />
+        {/* <Route path="/Inbox" element={<Inbox />} /> */}
         <Route path="/Mytask" element={<Mytask />} />
 
         <Route path="/Project_Detail" element={<Project_Detail />} />
