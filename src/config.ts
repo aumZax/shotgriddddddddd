@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://shelter-vintage-please-birds.trycloudflare.com";
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://shelter-vintage-please-birds.trycloudflare.com";
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -100,7 +100,6 @@ const ENDPOINTS = {
   CREATE_ASSET_NOTE: `${BASE_URL}/create-asset-note`,
   GET_NOTES: `${BASE_URL}/get-notes`,
   DELETE_NOTE: `${BASE_URL}/delete-note`,
-  UPDATE_ASSET_TABS: `${BASE_URL}/updateassettab`,
 
   SECRET_VERIFY: `${BASE_URL}/verify-secret`,
   SECRET_EXECUTE: `${BASE_URL}/execute`,
@@ -110,6 +109,8 @@ const ENDPOINTS = {
   ADD_TASK: `${BASE_URL}/add-task`,
   CREATE_SHOT_NOTE: `${BASE_URL}/create-shot-note`,
   CREATE_SEQUENCE_NOTE: `${BASE_URL}/create-sequence-note`,
+
+  UPDATE_ASSET: `${BASE_URL}/update-asset`,
 
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ

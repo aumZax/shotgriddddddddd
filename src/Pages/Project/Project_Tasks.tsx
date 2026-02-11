@@ -92,7 +92,7 @@ export default function Project_Tasks() {
     // เพิ่ม state สำหรับ loading สร้าง task ++++++++++++++++++++++++++++++++++++++++++++++++
     const [isCreatingTask, setIsCreatingTask] = useState(false);
 
-  // ⭐ เพิ่มตรงนี้ หลังบรรทัด 60
+    // ⭐ เพิ่มตรงนี้ หลังบรรทัด 60
     const useLoadingState = () => {
         const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
 
@@ -323,8 +323,8 @@ export default function Project_Tasks() {
         action: 'add' | 'remove',
         type: 'assignee' | 'reviewer'
     ) => {
-         const loadingKey = `${type}-${taskId}-${action}-${userId}`;
-    setLoading(loadingKey, true); // ⭐ เพิ่ม
+        const loadingKey = `${type}-${taskId}-${action}-${userId}`;
+        setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             const endpoint = type === 'assignee'
                 ? (action === 'add' ? ENDPOINTS.ADD_TASK_ASSIGNEE : ENDPOINTS.REMOVE_TASK_ASSIGNEE)
@@ -369,9 +369,9 @@ export default function Project_Tasks() {
         } catch (err: any) {
             console.error(`${action} ${type} error:`, err);
             alert(err.response?.data?.message || `ไม่สามารถ${action === 'add' ? 'เพิ่ม' : 'ลบ'}${type === 'assignee' ? 'Assigned' : 'Reviewer'}ได้`);
-        }finally {
-        setLoading(loadingKey, false); // ⭐ เพิ่ม
-    }
+        } finally {
+            setLoading(loadingKey, false); // ⭐ เพิ่ม
+        }
     };
 
     // แทนที่ฟังก์ชัน addAssignee, removeAssignee, addReviewer, removeReviewer
@@ -692,10 +692,10 @@ export default function Project_Tasks() {
         shotIndex: number,
         newStatus: StatusType
     ) => {
-            const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
-    const loadingKey = `status-${taskId}`;
-    
-    setLoading(loadingKey, true); // ⭐ เพิ่ม
+        const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
+        const loadingKey = `status-${taskId}`;
+
+        setLoading(loadingKey, true); // ⭐ เพิ่ม
         try {
             const taskId = taskGroups[categoryIndex].tasks[shotIndex].id;
 
@@ -721,9 +721,9 @@ export default function Project_Tasks() {
             console.error('Failed to update status:', err);
             // ✅ แสดง error message ให้ user ทราบ
             alert('ไม่สามารถอัพเดทสถานะได้ กรุณาลองใหม่อีกครั้ง');
-        }finally {
-        setLoading(loadingKey, false); // ⭐ เพิ่ม
-    }
+        } finally {
+            setLoading(loadingKey, false); // ⭐ เพิ่ม
+        }
     };
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Update Task ++++++++++++++++++++++++++++++++++++++++++++++
@@ -839,7 +839,7 @@ export default function Project_Tasks() {
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  
+
 
     return (
         <div
@@ -1335,98 +1335,98 @@ export default function Project_Tasks() {
                                                                                         </div>
                                                                                     )}
                                                                                     {/* Option: ไม่ระบุ */}
-                                                                                     {!(isLoading('pipeline-shot') || isLoading('pipeline-asset')) && (
-            <>
-                                                                                    <button
-                                                                                        onClick={async () => {
-                                                                                            const success = await updateTask(task.id, 'pipeline_step_id', null);
-                                                                                            if (success) {
-                                                                                                task.pipeline_step = null;
-                                                                                            }
-                                                                                            setEditingPipelineTaskId(null);
-                                                                                        }}
-                                                                                        className={`w-full flex items-center gap-3 px-3 py-2 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${!selectedPipelineStepId
-                                                                                            ? 'bg-blue-500/20 border border-blue-500/40'
-                                                                                            : 'hover:bg-gray-700/50 border border-transparent'
-                                                                                            }`}
-                                                                                    >
-                                                                                        <div className="w-3 h-3 rounded border-2 border-gray-500" />
-                                                                                        <span className="text-sm text-gray-400 italic">ไม่ระบุ</span>
-                                                                                    </button>
-
-                                                                                    {/* Pipeline Steps */}
-                                                                                    {availablePipelineSteps.map(step => (
-                                                                                        <button
-                                                                                            key={step.id}
-                                                                                            onClick={async () => {
-                                                                                                setSelectedPipelineStepId(step.id); // ⭐ สำคัญ
-
-                                                                                                const success = await updateTask(
-                                                                                                    task.id,
-                                                                                                    'pipeline_step_id',
-                                                                                                    step.id
-                                                                                                );
-
-                                                                                                if (success) {
-                                                                                                    task.pipeline_step = step;
-                                                                                                }
-
-                                                                                                setEditingPipelineTaskId(null);
-                                                                                            }}
-
-                                                                                            className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl
-                                                                                             ${selectedPipelineStepId === step.id
-                                                                                                    ? 'border border-blue-500 bg-blue-500/10'
-                                                                                                    : 'border border-transparent hover:bg-gray-700/50'
-                                                                                                }`}
-                                                                                            style={{
-                                                                                                backgroundImage:
-                                                                                                    selectedPipelineStepId === step.id
-                                                                                                        ? `linear-gradient(to right, ${step.color_hex}20 0%, ${step.color_hex}05 40%, transparent 70%)`
-                                                                                                        : undefined,
-                                                                                                backgroundColor:
-                                                                                                    selectedPipelineStepId === step.id ? '#1f2937' : undefined // gray-800
-                                                                                            }}
-                                                                                        >
-                                                                                            {/* สี่เหลี่ยมสี */}
-                                                                                            <div
-                                                                                                className="w-3 h-3 rounded flex-shrink-0"
-                                                                                                style={{
-                                                                                                    backgroundColor: step.color_hex,
-                                                                                                    boxShadow: `0 0 8px ${step.color_hex}60`
+                                                                                    {!(isLoading('pipeline-shot') || isLoading('pipeline-asset')) && (
+                                                                                        <>
+                                                                                            <button
+                                                                                                onClick={async () => {
+                                                                                                    const success = await updateTask(task.id, 'pipeline_step_id', null);
+                                                                                                    if (success) {
+                                                                                                        task.pipeline_step = null;
+                                                                                                    }
+                                                                                                    setEditingPipelineTaskId(null);
                                                                                                 }}
-                                                                                            />
+                                                                                                className={`w-full flex items-center gap-3 px-3 py-2 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl ${!selectedPipelineStepId
+                                                                                                    ? 'bg-blue-500/20 border border-blue-500/40'
+                                                                                                    : 'hover:bg-gray-700/50 border border-transparent'
+                                                                                                    }`}
+                                                                                            >
+                                                                                                <div className="w-3 h-3 rounded border-2 border-gray-500" />
+                                                                                                <span className="text-sm text-gray-400 italic">ไม่ระบุ</span>
+                                                                                            </button>
 
-                                                                                            {/* ชื่อ step */}
-                                                                                            <span className="text-sm font-medium text-gray-200 text-left">
-                                                                                                {step.step_name}
-                                                                                            </span>
+                                                                                            {/* Pipeline Steps */}
+                                                                                            {availablePipelineSteps.map(step => (
+                                                                                                <button
+                                                                                                    key={step.id}
+                                                                                                    onClick={async () => {
+                                                                                                        setSelectedPipelineStepId(step.id); // ⭐ สำคัญ
 
-                                                                                            {/* Badge แสดง Shot/Asset ถ้าแสดงทั้ง 2 type */}
-                                                                                            {(() => {
-                                                                                                const entityType = task.entity_type || group.entity_type;
-                                                                                                if (!entityType || entityType === 'unassigned') {
-                                                                                                    // แสดง badge ว่าเป็น Shot หรือ Asset
-                                                                                                    return (
-                                                                                                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${step.entity_type === 'shot'
-                                                                                                            ? 'bg-blue-500/20 text-blue-400'
-                                                                                                            : 'bg-green-500/20 text-green-400'
-                                                                                                            }`}>
-                                                                                                            {step.entity_type === 'shot' ? 'Shot' : 'Asset'}
-                                                                                                        </span>
-                                                                                                    );
-                                                                                                }
-                                                                                                return null;
-                                                                                            })()}
+                                                                                                        const success = await updateTask(
+                                                                                                            task.id,
+                                                                                                            'pipeline_step_id',
+                                                                                                            step.id
+                                                                                                        );
 
-                                                                                            {/* Checkmark ถ้าเลือกอยู่ */}
-                                                                                            {selectedPipelineStepId === step.id && (
-                                                                                                <Check className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" />
-                                                                                            )}
-                                                                                        </button>
-                                                                                    ))}
-                                                                                    </>
-                                                                                      )}
+                                                                                                        if (success) {
+                                                                                                            task.pipeline_step = step;
+                                                                                                        }
+
+                                                                                                        setEditingPipelineTaskId(null);
+                                                                                                    }}
+
+                                                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl
+                                                                                             ${selectedPipelineStepId === step.id
+                                                                                                            ? 'border border-blue-500 bg-blue-500/10'
+                                                                                                            : 'border border-transparent hover:bg-gray-700/50'
+                                                                                                        }`}
+                                                                                                    style={{
+                                                                                                        backgroundImage:
+                                                                                                            selectedPipelineStepId === step.id
+                                                                                                                ? `linear-gradient(to right, ${step.color_hex}20 0%, ${step.color_hex}05 40%, transparent 70%)`
+                                                                                                                : undefined,
+                                                                                                        backgroundColor:
+                                                                                                            selectedPipelineStepId === step.id ? '#1f2937' : undefined // gray-800
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {/* สี่เหลี่ยมสี */}
+                                                                                                    <div
+                                                                                                        className="w-3 h-3 rounded flex-shrink-0"
+                                                                                                        style={{
+                                                                                                            backgroundColor: step.color_hex,
+                                                                                                            boxShadow: `0 0 8px ${step.color_hex}60`
+                                                                                                        }}
+                                                                                                    />
+
+                                                                                                    {/* ชื่อ step */}
+                                                                                                    <span className="text-sm font-medium text-gray-200 text-left">
+                                                                                                        {step.step_name}
+                                                                                                    </span>
+
+                                                                                                    {/* Badge แสดง Shot/Asset ถ้าแสดงทั้ง 2 type */}
+                                                                                                    {(() => {
+                                                                                                        const entityType = task.entity_type || group.entity_type;
+                                                                                                        if (!entityType || entityType === 'unassigned') {
+                                                                                                            // แสดง badge ว่าเป็น Shot หรือ Asset
+                                                                                                            return (
+                                                                                                                <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${step.entity_type === 'shot'
+                                                                                                                    ? 'bg-blue-500/20 text-blue-400'
+                                                                                                                    : 'bg-green-500/20 text-green-400'
+                                                                                                                    }`}>
+                                                                                                                    {step.entity_type === 'shot' ? 'Shot' : 'Asset'}
+                                                                                                                </span>
+                                                                                                            );
+                                                                                                        }
+                                                                                                        return null;
+                                                                                                    })()}
+
+                                                                                                    {/* Checkmark ถ้าเลือกอยู่ */}
+                                                                                                    {selectedPipelineStepId === step.id && (
+                                                                                                        <Check className="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" />
+                                                                                                    )}
+                                                                                                </button>
+                                                                                            ))}
+                                                                                        </>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1486,22 +1486,22 @@ export default function Project_Tasks() {
                                                         {/* Column #7: สถานะ */}
                                                         <td className="px-4 py-4">
                                                             <div className="w-20 flex-shrink-0 relative">
-                                                               <button
-    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
-    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-    disabled={isLoading(`status-${task.id}`)} // ⭐ เพิ่ม
->
-    {isLoading(`status-${task.id}`) ? ( // ⭐ เพิ่ม
-        <div className="w-2.5 h-2.5 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-    ) : statusConfig[task.status as StatusType].icon === '-' ? (
-        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
-    ) : (
-        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
-    )}
-    <span className="text-xs text-gray-300 font-medium truncate">
-        {statusConfig[task.status as StatusType].label}
-    </span>
-</button>
+                                                                <button
+                                                                    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
+                                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                    disabled={isLoading(`status-${task.id}`)} // ⭐ เพิ่ม
+                                                                >
+                                                                    {isLoading(`status-${task.id}`) ? ( // ⭐ เพิ่ม
+                                                                        <div className="w-2.5 h-2.5 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                                                    ) : statusConfig[task.status as StatusType].icon === '-' ? (
+                                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                    ) : (
+                                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
+                                                                    )}
+                                                                    <span className="text-xs text-gray-300 font-medium truncate">
+                                                                        {statusConfig[task.status as StatusType].label}
+                                                                    </span>
+                                                                </button>
 
                                                                 {/* Status Dropdown */}
                                                                 {showStatusMenu?.categoryIndex === taskGroups.findIndex(g => g.tasks.includes(task)) &&

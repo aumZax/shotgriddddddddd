@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Image, Pencil, Package } from 'lucide-react';
-import axios from 'axios';
 import ENDPOINTS from '../config';
+import axios from 'axios';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -13,6 +13,7 @@ const statusConfig = {
 
 interface Asset {
     id: number;
+    asset_id: number;
     asset_name: string;
     status: string;
     description: string;
@@ -26,12 +27,13 @@ interface AssetTabProps {
     shotAssets: Asset[];
     loadingAssets: boolean;
     formatDateThai: (dateString: string) => string;
+    onAssetUpdate?: () => void; // ⬅️ เพิ่ม callback สำหรับ refresh data
 }
 
 // Group assets by type
 const groupAssetsByType = (assets: Asset[]) => {
     const grouped: Record<string, Asset[]> = {};
-    
+
     assets.forEach(asset => {
         const type = asset.asset_type || 'No Type';
         if (!grouped[type]) {
@@ -39,13 +41,14 @@ const groupAssetsByType = (assets: Asset[]) => {
         }
         grouped[type].push(asset);
     });
-    
+
     return grouped;
 };
 
-const AssetTab: React.FC<AssetTabProps> = ({ 
-    shotAssets: initialAssets, 
-    loadingAssets, 
+const AssetTab: React.FC<AssetTabProps> = ({
+    shotAssets: initialAssets,
+    loadingAssets,
+    onAssetUpdate // ⬅️ รับ callback
 }) => {
     const [assets, setAssets] = useState<Asset[]>(initialAssets);
     const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
@@ -59,11 +62,13 @@ const AssetTab: React.FC<AssetTabProps> = ({
         index: number;
     } | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
+    const [updating, setUpdating] = useState(false); // ⬅️ เพิ่ม loading state
 
     useEffect(() => {
         console.log('📦 AssetTab received data:', initialAssets);
+        console.log('📦 First asset structure:', initialAssets[0]);
         setAssets(initialAssets);
-        
+
         // Expand all types by default
         const grouped = groupAssetsByType(initialAssets);
         const expanded: Record<string, boolean> = {};
@@ -80,49 +85,83 @@ const AssetTab: React.FC<AssetTabProps> = ({
         }));
     };
 
-    const updateAsset = async (assetId: number, field: string, value: any) => {
+    // ============================================
+    // 🔥 ฟังก์ชันสำหรับอัปเดต Asset
+    // ============================================
+
+    const updateAssetField = async (
+        assetId: number,  // ← ตอนนี้คือ asset_id (ID จริง)
+        field: string,
+        value: any
+    ) => {
+        if (updating) return;
+
         try {
-            console.log('🔄 Updating asset:', { assetId, field, value });
-            
-            const response = await axios.post(`${ENDPOINTS.UPDATE_ASSET_TABS}`, {
+            setUpdating(true);
+
+            console.log('🔄 Updating asset:', { assetId, field, value }); // ⬅️ เพิ่ม log
+
+            const response = await axios.post(ENDPOINTS.UPDATE_ASSET, {
                 assetId,
                 field,
                 value
             });
 
-            console.log('✅ Update response:', response.data);
+            console.log('✅ Response:', response.data); // ⬅️ เพิ่ม log
 
-            // อัพเดท state
-            setAssets(prev =>
-                prev.map(asset =>
-                    asset.id === assetId ? { ...asset, [field]: value } : asset
-                )
-            );
+            if (response.data.success) {
+                // ✅ อัปเดต local state โดยใช้ asset_id
+                setAssets(prev =>
+                    prev.map(asset =>
+                        asset.asset_id === assetId  // ⬅️ เปลี่ยนจาก asset.id เป็น asset.asset_id
+                            ? { ...asset, [field]: value }
+                            : asset
+                    )
+                );
 
-            return true;
-        } catch (err) {
-            console.error('❌ Failed to update asset:', err);
-            return false;
+                // ✅ เรียก callback เพื่อ refresh data (optional)
+                if (onAssetUpdate) {
+                    onAssetUpdate();
+                }
+
+                console.log('✅ Asset updated successfully');
+            }
+        } catch (error: any) {
+            console.error('❌ Update asset failed:', error);
+            console.error('❌ Error response:', error.response?.data); // ⬅️ เพิ่ม log
+            alert(`Failed to update asset: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setUpdating(false);
         }
     };
 
-    const handleStatusChange = async (assetId: number, newStatus: StatusType) => {
-        try {
-            console.log('🔄 Changing status:', { assetId, newStatus });
-            
-            const success = await updateAsset(assetId, 'status', newStatus);
-            
-            if (success) {
-                console.log('✅ Status changed successfully');
-                // State จะถูกอัพเดทใน updateAsset แล้ว
-            } else {
-                console.error('❌ Failed to change status');
-            }
-            
-            setShowStatusMenu(null);
-        } catch (err) {
-            console.error('❌ Error in handleStatusChange:', err);
+    // ============================================
+    // 🔥 Handle Update Asset Name
+    // ============================================
+    const handleUpdateAssetName = async (assetId: number, newName: string) => {
+        if (!newName.trim()) {
+            alert('Asset name cannot be empty');
+            return;
         }
+
+        await updateAssetField(assetId, 'asset_name', newName.trim());
+        setEditingAssetId(null);
+    };
+
+    // ============================================
+    // 🔥 Handle Update Description
+    // ============================================
+    const handleUpdateDescription = async (assetId: number, newDesc: string) => {
+        await updateAssetField(assetId, 'description', newDesc.trim());
+        setEditingDescId(null);
+    };
+
+    // ============================================
+    // 🔥 Handle Update Status
+    // ============================================
+    const handleUpdateStatus = async (assetId: number, newStatus: StatusType) => {
+        await updateAssetField(assetId, 'status', newStatus);
+        setShowStatusMenu(null);
     };
 
     const groupedAssets = groupAssetsByType(assets);
@@ -187,7 +226,7 @@ const AssetTab: React.FC<AssetTabProps> = ({
                         {Object.entries(groupedAssets).map(([type, assetsInType], typeIndex) => (
                             <React.Fragment key={`type-${type}-${typeIndex}`}>
                                 {/* Type Header Row */}
-                                <tr 
+                                <tr
                                     className="bg-gradient-to-r from-blue-500/10 to-transparent hover:from-blue-500/20 cursor-pointer transition-all"
                                     onClick={() => toggleType(type)}
                                 >
@@ -249,28 +288,24 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <span className="text-green-400 text-lg flex-shrink-0">✓</span>
 
-                                                {editingAssetId === asset.id ? (
+                                                {editingAssetId === asset.asset_id ? (  // ⬅️ เปลี่ยนเป็น asset.asset_id
                                                     <input
                                                         autoFocus
                                                         type="text"
                                                         value={editingAssetName}
                                                         onChange={(e) => setEditingAssetName(e.target.value)}
-                                                        onBlur={async () => {
-                                                            if (editingAssetName.trim() && editingAssetName !== asset.asset_name) {
-                                                                await updateAsset(asset.id, 'asset_name', editingAssetName.trim());
-                                                            }
-                                                            setEditingAssetId(null);
-                                                        }}
+                                                        onBlur={() => handleUpdateAssetName(asset.asset_id, editingAssetName)} // ⬅️ ส่ง asset.asset_id
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
-                                                                e.currentTarget.blur();
+                                                                handleUpdateAssetName(asset.asset_id, editingAssetName); // ⬅️ ส่ง asset.asset_id
                                                             } else if (e.key === 'Escape') {
                                                                 setEditingAssetId(null);
                                                                 setEditingAssetName(asset.asset_name);
                                                             }
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="flex-1 px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none"
+                                                        disabled={updating}
+                                                        className="flex-1 px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none disabled:opacity-50"
                                                     />
                                                 ) : (
                                                     <>
@@ -284,7 +319,7 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                setEditingAssetId(asset.id);
+                                                                setEditingAssetId(asset.asset_id); // ⬅️ เปลี่ยนเป็น asset.asset_id
                                                                 setEditingAssetName(asset.asset_name);
                                                             }}
                                                             className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
@@ -316,17 +351,17 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                                         const spaceBelow = window.innerHeight - rect.bottom;
                                                         const spaceAbove = rect.top;
                                                         setStatusMenuPosition(spaceBelow < 200 && spaceAbove > spaceBelow ? 'top' : 'bottom');
-                                                        
-                                                        // ถ้ากดที่เดิม ให้ปิด ถ้ากดที่ใหม่ ให้เปิด
+
                                                         setShowStatusMenu(
-                                                            showStatusMenu?.type === type && 
-                                                            showStatusMenu?.assetId === asset.id && 
-                                                            showStatusMenu?.index === index
+                                                            showStatusMenu?.type === type &&
+                                                                showStatusMenu?.assetId === asset.asset_id &&  // ⬅️ เปลี่ยนเป็น asset.asset_id
+                                                                showStatusMenu?.index === index
                                                                 ? null
-                                                                : { type: type, assetId: asset.id, index: index }
+                                                                : { type: type, assetId: asset.asset_id, index: index }  // ⬅️ เปลี่ยนเป็น asset.asset_id
                                                         );
                                                     }}
-                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                                    disabled={updating}
+                                                    className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500 disabled:opacity-50"
                                                 >
                                                     {statusConfig[asset.status as StatusType].icon === '-' ? (
                                                         <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
@@ -338,73 +373,69 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                                     </span>
                                                 </button>
 
-                                                {showStatusMenu?.type === type && 
-                                                 showStatusMenu?.assetId === asset.id && 
-                                                 showStatusMenu?.index === index && (
-                                                    <>
-                                                        <div
-                                                            className="fixed inset-0 z-10"
-                                                            onClick={() => setShowStatusMenu(null)}
-                                                        />
-                                                        <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600`}>
-                                                            {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                <button
-                                                                    key={key}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleStatusChange(asset.id, key);
-                                                                    }}
-                                                                    className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
-                                                                >
-                                                                    {config.icon === '-' ? (
-                                                                        <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                    ) : (
-                                                                        <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                    )}
-                                                                    <div className="text-xs text-gray-200">
-                                                                        <span className="px-4">{config.label}</span>
-                                                                        <span>{config.fullLabel}</span>
-                                                                    </div>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </>
-                                                )}
+                                                {showStatusMenu?.type === type &&
+                                                    showStatusMenu?.assetId === asset.asset_id &&  // ⬅️ เปลี่ยนเป็น asset.asset_id
+                                                    showStatusMenu?.index === index && (
+                                                        <>
+                                                            <div
+                                                                className="fixed inset-0 z-10"
+                                                                onClick={() => setShowStatusMenu(null)}
+                                                            />
+                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600`}>
+                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                    <button
+                                                                        key={key}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleUpdateStatus(asset.asset_id, key); // ⬅️ ส่ง asset.asset_id
+                                                                        }}
+                                                                        disabled={updating}
+                                                                        className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 disabled:opacity-50"
+                                                                    >
+                                                                        {config.icon === '-' ? (
+                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                        ) : (
+                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                        )}
+                                                                        <div className="text-xs text-gray-200">
+                                                                            <span className="px-4">{config.label}</span>
+                                                                            <span>{config.fullLabel}</span>
+                                                                        </div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    )}
                                             </div>
                                         </td>
 
                                         {/* Column #6: Description */}
                                         <td className="px-4 py-4">
-                                            {editingDescId === asset.id ? (
+                                            {editingDescId === asset.asset_id ? (  // ⬅️ เปลี่ยนเป็น asset.asset_id
                                                 <textarea
                                                     autoFocus
                                                     value={editingDesc}
                                                     onChange={(e) => setEditingDesc(e.target.value)}
-                                                    onBlur={async () => {
-                                                        const newDesc = editingDesc.trim();
-                                                        if (newDesc !== asset.description) {
-                                                            await updateAsset(asset.id, 'description', newDesc);
-                                                        }
-                                                        setEditingDescId(null);
-                                                    }}
+                                                    onBlur={() => handleUpdateDescription(asset.asset_id, editingDesc)} // ⬅️ ส่ง asset.asset_id
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && !e.shiftKey) {
                                                             e.preventDefault();
-                                                            e.currentTarget.blur();
+                                                            handleUpdateDescription(asset.asset_id, editingDesc); // ⬅️ ส่ง asset.asset_id
                                                         } else if (e.key === 'Escape') {
                                                             setEditingDescId(null);
                                                             setEditingDesc(asset.description || '');
                                                         }
                                                     }}
                                                     onClick={(e) => e.stopPropagation()}
+                                                    disabled={updating}
                                                     rows={2}
-                                                    className="w-full max-w-xs text-sm text-gray-300 bg-gray-800 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                    className="w-full max-w-xs text-sm text-gray-300 bg-gray-800 border border-blue-500 rounded px-2 py-1 outline-none resize-none disabled:opacity-50"
                                                 />
                                             ) : (
                                                 <div
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setEditingDescId(asset.id);
+                                                        setEditingDescId(asset.asset_id); // ⬅️ เปลี่ยนเป็น asset.asset_id
                                                         setEditingDesc(asset.description || '');
                                                     }}
                                                     className="w-full max-w-xs text-sm text-gray-300 cursor-pointer hover:bg-gray-800/60 rounded px-2 py-1 min-h-[2.5rem] transition-colors"
