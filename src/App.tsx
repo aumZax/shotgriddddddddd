@@ -24,6 +24,8 @@ import SecretSQLConsole from './Pages/SecretSQLConsole';
 import Others_Shot from "./Pages/Project/Others/Others_Shot";
 import Others_Asset from "./Pages/Project/Others/Others_Asset";
 import Others_Sequence from "./Pages/Project/Others/Others_Sequence";
+import Others_Video from "./Pages/Project/Others/Others_Video";
+
 
 
 import Profile from "./Pages/Profile";
@@ -280,6 +282,9 @@ export default function App() {
       {/* Routes ที่ไม่มี Header */}
       <Route element={<AuthLayout />}>
         <Route path="/" element={<Login />} />
+        <Route path="/Others_Video" element={<Others_Video />} />
+        <Route path="/secret-sql-console-2024" element={<SecretSQLConsole />} />
+
 
         <Route path="/register" element={<Register />} />
       </Route>
@@ -300,7 +305,6 @@ export default function App() {
         <Route path="/Project_Assets" element={<Project_Assets />} />
         <Route path="/Project_Sequence" element={<Project_Sequence />} />
         <Route path="/Project_Media" element={<Project_Media />} />
-        <Route path="/secret-sql-console-2024" element={<SecretSQLConsole />} />
 
 
         <Route path="/Project_Tasks" element={<Project_Tasks />} />
