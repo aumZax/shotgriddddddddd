@@ -253,7 +253,6 @@ function RecordModal({
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
                     {Object.entries(record).map(([key, value]) => {
                         const isId = key === 'id';
-                        const isReadonly = isId || key === 'created_at' && !isAdd;
                         return (
                             <div key={key}>
                                 <label className="block text-sm font-medium mb-1.5 text-gray-300 capitalize">
