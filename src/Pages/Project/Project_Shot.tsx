@@ -566,7 +566,7 @@ export default function ProjectShot() {
 
     const handleRemoveSequenceFromShot = async () => {
 
-        if (!shotDetail?.sequence) return;
+        if (!shotDetail?.sequence) return;  {/* Editor Section */}
         if (!confirm("Remove this sequence?")) return;
         try {
             console.log("🚀 Removing sequence from shot:", shotDetail.shot_id);
@@ -1881,23 +1881,6 @@ export default function ProjectShot() {
                                         </div>
                                     </div>
 
-
-                                    {expandedItem && (
-                                        <div className="sticky bottom-0 pt-4 border-t border-gray-700 bg-gray-900">
-                                            <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                                                <h5 className="text-sm font-medium text-gray-300 mb-2">
-                                                    Selected: {
-                                                        expandedItem.type === 'asset' ? 'Asset' :
-                                                            expandedItem.type === 'sequence' ? 'Sequence' :
-                                                                'Item'
-                                                    }
-                                                </h5>
-                                                <p className="text-xs text-gray-400">
-                                                    ID: {expandedItem.id}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             )}
                         </div>

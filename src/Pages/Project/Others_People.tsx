@@ -80,6 +80,12 @@ export default function Others_People() {
 
   /* ═══════════ Loaders ═══════════ */
   useEffect(() => {
+    if (projectId) {
+      fetchViewers();
+    }
+  }, [projectId]);
+  
+  useEffect(() => {
     try {
       const raw = localStorage.getItem("projectData");
       const pid = localStorage.getItem("projectId");

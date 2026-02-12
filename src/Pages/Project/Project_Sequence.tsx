@@ -117,6 +117,48 @@ export default function Project_Sequence() {
         sequenceId: number;
         sequenceName: string;
     } | null>(null);
+    // ดึงข้อมูล sequences จาก API เมื่อ component โหลด
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+        if (!projectId) return;
+
+        setIsLoadingSequences(true);
+
+        fetch(ENDPOINTS.PROJECT_SEQUENCES, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ projectId })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch sequences");
+                return res.json();
+            })
+            .then(data => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const mapped = data.map((item: any) => ({
+                    dbId: item.id,
+                    id: item.sequence_name,
+                    thumbnail: item.file_url || "",
+                    description: item.description,
+                    status: item.status || "wtg",
+                    createdAt: item.created_at // 👈 เพิ่มตรงนี้
+                }));
+
+                setSequences(mapped);
+
+                // ⭐ ดึงข้อมูล shots สำหรับแต่ละ sequence
+                mapped.forEach((seq: SequenceItem) => {
+                    fetchSequenceShots(seq.dbId);
+                });
+            })
+            .catch(err => console.error("Sequence fetch error:", err))
+            .finally(() => {
+                setIsLoadingSequences(false);
+            });
+    }, [projectId]);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     useEffect(() => {
         if (isDragging) {
@@ -444,47 +486,7 @@ export default function Project_Sequence() {
 
 
 
-    // ดึงข้อมูล sequences จาก API เมื่อ component โหลด
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-        if (!projectId) return;
 
-        setIsLoadingSequences(true);
-
-        fetch(ENDPOINTS.PROJECT_SEQUENCES, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ projectId })
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch sequences");
-                return res.json();
-            })
-            .then(data => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const mapped = data.map((item: any) => ({
-                    dbId: item.id,
-                    id: item.sequence_name,
-                    thumbnail: item.file_url || "",
-                    description: item.description,
-                    status: item.status || "wtg",
-                    createdAt: item.created_at // 👈 เพิ่มตรงนี้
-                }));
-
-                setSequences(mapped);
-
-                // ⭐ ดึงข้อมูล shots สำหรับแต่ละ sequence
-                mapped.forEach((seq: SequenceItem) => {
-                    fetchSequenceShots(seq.dbId);
-                });
-            })
-            .catch(err => console.error("Sequence fetch error:", err))
-            .finally(() => {
-                setIsLoadingSequences(false);
-            });
-    }, [projectId]);
 
 
 
@@ -1642,20 +1644,7 @@ export default function Project_Sequence() {
                                         </div>
                                     </div>
 
-                                    {/* Editor Section */}
-                                    {expandedItem && (
-                                        <div className="sticky bottom-0 pt-4 border-t border-gray-700 bg-gray-900">
-                                            <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                                                <h5 className="text-sm font-medium text-gray-300 mb-2">
-                                                    Selected: {expandedItem.type === 'asset' ? 'Asset' : 'Shot'}
-                                                </h5>
-                                                <p className="text-xs text-gray-400">
-                                                    ID: {expandedItem.id}
-                                                </p>
-                                                {/* TODO: เพิ่ม form แก้ไขข้อมูลในอนาคต */}
-                                            </div>
-                                        </div>
-                                    )}
+         
 
                                 </>
                             )}

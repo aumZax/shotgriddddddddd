@@ -1,3 +1,42 @@
+// 🟢 Completed Group (เสร็จสมบูรณ์)
+// javascript// Shot
+// ['fin', 'cmpt', 'cfrm', 'cap', 'dlvr']
+// // Asset  
+// ['fin', 'cmpt']
+// // Sequence
+// ['fin']
+
+// 🔵 In Progress Group (กำลังดำเนินการ)
+// javascript// Shot
+// ['ip', 'arp', 'rts', 'wtc']
+
+// // Asset
+// ['ip', 'rts', 'recd']
+
+// // Sequence
+// ['ip']
+
+// 🟡 Pending Group (รอดำเนินการ/พักชั่วคราว)
+// javascript// Shot
+// ['wtg', 'hld', 'nef']
+
+// // Asset
+// ['wtg', 'hld', 'pndng']
+
+// // Sequence
+// ['wtg']
+
+// ⚫ Excluded (ไม่นับรวม)
+// javascript// Shot
+// ['omt', 'na', 'vnd']
+
+// // Asset
+// [] // ไม่มี
+
+// // Sequence
+// [] // ไม่มี
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 import  { useState } from 'react';
 import { BarChart3, CheckCircle2, Clock, AlertCircle, Film, Image, ListChecks, Layers, Search } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -7,6 +46,7 @@ import ENDPOINTS from "../../config";
 
 
 type StatusType = 'wtg' | 'ip' | 'fin';
+
 
 const statusConfig: Record<
     StatusType,
@@ -67,7 +107,11 @@ export default function Project_Detail() {
 
 
     const [sequences, setSequences] = useState<Sequence[]>([]);
-    const [, setLoading] = useState(true);
+    const [loadingSequences, setLoadingSequences] = useState(true);
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [loadingProjectImage, setLoadingProjectImage] = useState(true);
+    const [loadingSequenceImages, setLoadingSequenceImages] = useState<Record<number, boolean>>({});
+    
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     console.log("🔍 Project Data from localStorage:", projectData); // เพิ่มบรรทัดนี้
     const projectId = projectData?.projectId;
@@ -84,7 +128,7 @@ export default function Project_Detail() {
 
         const fetchSequences = async () => {
             try {
-                setLoading(true);
+                setLoadingSequences(true);
 
                 const res = await fetch(ENDPOINTS.PROJECT_SEQUENCES, {
                     method: "POST",
@@ -103,7 +147,7 @@ export default function Project_Detail() {
             } catch (error) {
                 console.error("Failed to load sequences", error);
             } finally {
-                setLoading(false);
+                setLoadingSequences(false);
             }
         };
 
@@ -115,77 +159,50 @@ export default function Project_Detail() {
     useEffect(() => {
         if (!projectId) return;
 
-        const fetchSequenceStats = async () => {
+        const fetchAllStats = async () => {
             try {
-                const res = await fetch(ENDPOINTS.PROJECT_SEQUENCE_STATS, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ projectId }),
-                });
+                setLoadingStats(true);
 
-                if (!res.ok) throw new Error("Failed to fetch asset stats");
+                // Fetch all stats in parallel
+                const [sequenceRes, shotRes, assetRes] = await Promise.all([
+                    fetch(ENDPOINTS.PROJECT_SEQUENCE_STATS, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ projectId }),
+                    }),
+                    fetch(ENDPOINTS.PROJECT_SHOT_STATS, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ projectId }),
+                    }),
+                    fetch(ENDPOINTS.PROJECT_ASSET_STATS, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ projectId }),
+                    })
+                ]);
 
-                const data = await res.json();
-                setSequenceStats(data);
+                if (!sequenceRes.ok || !shotRes.ok || !assetRes.ok) {
+                    throw new Error("Failed to fetch stats");
+                }
+
+                const [sequenceData, shotData, assetData] = await Promise.all([
+                    sequenceRes.json(),
+                    shotRes.json(),
+                    assetRes.json()
+                ]);
+
+                setSequenceStats(sequenceData);
+                setShotStats(shotData);
+                setAssetStats(assetData);
             } catch (err) {
-                console.error(err);
+                console.error("Failed to load stats", err);
+            } finally {
+                setLoadingStats(false);
             }
         };
 
-        fetchSequenceStats();
-    }, [projectId]);
-
-
-    useEffect(() => {
-        if (!projectId) return;
-
-        const fetchShotStats = async () => {
-            try {
-                const res = await fetch(ENDPOINTS.PROJECT_SHOT_STATS, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ projectId }),
-                });
-
-                if (!res.ok) throw new Error("Failed to fetch shot stats");
-
-                const data = await res.json();
-                setShotStats(data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        fetchShotStats();
-    }, [projectId]);
-
-    useEffect(() => {
-        if (!projectId) return;
-
-        const fetchAssetStats = async () => {
-            try {
-                const res = await fetch(ENDPOINTS.PROJECT_ASSET_STATS, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ projectId }),
-                });
-
-                if (!res.ok) throw new Error("Failed to fetch asset stats");
-
-                const data = await res.json();
-                setAssetStats(data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        fetchAssetStats();
+        fetchAllStats();
     }, [projectId]);
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -290,6 +307,24 @@ export default function Project_Detail() {
         });
     };
 
+    const handleProjectImageLoad = () => {
+        setLoadingProjectImage(false);
+    };
+
+    const handleSequenceImageLoad = (sequenceId: number) => {
+        setLoadingSequenceImages(prev => ({
+            ...prev,
+            [sequenceId]: false
+        }));
+    };
+
+    const handleSequenceImageError = (sequenceId: number) => {
+        setLoadingSequenceImages(prev => ({
+            ...prev,
+            [sequenceId]: false
+        }));
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100">
             <div className="pt-14">
@@ -310,11 +345,22 @@ export default function Project_Detail() {
                                     <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-500/40"></div>
                                     <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-purple-500/40"></div>
                                     
+                                    {/* Loading Overlay */}
+                                    {loadingProjectImage && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="w-12 h-12 border-3 border-gray-400 border-t-purple-500 rounded-full animate-spin" />
+                                                <p className="text-gray-300 text-sm">Loading Image...</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
                                     {/* Background blur effect */}
                                     <img
                                         src={ENDPOINTS.image_url+projectThumbnail}
                                         className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-20"
                                         alt=""
+                                        onLoad={handleProjectImageLoad}
                                     />
                                     
                                     {/* Main image with proper sizing */}
@@ -323,6 +369,7 @@ export default function Project_Detail() {
                                             src={ENDPOINTS.image_url+projectThumbnail}
                                             alt={projectName}
                                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+                                            onLoad={handleProjectImageLoad}
                                         />
                                     </div>
                                 </div>
@@ -401,16 +448,16 @@ export default function Project_Detail() {
                                     />
                                 </div>
                                 <div className="relative">
-                                    <select
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                        className="appearance-none bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 cursor-pointer hover:from-gray-600 hover:to-gray-700 hover:border-purple-500/50 shadow-lg"
-                                    >
-                                        <option value="all" className="bg-gray-800">All</option>
-                                        <option value="wtg" className="bg-gray-800">Waiting to Start</option>
-                                        <option value="ip" className="bg-gray-800">In Progress</option>
-                                        <option value="fin" className="bg-gray-800">Final</option>
-                                    </select>
+                                   <select
+    value={filterStatus}
+    onChange={(e) => setFilterStatus(e.target.value)}
+    className="appearance-none bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 cursor-pointer hover:from-gray-600 hover:to-gray-700 hover:border-purple-500/50 shadow-lg"
+>
+    <option value="all" className="bg-gray-800">All</option>
+    <option value="wtg" className="bg-gray-800">Waiting to Start</option>
+    <option value="ip" className="bg-gray-800">In Progress</option>
+    <option value="fin" className="bg-gray-800">Final</option>
+</select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                         <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -420,25 +467,54 @@ export default function Project_Detail() {
                             </div>
 
                             {/* Sequences List - Scrollable */}
-                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar relative">
+                                {/* Loading State */}
+                                {loadingSequences && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                            <p className="text-gray-300 text-sm">Loading...</p>
+                                        </div>
+                                    </div>
+                                )}
 
-                                {filteredSequences.map((seq) => (
+                                {/* No Results */}
+                                {!loadingSequences && filteredSequences.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                        <Layers className="w-16 h-16 mb-4 opacity-30" />
+                                        <p className="text-lg font-medium">ไม่พบ Sequence</p>
+                                        <p className="text-sm">ลองค้นหาด้วยคำอื่น หรือเปลี่ยนตัวกรอง</p>
+                                    </div>
+                                )}
+
+                                {/* Sequences Items */}
+                                {!loadingSequences && filteredSequences.map((seq) => (
                                     <div
                                         key={seq.id}
                                         className="bg-gray-750 rounded-lg border border-gray-700 hover:border-purple-500 transition-all cursor-pointer overflow-hidden"
-
                                         onClick={() => handleOpenSequence(seq)}
                                     >
-
                                         <div className="flex">
                                             {/* Thumbnail */}
-                                            <div className="relative w-32 h-24 flex-shrink-0 ">
+                                            <div className="relative w-32 h-24 flex-shrink-0">
                                                 {seq.file_url ? (
-                                                    <img
-                                                        src={ENDPOINTS.image_url+seq.file_url}
-                                                        alt={seq.sequence_name}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                    <>
+                                                        {/* Loading Overlay for Sequence Image */}
+                                                        {loadingSequenceImages[seq.id] !== false && (
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 z-10">
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <div className="w-8 h-8 border-2 border-gray-500 border-t-purple-400 rounded-full animate-spin" />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <img
+                                                            src={ENDPOINTS.image_url+seq.file_url}
+                                                            alt={seq.sequence_name}
+                                                            className="w-full h-full object-cover"
+                                                            onLoad={() => handleSequenceImageLoad(seq.id)}
+                                                            onError={() => handleSequenceImageError(seq.id)}
+                                                        />
+                                                    </>
                                                 ) : (
                                                     <div
                                                         className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 ">
@@ -450,8 +526,6 @@ export default function Project_Detail() {
                                                         </p>
                                                     </div>
                                                 )}
-
-
                                             </div>
 
                                             {/* Content */}
@@ -470,15 +544,12 @@ export default function Project_Detail() {
                                                     )}
                                                 </p>
 
-
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-xs">
                                                         {seq.shot_count === 0
                                                             ? (<span className='text-gray-400'> ยังไม่มี Shot </span>)
                                                             : (<span className='text-blue-300'> {seq.shot_count} Shots </span>)}
                                                     </div>
-
-
                                                 </div>
                                             </div>
                                         </div>
@@ -491,7 +562,16 @@ export default function Project_Detail() {
                     {/* Right Column - Stats & Activities (1/3 width) */}
                     <div className="space-y-6">
                         {/* Stats Cards - Stacked */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 relative">
+                            {/* Loading Overlay for Stats */}
+                            {loadingStats && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20 rounded-lg">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                        <p className="text-gray-300 text-sm">Loading...</p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Sequences Card */}
                             <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-purple-500 transition-colors">
@@ -509,7 +589,7 @@ export default function Project_Detail() {
                                 </div>
                                 <div className="w-full bg-gray-700 rounded-full h-2 mb-1">
                                     <div
-                                        className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full"
+                                        className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${sequencePercentage}%` }}
                                     />
                                 </div>
@@ -527,14 +607,13 @@ export default function Project_Detail() {
                                         <div>
                                             <h3 className="text-gray-400 text-xs">Total Shots</h3>
                                             <span className="text-xl font-bold text-white">{shotStats.totalShots}</span>
-
                                         </div>
                                     </div>
                                     <span className="text-xl font-bold text-blue-400">{shotPercentage}%</span>
                                 </div>
                                 <div className="w-full bg-gray-700 rounded-full h-2 mb-1">
                                     <div
-                                        className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full"
+                                        className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${shotPercentage}%` }}
                                     />
                                 </div>
@@ -542,7 +621,6 @@ export default function Project_Detail() {
                                     <span>{shotStats.completedShots} เสร็จแล้ว</span>
                                     <span>{remainingShots} remaining</span>
                                 </div>
-
                             </div>
 
                             {/* Assets Card */}
@@ -555,31 +633,35 @@ export default function Project_Detail() {
                                             <span className="text-xl font-bold text-white">
                                                 {assetStats.totalAssets}
                                             </span>
-
                                         </div>
                                     </div>
                                     <span className="text-xl font-bold text-green-400">{assetPercentage}%</span>
                                 </div>
                                 <div className="w-full bg-gray-700 rounded-full h-2 mb-1">
                                     <div
-                                        className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full"
+                                        className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full transition-all duration-500"
                                         style={{ width: `${assetPercentage}%` }}
                                     />
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-500">
                                     <span>{assetStats.completedAssets} เสร็จแล้ว</span>
-                                    <span>
-                                        {remainingAssets} remaining
-                                    </span>
+                                    <span>{remainingAssets} remaining</span>
                                 </div>
-
                             </div>
-
-
                         </div>
 
                         {/* Status Overview */}
-                        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 relative">
+                            {/* Loading Overlay for Status Overview */}
+                            {loadingStats && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20 rounded-lg">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                        <p className="text-gray-300 text-sm">Loading...</p>
+                                    </div>
+                                </div>
+                            )}
+
                             <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
                                 <BarChart3 className="w-4 h-4 mr-2 text-purple-400" />
                                 สถานะโดยรวม Shot & Asset
@@ -618,15 +700,10 @@ export default function Project_Detail() {
                                     </span>
                                 </div>
                             </div>
-
                         </div>
-
-
                     </div>
                 </div>
             </div>
-
-
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

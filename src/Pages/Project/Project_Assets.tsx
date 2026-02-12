@@ -2147,24 +2147,6 @@ export default function Project_Assets() {
                                         </div>
                                     </div>
 
-                                    {/* Editor Section */}
-                                    {expandedItem && (
-                                        <div className="sticky bottom-0 pt-4 border-t border-gray-700 bg-gray-900">
-                                            <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                                                <h5 className="text-sm font-medium text-gray-300 mb-2">
-                                                    Selected: {
-                                                        expandedItem.type === 'sequence' ? 'Sequence' :
-                                                            expandedItem.type === 'shot' ? 'Shot' :
-                                                                'Item'
-                                                    }
-                                                </h5>
-                                                <p className="text-xs text-gray-400">
-                                                    ID: {expandedItem.id}
-                                                </p>
-                                                {/* TODO: เพิ่ม form แก้ไขข้อมูลในอนาคต */}
-                                            </div>
-                                        </div>
-                                    )}
 
                                 </>
                             )}
