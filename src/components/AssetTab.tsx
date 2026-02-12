@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Image, Pencil, Package } from 'lucide-react';
+import { ChevronDown, ChevronRight, Image, Pencil, Package, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
 
@@ -8,7 +8,12 @@ type StatusType = 'wtg' | 'ip' | 'fin';
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' }
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    pndng: { label: 'pndng', fullLabel: 'Pending', color: 'bg-yellow-400', icon: 'dot' },
+    recd: { label: 'recd', fullLabel: 'Received', color: 'bg-blue-400', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
 };
 
 interface Asset {
@@ -381,7 +386,7 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                                                 className="fixed inset-0 z-10"
                                                                 onClick={() => setShowStatusMenu(null)}
                                                             />
-                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600`}>
+                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600  whitespace-nowrap`}>
                                                                 {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                                     <button
                                                                         key={key}
@@ -390,17 +395,24 @@ const AssetTab: React.FC<AssetTabProps> = ({
                                                                             handleUpdateStatus(asset.asset_id, key); // ⬅️ ส่ง asset.asset_id
                                                                         }}
                                                                         disabled={updating}
-                                                                        className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 disabled:opacity-50"
+                                                                        className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 disabled:opacity-50"
                                                                     >
                                                                         {config.icon === '-' ? (
                                                                             <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                                         ) : (
                                                                             <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                                         )}
-                                                                        <div className="text-xs text-gray-200">
-                                                                            <span className="px-4">{config.label}</span>
-                                                                            <span>{config.fullLabel}</span>
+                                                                        <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                            <span className="inline-block w-8">
+                                                                                {config.label}
+                                                                            </span>
+                                                                            <span>
+                                                                                {config.fullLabel}
+                                                                            </span>
                                                                         </div>
+                                                                         {asset.status === key && ( // ✅ แสดง checkmark
+                                                                                            <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                                        )}
                                                                     </button>
                                                                 ))}
                                                             </div>

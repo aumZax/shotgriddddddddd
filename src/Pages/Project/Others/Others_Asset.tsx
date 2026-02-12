@@ -2,15 +2,20 @@ import { useState, useEffect, } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Eye, Image, Upload, User, X } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 
 
 const statusConfig = {
-    wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    pndng: { label: 'pndng', fullLabel: 'Pending', color: 'bg-yellow-400', icon: 'dot' },
+    recd: { label: 'recd', fullLabel: 'Received', color: 'bg-blue-400', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
 };
 
 type StatusType = keyof typeof statusConfig;
@@ -1036,22 +1041,30 @@ export default function Others_Asset() {
                                     </button>
 
                                     {showStatusMenu && (
-                                        <div className="absolute left-0 top-full mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
-                                            {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                        <div className="absolute left-0 mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
+                                            {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                 <button
                                                     key={key}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleStatusChange(key);
                                                     }}
-                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+                                                    className="flex items-center gap-5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
                                                 >
                                                     {config.icon === '-' ? (
                                                         <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                     ) : (
                                                         <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
                                                     )}
-                                                    <span className="text-xs text-gray-200">{config.label}</span>
+                                                   <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                    <span className="inline-block w-8">
+                                                                        {config.label}
+                                                                    </span>
+                                                                    <span>{config.fullLabel}</span>
+                                                                </div>
+                                                    {assetData.status === key && ( // ✅ แสดง checkmark
+                                                        <Check className="w-4 h-4 text-blue-400 ml-auto " />
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>

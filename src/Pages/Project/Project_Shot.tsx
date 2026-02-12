@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box,Lock ,Film} from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box, Lock, Film, Check } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -11,7 +11,21 @@ type StatusType = keyof typeof statusConfig;
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' }
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    wtc: { label: 'wtc', fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
+    arp: { label: 'arp', fullLabel: 'Approval', color: 'bg-green-600', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need fixed', color: 'bg-red-500', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    vnd: { label: 'vnd', fullLabel: 'Vendor', color: 'bg-purple-800', icon: 'dot' },
+
+
 };
 
 interface Shot {
@@ -1121,7 +1135,10 @@ export default function ProjectShot() {
                                                             {/* Status Dropdown */}
                                                             {showStatusMenu?.categoryIndex === categoryIndex &&
                                                                 showStatusMenu?.shotIndex === shotIndex && (
-                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[180px] border border-gray-600`}>
+                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[200px] 
+                                                                                max-h-[350px] overflow-y-auto
+                                                                                border border-gray-600 whitespace-nowrap
+                                                                                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500`}>
                                                                         {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                                             <button
                                                                                 key={key}
@@ -1129,17 +1146,22 @@ export default function ProjectShot() {
                                                                                     e.stopPropagation();
                                                                                     handleStatusChange(categoryIndex, shotIndex, key);
                                                                                 }}
-                                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors  bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
+                                                                                className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors  bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
                                                                             >
                                                                                 {config.icon === '-' ? (
                                                                                     <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                                                 ) : (
                                                                                     <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                                                 )}
-                                                                                <div className="text-xs text-gray-200">
-                                                                                    <span className="px-4">{config.label}</span>
+                                                                                <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                                    <span className="inline-block w-8">
+                                                                                        {config.label}
+                                                                                    </span>
                                                                                     <span>{config.fullLabel}</span>
                                                                                 </div>
+                                                                                {shot.status === key && ( // ✅ แสดง checkmark
+                                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                                )}
                                                                             </button>
                                                                         ))}
                                                                     </div>

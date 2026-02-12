@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
-import { Eye, Image, Upload, User, X } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
@@ -12,9 +12,9 @@ import ShotTab from '../../../components/ShotTab';
 
 // Status configuration
 const statusConfig = {
-    wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
 };
 
 type StatusType = keyof typeof statusConfig;
@@ -1081,15 +1081,15 @@ export default function Others_Sequence() {
                                     </button>
 
                                     {showStatusMenu && (
-                                        <div className="absolute left-0 top-full mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
-                                            {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                        <div className="absolute left-0 mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
+                                            {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                 <button
                                                     key={key}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleStatusChange(key);
                                                     }}
-                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+                                                    className="flex items-center gap-5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
 
                                                 >
                                                     {config.icon === '-' ? (
@@ -1097,7 +1097,15 @@ export default function Others_Sequence() {
                                                     ) : (
                                                         <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
                                                     )}
-                                                    <span className="text-xs text-gray-200">{config.label}</span>
+                                                    <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                        <span className="inline-block w-8">
+                                                            {config.label}
+                                                        </span>
+                                                        <span>{config.fullLabel}</span>
+                                                    </div>
+                                                    {SequenceData.status === key && ( // ✅ แสดง checkmark
+                                                        <Check className="w-4 h-4 text-blue-400 ml-auto " />
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>

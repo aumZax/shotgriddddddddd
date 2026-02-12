@@ -6,9 +6,32 @@ import ENDPOINTS from '../config';
 type StatusType = keyof typeof statusConfig;
 
 const statusConfig = {
+    // Status เดิม
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' }
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+
+    // Pipeline Steps ใหม่
+    apr: { label: 'apr', fullLabel: 'Approved', color: 'bg-green-500', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need fixed', color: 'bg-red-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    rev: { label: 'rev', fullLabel: 'Pending Review', color: 'bg-yellow-600', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    ren: { label: 'ren', fullLabel: 'Rendering', color: 'bg-pink-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    vwd: { label: 'vwd', fullLabel: 'Viewed', color: 'bg-teal-500', icon: 'dot' },
+    crv: { label: 'crv', fullLabel: 'Client review', color: 'bg-purple-600', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    pndng: { label: 'pndng', fullLabel: 'Pending', color: 'bg-yellow-400', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    recd: { label: 'recd', fullLabel: 'Received', color: 'bg-blue-400', icon: 'dot' },
+    chk: { label: 'chk', fullLabel: 'Checking', color: 'bg-lime-500', icon: 'dot' },
+    rdd: { label: 'rdd', fullLabel: 'Render done', color: 'bg-emerald-500', icon: 'dot' },
+    srd: { label: 'srd', fullLabel: 'Submit render', color: 'bg-indigo-500', icon: 'dot' },
+    sos: { label: 'sos', fullLabel: 'Send outsource', color: 'bg-violet-500', icon: 'dot' }
 };
 
 type TaskAssignee = {
@@ -129,18 +152,18 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     }, [initialTasks]);
 
     // ⭐ Fetch project users
-   useEffect(() => {
-    const fetchProjectUsers = async () => {
-        try {
-            // ⭐ ไม่ต้องส่ง projectId ก็ได้
-            const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
-            setProjectUsers(res.data);
-        } catch (err) {
-            console.error("Fetch project users error:", err);
-        }
-    };
-    fetchProjectUsers();
-}, []);
+    useEffect(() => {
+        const fetchProjectUsers = async () => {
+            try {
+                // ⭐ ไม่ต้องส่ง projectId ก็ได้
+                const res = await axios.post(`${ENDPOINTS.PROJECT_USERS}`, {});
+                setProjectUsers(res.data);
+            } catch (err) {
+                console.error("Fetch project users error:", err);
+            }
+        };
+        fetchProjectUsers();
+    }, []);
 
     // ⭐ Dropdown position calculation for Assignee
     useEffect(() => {
@@ -785,7 +808,9 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                         className="fixed inset-0 z-10"
                                                         onClick={() => setShowStatusMenu(null)}
                                                     />
-                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600`}>
+                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] border border-gray-600  min-w-[200px] 
+                                                                                max-h-[350px] overflow-y-auto whitespace-nowrap
+                                                                                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500`}>
                                                         {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                             <button
                                                                 key={key}
@@ -793,17 +818,22 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                     e.stopPropagation();
                                                                     handleStatusChange(index, key);
                                                                 }}
-                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
                                                             >
                                                                 {config.icon === '-' ? (
                                                                     <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                                 ) : (
                                                                     <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                                 )}
-                                                                <div className="text-xs text-gray-200">
-                                                                    <span className="px-4">{config.label}</span>
+                                                                <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                    <span className="inline-block w-8">
+                                                                        {config.label}
+                                                                    </span>
                                                                     <span>{config.fullLabel}</span>
                                                                 </div>
+                                                                {task.status === key && ( // ✅ แสดง checkmark
+                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                )}
                                                             </button>
                                                         ))}
                                                     </div>

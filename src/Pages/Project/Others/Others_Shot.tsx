@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Eye, Image, Upload, User, X, } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X, } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -11,9 +11,21 @@ import AssetTab from '../../../components/AssetTab';
 
 // Status configuration
 const statusConfig = {
-    wtg: { label: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'Final', color: 'bg-green-500', icon: 'dot' }
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    wtc: { label: 'wtc', fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
+    arp: { label: 'arp', fullLabel: 'Approval', color: 'bg-green-600', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need fixed', color: 'bg-red-500', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    vnd: { label: 'vnd', fullLabel: 'Vendor', color: 'bg-purple-800', icon: 'dot' },
 };
 
 type StatusType = keyof typeof statusConfig;
@@ -1180,14 +1192,14 @@ export default function Others_Shot() {
 
                                     {showStatusMenu && (
                                         <div className="absolute left-0 mt-1 bg-gray-800 rounded-lg shadow-2xl z-50 w-full border border-gray-700">
-                                            {(Object.entries(statusConfig) as [StatusType, { label: string; color: string; icon: string }][]).map(([key, config]) => (
+                                            {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                 <button
                                                     key={key}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleStatusChange(key);
                                                     }}
-                                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+                                                    className="flex items-center gap-5 w-full px-3 py-2 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-600 hover:to-gray-600"
 
                                                 >
                                                     {config.icon === '-' ? (
@@ -1195,7 +1207,15 @@ export default function Others_Shot() {
                                                     ) : (
                                                         <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
                                                     )}
-                                                    <span className="text-xs text-gray-200">{config.label}</span>
+                                                    <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                        <span className="inline-block w-8">
+                                                            {config.label}
+                                                        </span>
+                                                        <span>{config.fullLabel}</span>
+                                                    </div>
+                                                    {shotData.status === key && ( // ✅ แสดง checkmark
+                                                        <Check className="w-4 h-4 text-blue-400 ml-auto " />
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>

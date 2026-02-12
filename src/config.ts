@@ -31,7 +31,6 @@ const ENDPOINTS = {
   PEOPLE: `${BASE_URL}/people`,
   GETPEOPLE: `${BASE_URL}/getpeople`,
   SEATS: `${BASE_URL}/seats`,
-  USERS: `${BASE_URL}/getallusers`,
   STATUSPEOPLE: `${BASE_URL}/statuspeople`,
   PROJECT_SEQUENCES: `${BASE_URL}/project-sequences`,
   UPDATE_SEQUENCE: `${BASE_URL}/project-sequences/update`,
@@ -113,6 +112,10 @@ const ENDPOINTS = {
   UPDATE_ASSET: `${BASE_URL}/update-asset`,
   UPDATE_SHOT: `${BASE_URL}/update-shot`,
 
+  PROJECT_VIEWERS: `${BASE_URL}/project-viewers`,
+  PROJECT_VIEWERS_ADD: `${BASE_URL}/project-viewers-add`,
+  PROJECT_VIEWERS_REMOVE: `${BASE_URL}/project-viewers-remove`,
+  GETALLUSERS: `${BASE_URL}/getallusers`,
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
