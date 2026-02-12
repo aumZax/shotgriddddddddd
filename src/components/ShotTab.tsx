@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Image, Pencil, Film } from 'lucide-react';
+import {Image, Pencil, Film } from 'lucide-react';
 import ENDPOINTS from '../config';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
