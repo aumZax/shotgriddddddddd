@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import { FolderClosed, Image, Lock, Video } from 'lucide-react';
+import { Check, FolderClosed, Image, Lock, Video } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";
@@ -983,17 +983,22 @@ export default function Project_Sequence() {
                                                                     e.stopPropagation();
                                                                     handleStatusChange(index, key);
                                                                 }}
-                                                                className="flex items-center gap-2.5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 rounded-lg"
+                                                                className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
                                                             >
                                                                 {config.icon === '-' ? (
                                                                     <span className="text-gray-400 font-bold w-2 text-center">-</span>
                                                                 ) : (
                                                                     <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                                 )}
-                                                                <div className="text-xs text-gray-200">
-                                                                    <span className="px-4">{config.label}</span>
+                                                                <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                    <span className="inline-block w-8">
+                                                                        {config.label}
+                                                                    </span>
                                                                     <span>{config.fullLabel}</span>
                                                                 </div>
+                                                                {sequence.status === key && ( // ✅ แสดง checkmark
+                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto " />
+                                                                )}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1056,8 +1061,8 @@ export default function Project_Sequence() {
                                                             <>
                                                                 {/* Shot Counter Badge */}
                                                                 <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-md">
-                                                                      <Video className="w-3.5 h-3.5 text-blue-400"/>
-                                                                  
+                                                                    <Video className="w-3.5 h-3.5 text-blue-400" />
+
                                                                     <span className="text-xs font-semibold text-blue-300">
                                                                         {sequenceShots[sequence.dbId].length}
                                                                     </span>
