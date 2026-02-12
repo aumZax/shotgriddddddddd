@@ -11,14 +11,19 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
   const token = localStorage.getItem("token");
-
   if (token) {
-    navigate("/Home");
+    const lastPath = localStorage.getItem("lastPath") || "/Home";
+    navigate(lastPath, { replace: true });
+  } else {
+    setChecking(false); // ไม่มี token → แสดง login ได้เลย
   }
 }, []);
+
+if (checking) return null;
 
     const handleLogin = async () => {
     if (!identifier || !password) {

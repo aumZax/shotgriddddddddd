@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://brother-casinos-papua-wit.trycloudflare.com";
-// const BASE_URL = "http://localhost:3000";
+// const BASE_URL = "https://brother-casinos-papua-wit.trycloudflare.com";
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -111,6 +111,7 @@ const ENDPOINTS = {
   CREATE_SEQUENCE_NOTE: `${BASE_URL}/create-sequence-note`,
 
   UPDATE_ASSET: `${BASE_URL}/update-asset`,
+  UPDATE_SHOT: `${BASE_URL}/update-shot`,
 
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ

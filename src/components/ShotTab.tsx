@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import {Image, Pencil, Film } from 'lucide-react';
+import { Image, Pencil, Film } from 'lucide-react';
 import ENDPOINTS from '../config';
+import axios from 'axios';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -29,7 +30,6 @@ interface ShotTabProps {
 const ShotTab: React.FC<ShotTabProps> = ({
     shots: initialShots,
     loadingShots,
-    formatDateThai,
     onShotUpdate
 }) => {
     const [shots, setShots] = useState<Shot[]>(initialShots);
@@ -41,55 +41,94 @@ const ShotTab: React.FC<ShotTabProps> = ({
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const [updating, setUpdating] = useState(false);
 
+    // ========================================
+    // SYNC PROPS WITH LOCAL STATE
+    // ========================================
     React.useEffect(() => {
         console.log('🎬 ShotTab received data:', initialShots);
         setShots(initialShots);
     }, [initialShots]);
 
-    // ฟังก์ชันอัปเดต Shot (คุณอาจต้องสร้าง endpoint นี้)
+    // ========================================
+    // FIELD NAME MAPPING
+    // Frontend (UI) → Backend (Database)
+    // ========================================
+    const mapFieldToDatabase = (frontendField: string): string => {
+        const fieldMap: Record<string, string> = {
+            'shot_name': 'shot_name',
+            'shot_status': 'status',           // ⚠️ Frontend ใช้ shot_status, DB ใช้ status
+            'shot_description': 'description', // ⚠️ Frontend ใช้ shot_description, DB ใช้ description
+            'shot_thumbnail': 'file_url'       // ⚠️ Frontend ใช้ shot_thumbnail, DB ใช้ file_url
+        };
+        
+        return fieldMap[frontendField] || frontendField;
+    };
+
+    // ========================================
+    // UPDATE SHOT FIELD - CONNECTED TO BACKEND
+    // ========================================
     const updateShotField = async (
         shotId: number,
-        field: string,
+        frontendField: string,
         value: any
     ) => {
         if (updating) return;
 
         try {
             setUpdating(true);
-            console.log('🔄 Updating shot:', { shotId, field, value });
+            
+            // แปลง field name ให้ตรงกับ database
+            const dbField = mapFieldToDatabase(frontendField);
+            
+            console.log('🔄 Updating shot:', { 
+                shotId, 
+                frontendField, 
+                dbField, 
+                value 
+            });
 
-            // TODO: เพิ่ม endpoint สำหรับอัปเดต shot
-            // const response = await axios.post(ENDPOINTS.UPDATE_SHOT, {
-            //     shotId,
-            //     field,
-            //     value
-            // });
+            // เรียก API อัปเดต (ส่ง database field name)
+            const response = await axios.post(ENDPOINTS.UPDATE_SHOT, {
+                shotId,
+                field: dbField,  // ส่ง field ที่ตรงกับ database
+                value
+            });
 
-            // Optimistic update
-            setShots(prev =>
-                prev.map(shot =>
-                    shot.shot_id === shotId
-                        ? { ...shot, [field]: value }
-                        : shot
-                )
-            );
+            if (response.data.success) {
+                // Optimistic update (ใช้ frontend field name)
+                setShots(prev =>
+                    prev.map(shot =>
+                        shot.shot_id === shotId
+                            ? { ...shot, [frontendField]: value }
+                            : shot
+                    )
+                );
 
-            if (onShotUpdate) {
-                onShotUpdate();
+                // เรียก callback เพื่อ refresh ข้อมูล
+                if (onShotUpdate) {
+                    onShotUpdate();
+                }
+
+                console.log('✅ Shot updated successfully');
             }
-
-            console.log('✅ Shot updated successfully');
         } catch (error: any) {
             console.error('❌ Update shot failed:', error);
             alert(`Failed to update shot: ${error.response?.data?.message || error.message}`);
+            
+            // Revert optimistic update
+            setShots(initialShots);
         } finally {
             setUpdating(false);
         }
     };
 
+    // ========================================
+    // HANDLER FUNCTIONS
+    // ========================================
     const handleUpdateShotName = async (shotId: number, newName: string) => {
         if (!newName.trim()) {
             alert('Shot name cannot be empty');
+            setEditingShotId(null);
             return;
         }
         await updateShotField(shotId, 'shot_name', newName.trim());
@@ -106,6 +145,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
         setShowStatusMenu(null);
     };
 
+    // ========================================
+    // LOADING STATE
+    // ========================================
     if (loadingShots) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -114,6 +156,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
         );
     }
 
+    // ========================================
+    // EMPTY STATE
+    // ========================================
     if (shots.length === 0) {
         return (
             <div className="text-center py-12">
@@ -127,16 +172,22 @@ const ShotTab: React.FC<ShotTabProps> = ({
         );
     }
 
+    // ========================================
+    // MAIN RENDER
+    // ========================================
     return (
         <div className="space-y-4 overflow-visible">
             <div className="overflow-x-visible rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 shadow-2xl">
                 <table className="w-full border-collapse relative">
+                    {/* ========================================
+                        TABLE HEADER
+                    ========================================= */}
                     <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10 backdrop-blur-sm">
                         <tr className="border-b-2 border-blue-500/30">
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-26">
                                 #
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-40">
                                 Thumbnail
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -151,31 +202,36 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                     </span>
                                 </div>
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-50">
                                 Status
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 Description
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Created
-                            </th>
                         </tr>
                     </thead>
+
+                    {/* ========================================
+                        TABLE BODY
+                    ========================================= */}
                     <tbody className="divide-y divide-gray-800/50">
                         {shots.map((shot, index) => (
                             <tr
                                 key={`shot-${shot.shot_id}-${index}`}
                                 className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
                             >
-                                {/* Column #1: Index */}
+                                {/* ========================================
+                                    COLUMN #1: INDEX
+                                ========================================= */}
                                 <td className="px-4 py-4">
                                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 text-gray-400 text-sm font-medium group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
                                         {index + 1}
                                     </div>
                                 </td>
 
-                                {/* Column #2: Thumbnail */}
+                                {/* ========================================
+                                    COLUMN #2: THUMBNAIL
+                                ========================================= */}
                                 <td className="px-4 py-3">
                                     {shot.shot_thumbnail ? (
                                         <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
@@ -198,7 +254,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                     )}
                                 </td>
 
-                                {/* Column #3: Shot Name */}
+                                {/* ========================================
+                                    COLUMN #3: SHOT NAME (EDITABLE)
+                                ========================================= */}
                                 <td className="px-4 py-4 w-48">
                                     <div className="flex items-center gap-2">
                                         <span className="text-green-400 text-lg flex-shrink-0">🎬</span>
@@ -247,7 +305,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                     </div>
                                 </td>
 
-                                {/* Column #4: Status */}
+                                {/* ========================================
+                                    COLUMN #4: STATUS (DROPDOWN)
+                                ========================================= */}
                                 <td className="px-4 py-4">
                                     <div className="w-20 flex-shrink-0 relative">
                                         <button
@@ -272,13 +332,14 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                             </span>
                                         </button>
 
+                                        {/* Status Dropdown Menu */}
                                         {showStatusMenu === shot.shot_id && (
                                             <>
                                                 <div
                                                     className="fixed inset-0 z-10"
                                                     onClick={() => setShowStatusMenu(null)}
                                                 />
-                                                <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] border border-gray-600`}>
+                                                <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[220px] border border-gray-600`}>
                                                     {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                                         <button
                                                             key={key}
@@ -294,8 +355,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                                             ) : (
                                                                 <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
                                                             )}
-                                                            <div className="text-xs text-gray-200">
-                                                                <span className="px-4">{config.label}</span>
+                                                            <div className="text-xs text-gray-200 flex gap-2">
+                                                                <span className="font-semibold">{config.label}</span>
+                                                                <span className="text-gray-400">-</span>
                                                                 <span>{config.fullLabel}</span>
                                                             </div>
                                                         </button>
@@ -306,7 +368,9 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                     </div>
                                 </td>
 
-                                {/* Column #5: Description */}
+                                {/* ========================================
+                                    COLUMN #5: DESCRIPTION (EDITABLE)
+                                ========================================= */}
                                 <td className="px-4 py-4">
                                     {editingDescId === shot.shot_id ? (
                                         <textarea
@@ -342,13 +406,6 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                             )}
                                         </div>
                                     )}
-                                </td>
-
-                                {/* Column #6: Created Date */}
-                                <td className="px-4 py-4">
-                                    <div className="text-xs text-gray-400">
-                                        {formatDateThai(shot.shot_created_at)}
-                                    </div>
                                 </td>
                             </tr>
                         ))}

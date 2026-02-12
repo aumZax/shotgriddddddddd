@@ -113,7 +113,7 @@ type TaskAssignee = {
 // ⭐ เพิ่ม Asset type
 interface Asset {
     id: number;
-    asset_id: number;    
+    asset_id: number;
     asset_name: string;
     status: string;
     description: string;
@@ -199,7 +199,7 @@ export default function Others_Shot() {
     const projectId = projectData?.projectId;
     // const projectName = projectData?.projectName;
 
-    
+
     // +++++++++++++++++++++++++++++++++++++++++++++ isMediaLoading ++++++++++++++++++++++++++++++
 
     const [isMediaLoading, setIsMediaLoading] = useState(true);
@@ -961,49 +961,49 @@ export default function Others_Shot() {
                                     {/* Background gradient - animated */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black animate-pulse"></div>
 
-                                   {shotData.thumbnail ? (
-    <>
-        {shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-            <video
-                src={ENDPOINTS.image_url + shotData.thumbnail}
-                className="relative w-full h-full object-cover z-10"
-                muted
-                loop
-                autoPlay
-                onLoadStart={() => setIsMediaLoading(true)}
-                onLoadedData={() => setIsMediaLoading(false)}
-                style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
-            />
-        ) : (
-            <img
-                src={ENDPOINTS.image_url + shotData.thumbnail}
-                alt="Shot thumbnail"
-                className="relative w-full h-full object-cover z-10"
-                onLoadStart={() => setIsMediaLoading(true)}
-                onLoad={() => setIsMediaLoading(false)}
-                style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
-            />
-        )}
-        
-        {/* Loading overlay */}
-        {isMediaLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                    <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
-                    <p className="text-gray-300 text-sm">Loading...</p>
-                </div>
-            </div>
-        )}
-    </>
-) : (
-    <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 z-10">
-        <div className="p-4 rounded-full bg-gray-800/50 backdrop-blur-sm">
-            <Image className="w-10 h-10 text-gray-400" />
-        </div>
-        <p className="text-gray-400 text-sm font-medium">No preview available</p>
-        <p className="text-gray-500 text-xs">Click to upload</p>
-    </div>
-)}
+                                    {shotData.thumbnail ? (
+                                        <>
+                                            {shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                                <video
+                                                    src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                    className="relative w-full h-full object-cover z-10"
+                                                    muted
+                                                    loop
+                                                    autoPlay
+                                                    onLoadStart={() => setIsMediaLoading(true)}
+                                                    onLoadedData={() => setIsMediaLoading(false)}
+                                                    style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                    alt="Shot thumbnail"
+                                                    className="relative w-full h-full object-cover z-10"
+                                                    onLoadStart={() => setIsMediaLoading(true)}
+                                                    onLoad={() => setIsMediaLoading(false)}
+                                                    style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+                                                />
+                                            )}
+
+                                            {/* Loading overlay */}
+                                            {isMediaLoading && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                                        <p className="text-gray-300 text-sm">Loading...</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 z-10">
+                                            <div className="p-4 rounded-full bg-gray-800/50 backdrop-blur-sm">
+                                                <Image className="w-10 h-10 text-gray-400" />
+                                            </div>
+                                            <p className="text-gray-400 text-sm font-medium">No preview available</p>
+                                            <p className="text-gray-500 text-xs">Click to upload</p>
+                                        </div>
+                                    )}
 
                                     {/* Hover Controls */}
                                     {shotData.thumbnail && (

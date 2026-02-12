@@ -150,49 +150,49 @@ export default function Others_Sequence() {
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ shots
-     const [shots, setShots] = useState<Shot[]>([]);
+    const [shots, setShots] = useState<Shot[]>([]);
     const [loadingShots, setLoadingShots] = useState(false);
     useEffect(() => {
-    if (!sequenceId) return;
+        if (!sequenceId) return;
 
-    const fetchSequenceDetail = async () => {
-        try {
-            setLoadingShots(true);
-            const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
-                sequenceId: sequenceId
-            });
+        const fetchSequenceDetail = async () => {
+            try {
+                setLoadingShots(true);
+                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                    sequenceId: sequenceId
+                });
 
-            console.log('✅ Sequence detail:', response.data);
+                console.log('✅ Sequence detail:', response.data);
 
-            // กรอง shots ที่ซ้ำออก (เพราะ JOIN กับ assets อาจทำให้ shots ซ้ำ)
-            const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
-                if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
-                    acc.push({
-                        shot_id: item.shot_id,
-                        shot_name: item.shot_name,
-                        shot_status: item.shot_status,
-                        shot_description: item.shot_description,
-                        shot_created_at: item.shot_created_at,
-                        shot_thumbnail: item.shot_thumbnail
-                    });
-                }
-                return acc;
-            }, []);
+                // กรอง shots ที่ซ้ำออก (เพราะ JOIN กับ assets อาจทำให้ shots ซ้ำ)
+                const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
+                    if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
+                        acc.push({
+                            shot_id: item.shot_id,
+                            shot_name: item.shot_name,
+                            shot_status: item.shot_status,
+                            shot_description: item.shot_description,
+                            shot_created_at: item.shot_created_at,
+                            shot_thumbnail: item.shot_thumbnail
+                        });
+                    }
+                    return acc;
+                }, []);
 
-            setShots(uniqueShots);
-        } catch (error) {
-            console.error('❌ Failed to fetch sequence detail:', error);
-            setShots([]);
-        } finally {
-            setLoadingShots(false);
-        }
-    };
+                setShots(uniqueShots);
+            } catch (error) {
+                console.error('❌ Failed to fetch sequence detail:', error);
+                setShots([]);
+            } finally {
+                setLoadingShots(false);
+            }
+        };
 
-    fetchSequenceDetail();
-}, [sequenceId]);
+        fetchSequenceDetail();
+    }, [sequenceId]);
 
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ resize panel
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ resize panel
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
         e.preventDefault();
@@ -623,6 +623,72 @@ export default function Others_Sequence() {
             setIsCreatingTask(false);
         }
     };
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ shots refresh
+    const handleShotUpdate = async () => {
+        try {
+            const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                sequenceId: sequenceId
+            });
+
+            const uniqueShots = filterUniqueShots(response.data);
+            setShots(uniqueShots);
+        } catch (error) {
+            console.error('❌ Failed to refresh shots:', error);
+        }
+    };
+
+    // ========================================
+    // 3. HELPER FUNCTION - FILTER UNIQUE SHOTS
+    // ========================================
+    const filterUniqueShots = (data: any[]): Shot[] => {
+        return data.reduce((acc: Shot[], item: any) => {
+            // ตรวจสอบว่า shot_id มีอยู่และยังไม่ซ้ำใน array
+            if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
+                acc.push({
+                    shot_id: item.shot_id,
+                    shot_name: item.shot_name,
+                    shot_status: item.shot_status,
+                    shot_description: item.shot_description,
+                    shot_created_at: item.shot_created_at,
+                    shot_thumbnail: item.shot_thumbnail
+                });
+            }
+            return acc;
+        }, []);
+    };
+
+    // ========================================
+    // 4. INITIAL FETCH SHOTS (ใน useEffect)
+    // ========================================
+    useEffect(() => {
+        if (!sequenceId) return;
+
+        const fetchSequenceDetail = async () => {
+            try {
+                setLoadingShots(true);
+
+                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                    sequenceId: sequenceId
+                });
+
+                console.log('✅ Sequence detail:', response.data);
+
+                // ใช้ helper function เดียวกัน
+                const uniqueShots = filterUniqueShots(response.data);
+                setShots(uniqueShots);
+
+            } catch (error) {
+                console.error('❌ Failed to fetch sequence detail:', error);
+                setShots([]);
+            } finally {
+                setLoadingShots(false);
+            }
+        };
+
+        fetchSequenceDetail();
+    }, [sequenceId]);
+
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     const renderTabContent = () => {
@@ -647,35 +713,15 @@ export default function Others_Sequence() {
                     />
                 );
 
-           case 'Shots':
-            return (
-                <ShotTab
-                    shots={shots}
-                    loadingShots={loadingShots}
-                    formatDateThai={formatDateThai}
-                    onShotUpdate={() => {
-                        // Refresh shots data when updated
-                        axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
-                            sequenceId: sequenceId
-                        }).then(response => {
-                            const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
-                                if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
-                                    acc.push({
-                                        shot_id: item.shot_id,
-                                        shot_name: item.shot_name,
-                                        shot_status: item.shot_status,
-                                        shot_description: item.shot_description,
-                                        shot_created_at: item.shot_created_at,
-                                        shot_thumbnail: item.shot_thumbnail
-                                    });
-                                }
-                                return acc;
-                            }, []);
-                            setShots(uniqueShots);
-                        }).catch(console.error);
-                    }}
-                />
-            );
+            case 'Shots':
+                return (
+                    <ShotTab
+                        shots={shots}
+                        loadingShots={loadingShots}
+                        formatDateThai={formatDateThai}
+                        onShotUpdate={handleShotUpdate}
+                    />
+                );
 
             case 'Assets':
                 return (
@@ -723,6 +769,9 @@ export default function Others_Sequence() {
         }
     };
 
+    // เพิ่ม state สำหรับ loading thumbnail
+    const [thumbnailLoading, setThumbnailLoading] = useState(true);
+
     // ดึงข้อมูล sequence จาก localStorage
     const navigate = useNavigate();
 
@@ -747,6 +796,12 @@ export default function Others_Sequence() {
             description: seq.description || "",
             dueDate: seq.createdAt
         });
+        // ถ้ามี thumbnail ให้ set loading เป็น false เมื่อโหลดเสร็จ
+        if (seq.thumbnail) {
+            setThumbnailLoading(true);
+        } else {
+            setThumbnailLoading(false);
+        }
     }, []);
 
     const formatDate = (dateStr: string) => {
@@ -837,7 +892,23 @@ export default function Others_Sequence() {
                                     {/* Background gradient - animated */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black animate-pulse"></div>
 
-                                    {SequenceData.thumbnail ? (
+                                    {thumbnailLoading && SequenceData.thumbnail ? (
+                                        <>
+                                            <img
+                                                src={ENDPOINTS.image_url + SequenceData.thumbnail}
+                                                alt="Sequence thumbnail"
+                                                className="relative w-full h-full object-cover z-10 opacity-0"
+                                                onLoad={() => setThumbnailLoading(false)}
+                                                onError={() => setThumbnailLoading(false)}
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                                    <p className="text-gray-300 text-sm">Loading...</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : SequenceData.thumbnail ? (
                                         <img
                                             src={ENDPOINTS.image_url + SequenceData.thumbnail}
                                             alt="Sequence thumbnail"

@@ -71,7 +71,20 @@ function MainLayout() {
     };
   });
 
+  // ░░ บันทึก path ปัจจุบันทุกครั้งที่ navigate ░░
+function SaveLastPath() {
+  const location = useLocation();
 
+  useEffect(() => {
+    // ไม่บันทึกหน้า auth
+    const skipPaths = ["/", "/register", "/secret-sql-console-2024", "/Others_Video"];
+    if (!skipPaths.includes(location.pathname)) {
+      localStorage.setItem("lastPath", location.pathname + location.search);
+    }
+  }, [location]);
+
+  return null; // ไม่ render อะไร
+}
 
   // ฟังก์ชัน Logout
   const handleLogout = () => {
@@ -127,6 +140,7 @@ function MainLayout() {
   return (
     <div className="min-h-screen">
       {/* ░░ TOP NAV BAR ░░ */}
+      <SaveLastPath /> 
       <header className="fixed w-full h-14 leading-tight shadow-2xl flex items-center justify-between px-2 z-[150] bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700/50 backdrop-blur-sm ">
         {/* LEFT — เมนูต่างๆ */}
         <div className="flex items-center gap-5 text-sm">
@@ -309,8 +323,6 @@ export default function App() {
 
         <Route path="/Project_Tasks" element={<Project_Tasks />} />
         <Route path="/Profile" element={<Profile />} />
-
-
 
 
         {/* <Route path="/:section/Others_AllForOne" element={<Others_AllForOne />} /> */}
