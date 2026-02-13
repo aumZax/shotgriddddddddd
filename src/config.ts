@@ -1,6 +1,6 @@
 // endpoints.ts
-const BASE_URL = "https://diana-prisoners-negotiation-levy.trycloudflare.com";
-// const BASE_URL = "http:localhost//:3000";
+// const BASE_URL = "https://diana-prisoners-negotiation-levy.trycloudflare.com";
+const BASE_URL = "http://localhost:3000";
 
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
@@ -116,6 +116,8 @@ const ENDPOINTS = {
   PROJECT_VIEWERS_ADD: `${BASE_URL}/project-viewers-add`,
   PROJECT_VIEWERS_REMOVE: `${BASE_URL}/project-viewers-remove`,
   GETALLUSERS: `${BASE_URL}/getallusers`,
+
+  TASK_VERSIONS: `${BASE_URL}/task-versions`,
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };

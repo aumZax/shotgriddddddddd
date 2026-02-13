@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
@@ -117,8 +118,9 @@ export default function Project_Sequence() {
         sequenceId: number;
         sequenceName: string;
     } | null>(null);
-    // ดึงข้อมูล sequences จาก API เมื่อ component โหลด
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+
+    const [sequenceShots, setSequenceShots] = useState<{ [key: number]: Shot[] }>({});
+
     useEffect(() => {
         if (!projectId) return;
 
@@ -158,7 +160,6 @@ export default function Project_Sequence() {
                 setIsLoadingSequences(false);
             });
     }, [projectId]);
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     useEffect(() => {
         if (isDragging) {
@@ -484,12 +485,6 @@ export default function Project_Sequence() {
         });
     };
 
-
-
-
-
-
-
     const updateSequence = (
         dbId: number,
         payload: {
@@ -754,7 +749,7 @@ export default function Project_Sequence() {
         setPosition({ x: 0, y: 0 }); // ⭐ reset ตำแหน่ง
     };
 
-    const [sequenceShots, setSequenceShots] = useState<{ [key: number]: Shot[] }>({});
+
     const fetchSequenceShots = async (sequenceId: number) => {
         try {
             const res = await fetch(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
@@ -891,7 +886,25 @@ export default function Project_Sequence() {
                                 {filteredSequences.map((sequence, index) => (
                                     <div
                                         key={sequence.dbId}
-                                        onClick={() => handleSequenceClick(index)}
+                                        onClick={(e) => {
+
+                                            // ⭐ ป้องกัน navigate ถ้าคลิกที่ input/button/textarea
+                                            const target = e.target as HTMLElement;
+                                            if (
+                                                target.tagName === 'INPUT' ||
+                                                target.tagName === 'TEXTAREA' ||
+                                                target.tagName === 'BUTTON' ||
+                                                target.closest('button') ||
+                                                target.closest('input') ||
+                                                target.closest('textarea')
+                                            ) {
+                                                return;
+                                            }
+                                            handleSequenceClick(index);
+                                            // ⭐ เรียกใช้ handleOpenSequence
+                                            handleOpenSequence(sequence);
+                                            setSelectedSequence(index);
+                                        }}
                                         onContextMenu={(e) => handleContextMenu(e, sequence)}
                                         className={`group cursor-pointer rounded-md transition-all duration-150 border ${selectedSequence === index
                                             ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
@@ -1644,7 +1657,7 @@ export default function Project_Sequence() {
                                         </div>
                                     </div>
 
-         
+
 
                                 </>
                             )}

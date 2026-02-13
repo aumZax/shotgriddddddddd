@@ -496,6 +496,7 @@ export default function Project_Assets() {
             console.log('✅ Selected asset:', selectedAssetData);
 
             setSelectedAsset({ categoryIndex, assetIndex });
+            navigate('/Project_Assets/Others_Asset');
         }
     };
 
@@ -1234,7 +1235,7 @@ export default function Project_Assets() {
                                                                         })
                                                                     );
 
-                                                                    navigate('/Project_Assets/Others_Asset');
+
                                                                 }}
                                                             >
                                                                 {asset.file_url ? (
@@ -1351,9 +1352,9 @@ export default function Project_Assets() {
                                                                                     <span className="inline-block w-8">{config.label}</span>
                                                                                     <span>{config.fullLabel}</span>
                                                                                 </div>
-                                                                                 {asset.status === key && ( // ✅ แสดง checkmark
-                                                                                            <Check className="w-4 h-4 text-blue-400 ml-auto" />
-                                                                                        )}
+                                                                                {asset.status === key && ( // ✅ แสดง checkmark
+                                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                                )}
                                                                             </button>
                                                                         ))}
                                                                     </div>
@@ -2146,6 +2147,7 @@ export default function Project_Assets() {
                                             )}
                                         </div>
                                     </div>
+
 
 
                                 </>

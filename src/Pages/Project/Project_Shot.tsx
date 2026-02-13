@@ -566,7 +566,7 @@ export default function ProjectShot() {
 
     const handleRemoveSequenceFromShot = async () => {
 
-        if (!shotDetail?.sequence) return;  {/* Editor Section */}
+        if (!shotDetail?.sequence) return;
         if (!confirm("Remove this sequence?")) return;
         try {
             console.log("🚀 Removing sequence from shot:", shotDetail.shot_id);
@@ -996,6 +996,29 @@ export default function ProjectShot() {
                                                 <div
                                                     key={`${category.category}-${shot.id}-${shotIndex}`}
                                                     onContextMenu={(e) => handleContextMenu(e, shot)}
+                                                    onClick={() => {
+                                                        // ส่งข้อมูลให้ครบถ้วนรวมถึง sequence และ assets
+                                                        localStorage.setItem(
+                                                            "selectedShot",
+                                                            JSON.stringify({
+                                                                id: shot.id,
+                                                                shot_name: shot.shot_name,
+                                                                description: shot.description,
+                                                                status: shot.status,
+                                                                thumbnail: shot.thumbnail || "",
+                                                                sequence: category.category,
+                                                                // ⭐ เพิ่มข้อมูล sequence และ assets
+                                                                sequenceDetail: shot.sequence || null,
+                                                                assets: shot.assets || []
+                                                            })
+                                                        );
+
+                                                        // Navigate ไปหน้าใหม่
+                                                        navigate("/Project_Shot/Others_Shot");
+
+                                                        // อัพเดท state
+                                                        setSelectedShot({ categoryIndex, shotIndex });
+                                                    }}
                                                     className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
                                                         ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
                                                         : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
@@ -1006,31 +1029,6 @@ export default function ProjectShot() {
                                                         <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
                                                             <div
                                                                 className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-
-                                                                    // ส่งข้อมูลให้ครบถ้วนรวมถึง sequence และ assets
-                                                                    localStorage.setItem(
-                                                                        "selectedShot",
-                                                                        JSON.stringify({
-                                                                            id: shot.id,
-                                                                            shot_name: shot.shot_name,
-                                                                            description: shot.description,
-                                                                            status: shot.status,
-                                                                            thumbnail: shot.thumbnail || "",
-                                                                            sequence: shotData[categoryIndex].category,
-                                                                            // ⭐ เพิ่มข้อมูล sequence และ assets
-                                                                            sequenceDetail: shot.sequence || null,
-                                                                            assets: shot.assets || []
-                                                                        })
-                                                                    );
-
-                                                                    // Navigate ไปหน้าใหม่
-                                                                    navigate("/Project_Shot/Others_Shot");
-
-                                                                    // อัพเดท state
-                                                                    setSelectedShot({ categoryIndex, shotIndex });
-                                                                }}
                                                             >
                                                                 {shot.thumbnail ? (
                                                                     shot.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
@@ -1880,6 +1878,8 @@ export default function ProjectShot() {
                                             )}
                                         </div>
                                     </div>
+
+
 
                                 </>
                             )}

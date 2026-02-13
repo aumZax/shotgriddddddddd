@@ -42,30 +42,30 @@ export default function Others_People() {
   const [projectName, setProjectName] = useState("");
   const [projectId, setProjectId] = useState<number | null>(null);
   const [permission, setPermission] = useState<string | null>(null);
-  const canManage   = ["Admin", "Producer", "Owner"].includes(permission || "");
-  const canEdit     = ["Admin", "Producer", "Supervisor", "Owner"].includes(permission || "");
+  const canManage = ["Admin", "Producer", "Owner"].includes(permission || "");
+  const canEdit = ["Admin", "Producer", "Supervisor", "Owner"].includes(permission || "");
   const canEditPerm = ["Admin", "Owner"].includes(permission || "");
 
   /* ─── tabs ─── */
   const [activeTab, setActiveTab] = useState<MainTab>("team");
 
   /* ─── team state ─── */
-  const [people, setPeople]         = useState<Person[]>([]);
+  const [people, setPeople] = useState<Person[]>([]);
   const [loadingPeople, setLoadingPeople] = useState(true);
   const [editingCell, setEditingCell] = useState<{ id: number; field: keyof Person } | null>(null);
-  const [editValue, setEditValue]   = useState("");
+  const [editValue, setEditValue] = useState("");
   const [showCreatePerson, setShowCreatePerson] = useState(false);
   const [showMoreFields, setShowMoreFields] = useState(false);
-  const [allUsers, setAllUsers]     = useState<UserData[]>([]);
+  const [allUsers, setAllUsers] = useState<UserData[]>([]);
 
   /* ─── viewers state ─── */
-  const [viewers, setViewers]             = useState<ProjectViewer[]>([]);
+  const [viewers, setViewers] = useState<ProjectViewer[]>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
   const [showAddViewer, setShowAddViewer] = useState(false);
 
   /* ─── seats ─── */
   const [totalSeats, setTotalSeats] = useState(50);
-  const [usedSeats,  setUsedSeats]  = useState(0);
+  const [usedSeats, setUsedSeats] = useState(0);
 
   /* ─── context menu / delete confirm ─── */
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; peopleId: string; peopleEmail: string } | null>(null);
@@ -79,12 +79,6 @@ export default function Others_People() {
   const timeString = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: true });
 
   /* ═══════════ Loaders ═══════════ */
-  useEffect(() => {
-    if (projectId) {
-      fetchViewers();
-    }
-  }, [projectId]);
-  
   useEffect(() => {
     try {
       const raw = localStorage.getItem("projectData");
@@ -102,7 +96,15 @@ export default function Others_People() {
     fetchPeople();
     fetchSeatsInfo();
     getAllUsers();
+
   }, []);
+
+
+  useEffect(() => {
+    if (projectId) {
+      fetchViewers();
+    }
+  }, [projectId]);
 
   useEffect(() => {
     if (activeTab === "viewers" && projectId) fetchViewers();
@@ -258,11 +260,10 @@ export default function Others_People() {
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab("team")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t text-sm font-medium border-b-2 transition-all ${
-                activeTab === "team"
+              className={`flex items-center gap-2 px-4 py-2 rounded-t text-sm font-medium border-b-2 transition-all ${activeTab === "team"
                   ? "border-blue-500 text-blue-400 bg-gray-800"
                   : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-              }`}
+                }`}
             >
               <User className="w-4 h-4" />
               Team Members
@@ -273,11 +274,10 @@ export default function Others_People() {
 
             <button
               onClick={() => setActiveTab("viewers")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t text-sm font-medium border-b-2 transition-all ${
-                activeTab === "viewers"
+              className={`flex items-center gap-2 px-4 py-2 rounded-t text-sm font-medium border-b-2 transition-all ${activeTab === "viewers"
                   ? "border-emerald-500 text-emerald-400 bg-gray-800"
                   : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-              }`}
+                }`}
             >
               <Eye className="w-4 h-4" />
               Project Viewers
@@ -414,7 +414,7 @@ export default function Others_People() {
                             await fetch(`${ENDPOINTS.PEOPLE}/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ groups: v, permission: localStorage.getItem("Permiss"), email: actor.email }) }).catch(() => fetchPeople());
                             setEditingCell(null);
                           }} onBlur={handleCellBlur} onKeyDown={handleKeyDown} className="w-full bg-gray-700 border border-blue-500 rounded px-2 py-1 text-sm text-white focus:outline-none">
-                            {["None","FX","Modeling","Animation","Lighting","Compositing","Rigging","Layout","Rendering"].map(g => <option key={g}>{g}</option>)}
+                            {["None", "FX", "Modeling", "Animation", "Lighting", "Compositing", "Rigging", "Layout", "Rendering"].map(g => <option key={g}>{g}</option>)}
                           </select>
                         ) : (
                           <span className="text-gray-300">{p.groups}</span>
@@ -608,7 +608,7 @@ function AddViewerModal({
   const filtered = allUsers.filter(u =>
     !existingViewerIds.includes(u.id) &&
     (u.email?.toLowerCase().includes(search.toLowerCase()) ||
-     u.username?.toLowerCase().includes(search.toLowerCase()))
+      u.username?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleAdd = async () => {
@@ -789,9 +789,7 @@ function CreatePersonModal({
           name: `${form.firstName} ${form.lastName}`.trim(),
           email: form.email, status: form.status,
           permissionGroup: form.permissionGroup,
-          projects: form.projects || defaultProjectName,
           groups: form.groups || "None",
-          projectId: localStorage.getItem("projectId") || null,
         }),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
@@ -855,7 +853,7 @@ function CreatePersonModal({
           <div className="grid grid-cols-[140px_1fr] items-center gap-3">
             <label className="text-sm text-gray-300 text-right">Group:</label>
             <select value={form.groups} onChange={(e) => setForm({ ...form, groups: e.target.value })} className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500">
-              {["None","FX","Modeling","Animation","Lighting","Compositing","Rigging","Layout","Rendering"].map(g => <option key={g}>{g}</option>)}
+              {["None", "FX", "Modeling", "Animation", "Lighting", "Compositing", "Rigging", "Layout", "Rendering"].map(g => <option key={g}>{g}</option>)}
             </select>
           </div>
 

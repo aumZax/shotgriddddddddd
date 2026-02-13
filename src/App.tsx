@@ -37,18 +37,37 @@ import { Search, ChevronDown } from 'lucide-react';
 // import Project_Media from "./Pages/Project/Project_Media";
 
 
+interface Project {
+  projectId: number;
+  projectName: string;
+  images?: string[];
+  thumbnail?: string;
+  files_project?: string[];
+  username?: string;
+  createdAt?: string;
+  permissionGroup?: string;
+  description?: string;
+  template?: string;
+}
+
 
 // ░░ Layout สำหรับหน้าที่มี Header ░░
 function MainLayout() {
   const [isOpen, setIsOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [allPagesOpen, setAllPagesOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const projectsRef = useRef<HTMLDivElement>(null);
+  const allPagesRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [projects, setProjects] = useState<Project[]>([]);
 
   // ดึงข้อมูล user จาก localStorage แบบ lazy initialization
   const [authUser] = useState<{
     email: string;
     imageURL: string;
+    id?: number;
 
 
   }>(() => {
@@ -59,6 +78,7 @@ function MainLayout() {
         return {
           email: u.email || "Anonymous@gmail.com",
           imageURL: u.imageURL || "/icon/black-dog.png",
+          id: u.id || undefined,
         };
       }
     } catch (e) {
@@ -85,6 +105,9 @@ function SaveLastPath() {
 
   return null; // ไม่ render อะไร
 }
+useEffect(() => {
+  fetchProjects();
+}, []);
 
   // ฟังก์ชัน Logout
   const handleLogout = () => {
@@ -94,6 +117,165 @@ function SaveLastPath() {
     // นำทางไปยังหน้า Login
     navigate("/");
   };
+
+const fetchProjects = async () => {
+  try {
+    const response = await fetch(ENDPOINTS.PROJECTLIST, {
+      method: "POST",
+      body: JSON.stringify({
+        created_by: authUser.id,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+    console.log("🔥 API RAW:", data);
+
+    if (Array.isArray(data.projects)) {
+      // 👇 Debug: ดูว่าแต่ละ project มี field อะไรบ้าง
+      if (data.projects.length > 0) {
+        console.log("📋 First project structure:", data.projects[0]);
+        console.log("🖼️ Images field:", data.projects[0]?.images);
+        console.log("🔑 All keys:", Object.keys(data.projects[0]));
+      }
+      
+      setProjects(data.projects);
+    } else {
+      console.error("Unexpected format:", data);
+      setProjects([]);
+    }
+
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+  }
+};
+
+const handleProjectClick = async (project: Project) => {
+  const projectId = project.projectId;
+  if (!projectId) return;
+
+  console.log("🚀 Starting handleProjectClick for:", project.projectName);
+
+  localStorage.setItem("projectId", JSON.stringify(projectId));
+
+  // ดึง thumbnail URL - ส่งตรงๆ ไม่ต้องต่อ image_url
+  let thumbnailUrl = "";
+  
+  // 1. ลองใช้ thumbnail ที่ API ส่งมา (ถ้ามี)
+  if (project.thumbnail) {
+    thumbnailUrl = project.thumbnail;
+    console.log("✅ Using thumbnail from API:", thumbnailUrl);
+  }
+  // 2. ลองใช้ images array
+  else if (project.images && Array.isArray(project.images) && project.images.length > 0) {
+    thumbnailUrl = project.images[0];
+    console.log("✅ Using first image from images array:", thumbnailUrl);
+  }
+  // 3. ลองใช้ files_project
+  else if (project.files_project && Array.isArray(project.files_project) && project.files_project.length > 0) {
+    thumbnailUrl = project.files_project[0];
+    console.log("✅ Using first file from files_project:", thumbnailUrl);
+  }
+  // 4. ไม่มีรูปเลย ใช้ placeholder
+  else {
+    thumbnailUrl = "";
+    console.warn("⚠️ No images found for project:", project.projectName);
+  }
+
+  const baseData = {
+    projectId,
+    projectName: project.projectName,
+    thumbnail: thumbnailUrl,
+    images: project.images || project.files_project || [],
+    createdBy: project.username || "",
+    createdAt: project.createdAt || "",
+    permission: project.permissionGroup || "",
+    description: project.description || "",
+    template: project.template || "",
+    fetchedAt: new Date().toISOString(),
+  };
+
+  console.log("📦 Base data prepared:", baseData);
+
+  // บันทึก baseData ก่อนเลย เผื่อ API fail
+  localStorage.setItem(
+    "projectData",
+    JSON.stringify({
+      ...baseData,
+      projectInfo: null,
+      projectDetails: null,
+    })
+  );
+
+  console.log("💾 Saved initial data to localStorage");
+
+  try {
+    console.log("🔄 Fetching project details...");
+    
+    // ตั้ง timeout 10 วินาที
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 10000)
+    );
+
+    const fetchPromise = Promise.all([
+      fetch(ENDPOINTS.PROJECTINFO, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      }),
+      fetch(ENDPOINTS.PROJECTDETAIL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      }),
+    ]);
+
+    const [projectInfoRes, projectDetailsRes] = await Promise.race([
+      fetchPromise,
+      timeoutPromise
+    ]) as Response[];
+
+    console.log("✅ Got responses");
+
+    const projectInfo = await projectInfoRes.json();
+    const projectDetails = await projectDetailsRes.json();
+
+    console.log("📊 Project Info:", projectInfo);
+    console.log("📊 Project Details:", projectDetails);
+
+    // ลองหารูปจาก projectInfo หรือ projectDetails ถ้ายังไม่มี
+    if (!project.thumbnail && !thumbnailUrl) {
+      if (projectInfo?.thumbnail) {
+        baseData.thumbnail = projectInfo.thumbnail;
+        console.log("✅ Updated thumbnail from projectInfo:", projectInfo.thumbnail);
+      } else if (projectDetails?.thumbnail) {
+        baseData.thumbnail = projectDetails.thumbnail;
+        console.log("✅ Updated thumbnail from projectDetails:", projectDetails.thumbnail);
+      }
+    }
+
+    const finalData = {
+      ...baseData,
+      projectInfo,
+      projectDetails,
+    };
+
+    localStorage.setItem("projectData", JSON.stringify(finalData));
+
+    console.log("✅ Final project data saved to localStorage");
+
+  } catch (err) {
+    console.error("❌ Error fetching project data:", err);
+    // baseData ถูกบันทึกไปแล้วด้านบน ไม่ต้องทำอะไร
+  }
+  
+  setProjectsOpen(false);
+
+  console.log("🚀 Navigating to Project_Detail...");
+  navigate("/Project_Detail");
+};
   useEffect(() => {
     const handleGlobalKeyPress = (e: KeyboardEvent) => {
       // Ctrl + Alt + D = เปิด Secret Console
@@ -120,22 +302,26 @@ function SaveLastPath() {
     document.addEventListener('keydown', handleGlobalKeyPress);
     return () => document.removeEventListener('keydown', handleGlobalKeyPress);
   }, [navigate, location]);
+  
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
+      if (projectsRef.current && !projectsRef.current.contains(event.target as Node)) {
+        setProjectsOpen(false);
+      }
+      if (allPagesRef.current && !allPagesRef.current.contains(event.target as Node)) {
+        setAllPagesOpen(false);
+      }
     }
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -169,38 +355,76 @@ function SaveLastPath() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
 
-            <div className="relative group">
-              <span className="
+            {/* Projects Dropdown */}
+            <div className="relative" ref={projectsRef}>
+              <span 
+                className="
                   hidden sm:inline-flex items-center gap-1
                   hover:text-blue-400 cursor-pointer
-                  text-xl font-medium
+                  text-xl font-medium text-gray-300
                   transition-all duration-300 whitespace-nowrap
-                ">
+                "
+                onClick={() => setProjectsOpen(!projectsOpen)}
+              >
                 <span>Projects</span>
                 <ChevronDown className="w-5 h-5" />
               </span>
-              <div className="absolute hidden group-hover:block bg-gray-800 shadow-2xl rounded-lg mt-1 w-32 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md">
-                <Link to="/p1" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200 border-b border-gray-700/30">Project 1</Link>
-                <Link to="/p2" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200">Project 2</Link>
-              </div>
+              {projectsOpen && (
+                <div 
+                  className="absolute bg-gray-800 shadow-2xl rounded-lg mt-1 w-40 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md"
+                >
+                  {projects.map((project, index) => (
+                    <div
+                      key={`${project.projectId}-${index}`}
+                      onClick={() => handleProjectClick(project)}
+                      className={`block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200 cursor-pointer ${
+                        index !== projects.length - 1
+                          ? "border-b border-gray-700/30"
+                          : ""
+                      }`}
+                    >
+                      {project.projectName}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="relative group">
+            {/* All Pages Dropdown */}
+            <div className="relative" ref={allPagesRef}>
               <span
                 className="
                   hidden sm:inline-flex items-center gap-1
                   hover:text-blue-400 cursor-pointer
-                  text-xl font-medium
+                  text-xl font-medium text-gray-300
                   transition-all duration-300 whitespace-nowrap
-                ">
+                "
+                onClick={() => setAllPagesOpen(!allPagesOpen)}
+              >
                 <span>All Pages</span>
                 <ChevronDown className="w-5 h-5" />
               </span>
 
-              <div className="absolute hidden group-hover:block bg-gray-800 shadow-2xl rounded-lg mt-1 w-32 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md">
-                <Link to="/page1" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200 border-b border-gray-700/30">Page 1</Link>
-                <Link to="/page2" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200">Page 2</Link>
-              </div>
+              {allPagesOpen && (
+                <div 
+                  className="absolute bg-gray-800 shadow-2xl rounded-lg mt-1 w-32 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md"
+                >
+                  <Link 
+                    to="/page1" 
+                    className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200 border-b border-gray-700/30"
+                    onClick={() => setAllPagesOpen(false)}
+                  >
+                    Page 1
+                  </Link>
+                  <Link 
+                    to="/page2" 
+                    className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200"
+                    onClick={() => setAllPagesOpen(false)}
+                  >
+                    Page 2
+                  </Link>
+                </div>
+              )}
             </div>
 
             <Link className="hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/people">
