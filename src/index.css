@@ -125,3 +125,30 @@ button:focus-visible {
   overflow: hidden;
   background: radial-gradient(ellipse at bottom, #0b0d2a 0%, #000 100%);
 }
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 18px;
+  height: 18px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ef4444 #1a1a1a;
+}
