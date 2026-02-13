@@ -1,34 +1,34 @@
 // 🟢 Completed Group (เสร็จสมบูรณ์)
 // javascript// Shot
-// ['fin', 'cmpt', 'cfrm', 'cap', 'dlvr']
+// 🟢['fin', 'cmpt', 'cfrm', 'cap', 'dlvr']
 // // Asset  
-// ['fin', 'cmpt']
+// 🟢['fin', 'cmpt']
 // // Sequence
-// ['fin']
+// 🟢['fin']
 
 // 🔵 In Progress Group (กำลังดำเนินการ)
 // javascript// Shot
-// ['ip', 'arp', 'rts', 'wtc']
+// 🔵['ip', 'arp', 'rts', 'wtc']
 
 // // Asset
-// ['ip', 'rts', 'recd']
+// 🔵['ip', 'rts', 'recd']
 
 // // Sequence
-// ['ip']
+// 🔵['ip']
 
 // 🟡 Pending Group (รอดำเนินการ/พักชั่วคราว)
 // javascript// Shot
-// ['wtg', 'hld', 'nef']
+// 🟡['wtg', 'hld', 'nef']
 
 // // Asset
-// ['wtg', 'hld', 'pndng']
+// 🟡['wtg', 'hld', 'pndng']
 
 // // Sequence
-// ['wtg']
+// 🟡['wtg']
 
 // ⚫ Excluded (ไม่นับรวม)
 // javascript// Shot
-// ['omt', 'na', 'vnd']
+// ⚫['omt', 'na', 'vnd']
 
 // // Asset
 // [] // ไม่มี
