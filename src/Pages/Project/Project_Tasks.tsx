@@ -846,19 +846,10 @@ export default function Project_Tasks() {
         return position;
     };
 
-    // ใช้งาน - แทนที่ state และ useEffect ทั้ง 3 ตัว
-    const assigneeDropdownPosition = useDropdownPosition(
-        editingAssigneeTaskId !== null,
-        assigneeDropdownRef
-    );
-    const reviewerDropdownPosition = useDropdownPosition(
-        editingReviewerTaskId !== null,
-        reviewerDropdownRef
-    );
-    const pipelineDropdownPosition = useDropdownPosition(
-        editingPipelineTaskId !== null,
-        pipelineDropdownRef
-    );
+    // ⭐ เพิ่ม states สำหรับตำแหน่ง dropdown แต่ละตัว (ใกล้บรรทัด 50-60)
+    const [assigneeDropdownPosition, setAssigneeDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+    const [reviewerDropdownPosition, setReviewerDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+    const [pipelineDropdownPosition, setPipelineDropdownPosition] = useState<'top' | 'bottom'>('bottom');
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1256,12 +1247,20 @@ export default function Project_Tasks() {
 
                                                         {/* ⭐ Column #5: Pipeline Step - เพิ่มตรงนี้ */}
                                                         <td className="px-4 py-4">
-                                                            <div className="relative inline-block" ref={pipelineDropdownRef}>
+                                                            <div className="relative" ref={pipelineDropdownRef}>
                                                                 <button
-                                                                    onClick={() => {
+                                                                    onClick={(e) => {
                                                                         if (editingPipelineTaskId === task.id) {
                                                                             setEditingPipelineTaskId(null);
                                                                         } else {
+                                                                            // ⭐ เพิ่มการคำนวณตำแหน่งแบบเดียวกับ status
+                                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                                            const spaceBelow = window.innerHeight - rect.bottom;
+                                                                            const spaceAbove = rect.top;
+
+                                                                            setPipelineDropdownPosition(
+                                                                                spaceBelow < 400 && spaceAbove > spaceBelow ? 'top' : 'bottom'
+                                                                            );
                                                                             let entityType = task.entity_type || group.entity_type;
 
                                                                             // ⭐ ถ้าเป็น sequence ให้แจ้งเตือน
@@ -1342,7 +1341,8 @@ export default function Project_Tasks() {
                                                                                     </span>
                                                                                     <button
                                                                                         onClick={() => setEditingPipelineTaskId(null)}
-                                                                                        className="p-1 hover:bg-gray-700/50 rounded transition-colors"
+                                                                                        className="p-1 rounded transition-colors bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 rounded-2xl"
+
                                                                                     >
                                                                                         <X className="w-4 h-4 text-gray-400 hover:text-gray-200" />
                                                                                     </button>
@@ -1582,13 +1582,21 @@ export default function Project_Tasks() {
 
                                                         {/* ============= Column: Assigned To (Assignees) ============= */}
                                                         <td className="px-4 py-4">
-                                                            <div className="relative inline-block" ref={assigneeDropdownRef}>
+                                                            <div className="relative" ref={assigneeDropdownRef}>
                                                                 {/* ปุ่มแสดงรายชื่อ + เปิด Dropdown */}
                                                                 <button
-                                                                    onClick={() => {
+                                                                    onClick={(e) => {
                                                                         if (editingAssigneeTaskId === task.id) {
                                                                             setEditingAssigneeTaskId(null);
                                                                         } else {
+                                                                            // ⭐ เพิ่มการคำนวณตำแหน่ง
+                                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                                            const spaceBelow = window.innerHeight - rect.bottom;
+                                                                            const spaceAbove = rect.top;
+
+                                                                            setAssigneeDropdownPosition(
+                                                                                spaceBelow < 400 && spaceAbove > spaceBelow ? 'top' : 'bottom'
+                                                                            );
                                                                             setEditingAssigneeTaskId(task.id);
                                                                             setSearchAssignee("");
                                                                         }
@@ -1768,12 +1776,20 @@ export default function Project_Tasks() {
 
                                                         {/* ============= Column: Reviewer ============= */}
                                                         <td className="px-4 py-4">
-                                                            <div className="relative inline-block" ref={reviewerDropdownRef}>
+                                                            <div className="relative" ref={reviewerDropdownRef}>
                                                                 <button
-                                                                    onClick={() => {
+                                                                    onClick={(e) => {
                                                                         if (editingReviewerTaskId === task.id) {
                                                                             setEditingReviewerTaskId(null);
                                                                         } else {
+                                                                            // ⭐ เพิ่มการคำนวณตำแหน่ง
+                                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                                            const spaceBelow = window.innerHeight - rect.bottom;
+                                                                            const spaceAbove = rect.top;
+
+                                                                            setReviewerDropdownPosition(
+                                                                                spaceBelow < 400 && spaceAbove > spaceBelow ? 'top' : 'bottom'
+                                                                            );
                                                                             setEditingReviewerTaskId(task.id);
                                                                             setSearchReviewer("");
                                                                         }
