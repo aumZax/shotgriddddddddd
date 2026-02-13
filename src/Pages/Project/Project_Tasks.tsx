@@ -821,30 +821,7 @@ export default function Project_Tasks() {
     // ⭐ Custom Hook สำหรับคำนวณตำแหน่ง dropdown
     // ⭐ วิธีที่ 2: ใช้ Generic Type ที่ยืดหยุ่นกว่า
     // ⭐ แก้ไข type ของ parameter ให้รับ null ได้
-    const useDropdownPosition = (
-        isOpen: boolean,
-        dropdownRef: React.RefObject<HTMLDivElement | null>, // เพิ่ม | null
-        dropdownHeight: number = 384
-    ) => {
-        const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
-
-        useEffect(() => {
-            if (isOpen && dropdownRef.current) {
-                const rect = dropdownRef.current.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                const spaceBelow = viewportHeight - rect.bottom;
-                const spaceAbove = rect.top;
-
-                setPosition(
-                    spaceBelow < dropdownHeight && spaceAbove > dropdownHeight
-                        ? 'top'
-                        : 'bottom'
-                );
-            }
-        }, [isOpen, dropdownHeight]);
-
-        return position;
-    };
+    
 
     // ⭐ เพิ่ม states สำหรับตำแหน่ง dropdown แต่ละตัว (ใกล้บรรทัด 50-60)
     const [assigneeDropdownPosition, setAssigneeDropdownPosition] = useState<'top' | 'bottom'>('bottom');
