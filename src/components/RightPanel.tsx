@@ -551,7 +551,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                                         )}
 
                                                         {/* Meta Info Row */}
-                                                        <div className="flex items-center gap-4 text-xs flex-wrap">
+                                                        <div className="flex items-center gap-4 text-xs flex-wrap text-slate-50">
                                                             {/* Uploaded By - Clickable with dropdown */}
                                                             <div className="flex items-center gap-1.5 relative">
                                                                 <User className="w-3.5 h-3.5 flex-shrink-0" />
