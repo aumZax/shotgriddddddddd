@@ -278,9 +278,41 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                 <div className="flex flex-col gap-2">
 
                                     {/* Status */}
-                                    <span className={`px-3 py-1 rounded-md text-xs font-semibold tracking-wide ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border} w-fit`}>
-                                        {selectedTask.status}
-                                    </span>
+                                    <div className='flex items-center gap-3'>
+                                        <span className="text-xs text-gray-400 font-medium">Status:</span>
+                                        <span className={`px-3 py-1 rounded-md text-xs font-semibold tracking-wide ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border} w-fit`}>
+                                            {selectedTask.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Pipeline Step - แก้ไขส่วนนี้ */}
+                                    <div className='flex items-center gap-3'>
+                                        <span className="text-xs text-gray-400 font-medium">Pipeline Step:</span>
+                                        {selectedTask.pipeline_step ? (
+                                            <div
+                                                className="px-3 py-1 rounded-md text-xs font-semibold tracking-wide w-fit flex items-center gap-2 shadow-sm"
+                                                style={{
+                                                    backgroundColor: `${selectedTask.pipeline_step.color_hex}20`,
+                                                    borderColor: `${selectedTask.pipeline_step.color_hex}50`,
+                                                    color: selectedTask.pipeline_step.color_hex,
+                                                    border: '1px solid'
+                                                }}
+                                            >
+                                                <div
+                                                    className="w-2 h-2 rounded-full"
+                                                    style={{
+                                                        backgroundColor: selectedTask.pipeline_step.color_hex,
+                                                        boxShadow: `0 0 6px ${selectedTask.pipeline_step.color_hex}60`
+                                                    }}
+                                                />
+                                                {selectedTask.pipeline_step.step_name}
+                                            </div>
+                                        ) : (
+                                            <span className="px-3 py-1 rounded-md text-xs font-semibold tracking-wide text-gray-500 bg-gray-700/30 border border-gray-600/40 w-fit italic">
+                                                ไม่ระบุ
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {/* Description */}
                                     {selectedTask.description && (
