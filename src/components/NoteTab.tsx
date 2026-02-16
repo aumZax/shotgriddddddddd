@@ -105,12 +105,12 @@ const NotesTab = ({
         return earliest.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
     };
 
-    const getLatestDate = () => {
-        if (notes.length === 0) return '-';
-        const dates = notes.map(n => new Date(n.created_at).getTime());
-        const latest = new Date(Math.max(...dates));
-        return latest.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    };
+    // const getLatestDate = () => {
+    //     if (notes.length === 0) return '-';
+    //     const dates = notes.map(n => new Date(n.created_at).getTime());
+    //     const latest = new Date(Math.max(...dates));
+    //     return latest.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    // };
 
     const stats = getStatusStats();
 
@@ -152,12 +152,9 @@ const NotesTab = ({
                                 </div>
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                <div>ประเภท</div>
+                                <div>การมองเห็น</div>
                                 <div className="mt-2 text-xs text-gray-500 normal-case">
-                                    <div className="flex items-center gap-2">
-                                        <span>ล่าสุด:</span>
-                                        <span className="text-gray-300 font-mono">{getLatestDate()}</span>
-                                    </div>
+                                   
                                 </div>
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -177,9 +174,9 @@ const NotesTab = ({
                                     <span>ผู้รับมอบหมาย</span>
                                 </div>
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 งานที่เกี่ยวข้อง
-                            </th>
+                            </th> */}
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <div className="flex items-center gap-1">
                                     <Paperclip className="w-3.5 h-3.5" />
@@ -232,6 +229,7 @@ const NotesTab = ({
                             notes.map((note, index) => (
                                 <tr
                                     key={note.id}
+                                    onClick={() => onNoteClick?.(note)}
                                     onContextMenu={(e) => {
                                         // prevent browser menu, close expanded assigned dropdown, then call parent handler
                                         e.preventDefault();
@@ -250,7 +248,7 @@ const NotesTab = ({
 
                                     {/* Subject & Body */}
                                     <td className="px-4 py-4">
-                                        <div className="space-y-1 cursor-pointer hover:opacity-80" onClick={() => onNoteClick?.(note)}>
+                                        <div className="space-y-1 hover:opacity-80">
                                             <div className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors">
                                                 {note.subject}
                                             </div>
@@ -316,6 +314,7 @@ const NotesTab = ({
                                                             key={index}
                                                             disabled
                                                             onClick={(e) => {
+                                                                
                                                                 e.stopPropagation();
                                                                 setExpandedNoteId(
                                                                     expandedNoteId === note.id ? null : note.id
@@ -413,7 +412,7 @@ const NotesTab = ({
                                     </td>
 
                                     {/* Tasks */}
-                                    <td className="px-4 py-4">
+                                    {/* <td className="px-4 py-4">
                                         {note.tasks && note.tasks.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
                                                 {note.tasks.slice(0, 2).map((task: string, taskIndex: number) => (
@@ -433,7 +432,7 @@ const NotesTab = ({
                                         ) : (
                                             <span className="text-gray-600 text-sm italic">ไม่มี</span>
                                         )}
-                                    </td>
+                                    </td> */}
 
                                     {/* Attachment */}
                                     <td className="px-4 py-4">

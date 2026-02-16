@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Calendar, Edit3, Package, Grid3x3, List, User, File, Clock, Upload, FileText } from 'lucide-react';
+import { X, Calendar, Edit3, Package, Image, User, File, Clock, FileText } from 'lucide-react';
 
 // Types
 type StatusType = keyof typeof statusConfig;
@@ -119,6 +119,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
     const [showUserMenu, setShowUserMenu] = React.useState<number | null>(null);
     const [userSearchTerm, setUserSearchTerm] = React.useState<string>('');
 
+
+
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
         const date = new Date(dateString);
@@ -215,6 +217,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
         );
     };
 
+
     return (
         <div
             className={`
@@ -233,44 +236,80 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
             {/* Panel Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
+
+
                 {/* Header */}
                 <div className="bg-gradient-to-r from-[#1a1d24] to-[#1e2128] border-b border-gray-700/50 shadow-lg">
-                    <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center justify-between px-3 py-2">
                         <div className="flex items-center gap-4">
-                            <div className="relative group">
-                                <img
-                                    src={selectedTask.file_url}
-                                    alt=""
-                                    className="w-14 h-14 object-cover rounded-lg shadow-md ring-2 ring-gray-700/50 group-hover:ring-blue-500/50 transition-all"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-colors"></div>
+
+                            {/* Thumbnail */}
+                            <div className="relative group shrink-0">
+                                {selectedTask.file_url ? (
+                                    <img
+                                        src={selectedTask.file_url}
+                                        alt=""
+                                        className="w-26 h-26 object-cover rounded-xl shadow-md 
+                        ring-1 ring-gray-700/60 
+                        group-hover:ring-blue-500/60 
+                        transition-all duration-200"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700">
+                                        <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
+                                            <Image className="w-5 h-5 text-gray-600" />
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 rounded-xl 
+                    bg-black/0 group-hover:bg-black/10 
+                    transition-colors duration-200" />
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-400 font-medium tracking-wide mb-1">
-                                    Napo (Animation demo) › C005 › {selectedTask.task_name.split('/')[0].trim()}
-                                </div>
-                                <h2 className="text-xl text-white font-semibold">
+
+                            {/* Info */}
+                            <div className="flex flex-col gap-2">
+
+                                {/* Task Name */}
+                                <h2 className="text-lg md:text-xl font-semibold text-white leading-tight">
                                     {selectedTask?.task_name.split('/').pop()?.trim()}
                                 </h2>
+
+                                {/* Status + Description + Due */}
+                                <div className="flex flex-col gap-2">
+
+                                    {/* Status */}
+                                    <span className={`px-3 py-1 rounded-md text-xs font-semibold tracking-wide ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border} w-fit`}>
+                                        {selectedTask.status}
+                                    </span>
+
+                                    {/* Description */}
+                                    {selectedTask.description && (
+                                        <div className="bg-gray-700/40 px-3 py-2 rounded-md max-w-xl">
+                                            <p className="text-xs text-gray-400 leading-relaxed line-clamp-2" title={selectedTask.description}>
+                                                <span className="font-medium text-gray-300">Description:</span> {selectedTask.description}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Due Date */}
+                                    <div className="flex items-center gap-2 text-sm text-gray-300 bg-gray-700/40 px-3 py-1.5 rounded-md w-fit">
+                                        <Calendar className="w-4 h-4 opacity-80 flex-shrink-0" />
+                                        <span className="whitespace-nowrap">
+                                            ครบกำหนด {formatDateThai(selectedTask.due_date)}
+                                        </span>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
+
+                        {/* Close Button - ย้ายมาอยู่ใน justify-between */}
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg p-2 transition-all"
+                            className="p-2 transition-colors bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 rounded-2xl self-start"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5 h-5 text-gray-400 hover:text-white" />
                         </button>
-                    </div>
-
-                    {/* Status bar */}
-                    <div className="flex items-center gap-3 px-6 py-3 bg-black/10">
-                        <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border}`}>
-                            {selectedTask.status}
-                        </span>
-                        <div className="flex items-center gap-2 text-sm text-gray-300 bg-gray-700/30 px-3 py-1.5 rounded-lg">
-                            <Calendar className="w-4 h-4" />
-                            <span>ครบกำหนด {formatDateThai(selectedTask.due_date)}</span>
-                        </div>
                     </div>
 
                     {/* Tabs */}
@@ -278,8 +317,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         <button
                             onClick={() => onTabChange('notes')}
                             className={`flex items-center gap-2 px-6 py-3.5 text-sm font-medium transition-all relative ${activeTab === 'notes'
-                                ? 'text-white bg-gradient-to-b from-blue-500/10 to-transparent'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                ? 'text-white bg-gradient-to-r from-blue-700 to-blue-700'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-gray-700 to-gray-700'
                                 }`}
                         >
                             <Edit3 className="w-4 h-4" />
@@ -291,8 +330,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         <button
                             onClick={() => onTabChange('versions')}
                             className={`flex items-center gap-2 px-6 py-3.5 text-sm font-medium transition-all relative ${activeTab === 'versions'
-                                ? 'text-white bg-gradient-to-b from-blue-500/10 to-transparent'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                ? 'text-white bg-gradient-to-r from-blue-700 to-blue-700'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-gray-700 to-gray-700'
                                 }`}
                         >
                             <Package className="w-4 h-4" />
@@ -305,7 +344,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-auto p-6 bg-[#24272f]">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-[#24272f]">
                     {activeTab === 'notes' && (
                         <div className="space-y-4">
                             <input
@@ -338,26 +377,6 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
                     {activeTab === 'versions' && (
                         <div className="space-y-4">
-                            <div className="flex gap-2 flex-wrap items-center">
-                                <select className="px-4 py-2.5 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-300 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer">
-                                    <option>Any status</option>
-                                    <option value="wtg">Waiting</option>
-                                    <option value="ip">In Progress</option>
-                                    <option value="apr">Approved</option>
-                                    <option value="fin">Final</option>
-                                </select>
-                                <label className="flex items-center gap-2 px-4 py-2.5 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-300 text-sm cursor-pointer hover:bg-[#1e2129] transition-colors">
-                                    <input type="checkbox" id="latestVersion" className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-2 focus:ring-blue-500/20" />
-                                    <span>Latest version</span>
-                                </label>
-                                <div className="flex-1"></div>
-                                <button className="p-2.5 bg-[#1a1d24] border border-gray-700/50 rounded-lg hover:bg-[#1e2129] hover:border-blue-500/50 transition-all">
-                                    <Grid3x3 className="w-5 h-5 text-gray-400" />
-                                </button>
-                                <button className="p-2.5 bg-[#1a1d24] border border-gray-700/50 rounded-lg hover:bg-[#1e2129] hover:border-blue-500/50 transition-all">
-                                    <List className="w-5 h-5 text-gray-400" />
-                                </button>
-                            </div>
 
                             {isLoadingVersions ? (
                                 <div className="flex flex-col items-center justify-center py-20">
@@ -369,255 +388,260 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                     <Package className="w-20 h-20 mb-4 text-gray-600" strokeWidth={1.5} />
                                     <p className="text-sm font-medium mb-1">No versions yet</p>
                                     <p className="text-xs text-gray-600">Upload your first version below</p>
-                                </div>  
+                                </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
                                     {taskVersions.map((version, index) => {
                                         const versionStatusStyle = getStatusStyle(version.status);
 
                                         return (
                                             <div
                                                 key={version.id}
-                                                className="bg-gradient-to-br from-[#1a1d24] to-[#1e2128] rounded-xl overflow-hidden border border-gray-700/50 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-200 cursor-pointer group"
+                                                className="bg-gradient-to-br from-[#1a1d24] to-[#1e2128] rounded-xl overflow-visible border border-gray-700/50 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-200 group"
                                             >
-                                                {/* รูปภาพ */}
-                                                <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
-                                                    <img
-                                                        src={version.file_url}
-                                                        alt={`Version ${version.version_number}`}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                        onError={(e) => {
-                                                            e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image';
-                                                        }}
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                                    {/* Version Badge */}
-                                                    {index === 0 && (
-                                                        <div className="absolute top-3 right-3 bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-1 rounded-full text-xs text-white font-bold shadow-lg uppercase tracking-wide z-10">
-                                                            Current
-                                                        </div>
-                                                    )}
-
-                                                    {/* Status Badge */}
-                                                    <div className="absolute top-3 left-3 z-20">
-                                                        <div className="relative">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setShowStatusMenu(showStatusMenu === version.id ? null : version.id);
+                                                <div className="flex gap-2 p-2">
+                                                    {/* รูปภาพ */}
+                                                    {/* รูปภาพ */}
+                                                    <div className="relative w-48 h-32 flex-shrink-0 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden rounded-lg">
+                                                        {version.file_url ? (
+                                                            <img
+                                                                src={version.file_url}
+                                                                alt={`Version ${version.version_number}`}
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = 'none';
+                                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                                 }}
-                                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg bg-gradient-to-r ${versionStatusStyle.gradient} text-white hover:opacity-90 transition-opacity cursor-pointer`}
-                                                            >
-                                                                {statusConfig[version.status as StatusType]?.label || version.status}
-                                                            </button>
-
-                                                            {/* Status Dropdown - ⭐ เพิ่ม z-index สูงขึ้น */}
-                                                            {showStatusMenu === version.id && (
-                                                                <>
-                                                                    <div
-                                                                        className="fixed inset-0 z-[998]"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setShowStatusMenu(null);
-                                                                        }}
-                                                                    />
-                                                                    <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-2xl z-[999] min-w-[180px] max-h-[300px] overflow-y-auto border border-gray-600">
-                                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                            <button
-                                                                                key={key}
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleUpdateVersion(version.id, 'status', key);
-                                                                                }}
-                                                                                className="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors hover:bg-gray-700"
-                                                                            >
-                                                                                {config.icon === '-' ? (
-                                                                                    <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                                ) : (
-                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                                )}
-                                                                                <div className="text-xs text-gray-200 flex items-center gap-3">
-                                                                                    <span className="inline-block w-8">{config.label}</span>
-                                                                                    <span className="text-[10px]">{config.fullLabel}</span>
-                                                                                </div>
-                                                                                {version.status === key && (
-                                                                                    <span className="ml-auto text-blue-400">✓</span>
-                                                                                )}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                </>
-                                                            )}
+                                                            />
+                                                        ) : null}
+                                                        <div className={`${version.file_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700`}>
+                                                            <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
+                                                                <Package className="w-5 h-5 text-gray-600" />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </div>
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                                                {/* ข้อมูล */}
-                                                <div className="p-4 space-y-2">
-                                                    {/* Version Name - Editable */}
-                                                    {editingVersionId === version.id && editingField === 'version_name' ? (
-                                                        <input
-                                                            autoFocus
-                                                            type="text"
-                                                            value={editValue}
-                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                            onBlur={() => {
-                                                                if (editValue.trim() && editValue !== (version.version_name || `Version ${version.version_number}`)) {
-                                                                    handleUpdateVersion(version.id, 'version_name', editValue.trim());
-                                                                } else {
-                                                                    cancelEditing();
-                                                                }
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.currentTarget.blur();
-                                                                } else if (e.key === 'Escape') {
-                                                                    cancelEditing();
-                                                                }
-                                                            }}
-                                                            className="w-full px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none z-30"
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            onClick={() => startEditing(version.id, 'version_name', version.version_name || `Version ${version.version_number}`)}
-                                                            className="text-sm text-white font-semibold truncate cursor-pointer hover:text-blue-400 transition-colors"
-                                                            title="คลิกเพื่อแก้ไข"
-                                                        >
-                                                            {version.version_name || `Version ${version.version_number}`}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Description - Editable */}
-                                                    {editingVersionId === version.id && editingField === 'description' ? (
-                                                        <textarea
-                                                            autoFocus
-                                                            value={editValue}
-                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                            onBlur={() => {
-                                                                handleUpdateVersion(version.id, 'description', editValue.trim());
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                                    e.preventDefault();
-                                                                    e.currentTarget.blur();
-                                                                } else if (e.key === 'Escape') {
-                                                                    cancelEditing();
-                                                                }
-                                                            }}
-                                                            rows={2}
-                                                            className="w-full px-2 py-1 bg-gray-800 border border-blue-500 rounded text-gray-300 text-xs outline-none resize-none z-30"
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            onClick={() => startEditing(version.id, 'description', version.description || '')}
-                                                            className="text-xs text-gray-400 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-300 transition-colors min-h-[2rem]"
-                                                            title={version.description ? "คลิกเพื่อแก้ไข" : "คลิกเพื่อเพิ่มคำอธิบาย"}
-                                                        >
-                                                            {version.description || 'คลิกเพื่อเพิ่มคำอธิบาย...'}
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                                                        {/* Uploaded By - Clickable with dropdown */}
-                                                        <div className="flex items-center gap-1.5 relative z-20">
-                                                            <User className="w-3.5 h-3.5 flex-shrink-0" />
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setShowUserMenu(showUserMenu === version.id ? null : version.id);
-                                                                    setUserSearchTerm('');
-                                                                }}
-                                                                className="truncate hover:text-blue-400 transition-colors cursor-pointer underline decoration-dotted"
-                                                                title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
-                                                            >
-                                                                {version.uploaded_by_name || 'Unknown'}
-                                                            </button>
-
-                                                            {/* User Dropdown - ⭐ เพิ่ม z-index สูงขึ้น */}
-                                                            {showUserMenu === version.id && (
-                                                                <>
-                                                                    <div
-                                                                        className="fixed inset-0 z-[998]"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setShowUserMenu(null);
-                                                                            setUserSearchTerm('');
-                                                                        }}
-                                                                    />
-                                                                    <div className="absolute top-full left-0 mt-2 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl z-[999] w-72 border border-slate-600/50 overflow-hidden">
-                                                                        {/* Search Header */}
-                                                                        <div className="p-3 bg-slate-700/50 border-b border-slate-600/50">
-                                                                            <div className="flex items-center gap-2 mb-2">
-                                                                                <User className="w-4 h-4 text-slate-400" />
-                                                                                <span className="text-sm font-semibold text-slate-200">
-                                                                                    เลือกผู้อัปโหลด
-                                                                                </span>
-                                                                            </div>
-                                                                            <input
-                                                                                type="text"
-                                                                                placeholder="ค้นหาชื่อ..."
-                                                                                value={userSearchTerm}
-                                                                                onChange={(e) => setUserSearchTerm(e.target.value)}
-                                                                                onClick={(e) => e.stopPropagation()}
-                                                                                className="w-full px-3 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
-                                                                            />
-                                                                        </div>
-
-                                                                        {/* User List */}
-                                                                        <div className="max-h-64 overflow-y-auto">
-                                                                            {getFilteredUsers().length === 0 ? (
-                                                                                <div className="p-4 text-center text-slate-500 text-sm">
-                                                                                    ไม่พบผู้ใช้
-                                                                                </div>
-                                                                            ) : (
-                                                                                getFilteredUsers().map((user) => (
-                                                                                    <button
-                                                                                        key={user.id}
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            handleUpdateVersion(version.id, 'uploaded_by', user.id);
-                                                                                        }}
-                                                                                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-slate-700/50"
-                                                                                    >
-                                                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${version.uploaded_by === user.id
-                                                                                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-2 ring-blue-400/50'
-                                                                                                : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'
-                                                                                            }`}>
-                                                                                            {user.username[0].toUpperCase()}
-                                                                                        </div>
-                                                                                        <span className="flex-1 text-sm font-medium text-slate-200">
-                                                                                            {user.username}
-                                                                                        </span>
-                                                                                        {version.uploaded_by === user.id && (
-                                                                                            <span className="text-blue-400 text-sm">✓</span>
-                                                                                        )}
-                                                                                    </button>
-                                                                                ))
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
-
-                                                        {/* File size */}
-                                                        {version.file_size && (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <File className="w-3.5 h-3.5" />
-                                                                <span>{(version.file_size / 1024 / 1024).toFixed(1)} MB</span>
+                                                        {/* Version Badge */}
+                                                        {index === 0 && (
+                                                            <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-blue-600 px-2 py-0.5 rounded-full text-xs text-white font-bold shadow-lg uppercase tracking-wide">
+                                                                Current
                                                             </div>
                                                         )}
+
+                                                        {/* Status Bar */}
+                                                        <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${versionStatusStyle.gradient}`}></div>
                                                     </div>
 
-                                                    {/* Date */}
-                                                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                        <Clock className="w-3.5 h-3.5" />
-                                                        <span>{formatDateThai(version.created_at)}</span>
-                                                    </div>
+                                                    {/* ข้อมูล */}
+                                                    <div className="flex-1 min-w-0 space-y-2.5">
+                                                        {/* Header Row: Version Name + Status */}
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            {/* Version Name - Editable */}
+                                                            {editingVersionId === version.id && editingField === 'version_name' ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    type="text"
+                                                                    value={editValue}
+                                                                    onChange={(e) => setEditValue(e.target.value)}
+                                                                    onBlur={() => {
+                                                                        if (editValue.trim() && editValue !== (version.version_name || `Version ${version.version_number}`)) {
+                                                                            handleUpdateVersion(version.id, 'version_name', editValue.trim());
+                                                                        } else {
+                                                                            cancelEditing();
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.currentTarget.blur();
+                                                                        } else if (e.key === 'Escape') {
+                                                                            cancelEditing();
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none"
+                                                                />
+                                                            ) : (
+                                                                <div
+                                                                    onClick={() => startEditing(version.id, 'version_name', version.version_name || `Version ${version.version_number}`)}
+                                                                    className="flex-1 text-sm text-white font-semibold truncate cursor-pointer hover:text-blue-400 transition-colors"
+                                                                    title="คลิกเพื่อแก้ไข"
+                                                                >
+                                                                    {version.version_name || `Version ${version.version_number}`}
+                                                                </div>
+                                                            )}
 
-                                                    {/* Status Bar */}
-                                                    <div className={`mt-3 h-1 rounded-full bg-gradient-to-r ${versionStatusStyle.gradient}`}></div>
+                                                            {/* Status Badge - แยกออกมาพร้อม dropdown ที่มี z-index สูง */}
+                                                            <div className="relative flex-shrink-0">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setShowStatusMenu(showStatusMenu === version.id ? null : version.id);
+                                                                    }}
+                                                                    className={`px-2.5 py-1 rounded-lg text-md font-bold tracking-wide shadow-lg bg-gradient-to-r ${versionStatusStyle.gradient} text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap`}
+                                                                >
+                                                                    {statusConfig[version.status as StatusType]?.label || version.status}
+                                                                </button>
+
+                                                                {/* Status Dropdown - ใช้ Portal-like approach */}
+                                                                {showStatusMenu === version.id && (
+                                                                    <>
+                                                                        <div
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setShowStatusMenu(null);
+                                                                            }}
+                                                                        />
+                                                                        <div className="absolute top-full right-0 mt-2 bg-gray-800 rounded-lg shadow-2xl z-[100] min-w-[180px] max-h-[300px] overflow-y-auto border border-blue-500/40">
+                                                                            {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                                <button
+                                                                                    key={key}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleUpdateVersion(version.id, 'status', key);
+                                                                                    }}
+                                                                                    className="flex items-center gap-3 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                                >
+                                                                                    {config.icon === '-' ? (
+                                                                                        <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                                    ) : (
+                                                                                        <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                    )}
+                                                                                    <div className="text-xs text-gray-200 flex items-center gap-3">
+                                                                                        <span className="inline-block w-8">{config.label}</span>
+                                                                                        <span className="text-[10px]">{config.fullLabel}</span>
+                                                                                    </div>
+                                                                                    {version.status === key && (
+                                                                                        <span className="ml-auto text-blue-400">✓</span>
+                                                                                    )}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Description - Editable */}
+                                                        {editingVersionId === version.id && editingField === 'description' ? (
+                                                            <textarea
+                                                                autoFocus
+                                                                value={editValue}
+                                                                onChange={(e) => setEditValue(e.target.value)}
+                                                                onBlur={() => {
+                                                                    handleUpdateVersion(version.id, 'description', editValue.trim());
+                                                                }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                                        e.preventDefault();
+                                                                        e.currentTarget.blur();
+                                                                    } else if (e.key === 'Escape') {
+                                                                        cancelEditing();
+                                                                    }
+                                                                }}
+                                                                rows={2}
+                                                                className="w-full px-2 py-1 bg-gray-800 border border-blue-500 rounded text-gray-300 text-xs outline-none resize-none"
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                onClick={() => startEditing(version.id, 'description', version.description || '')}
+                                                                className="text-xs text-gray-400 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-300 transition-colors min-h-[2rem]"
+                                                                title={version.description ? "คลิกเพื่อแก้ไข" : "คลิกเพื่อเพิ่มคำอธิบาย"}
+                                                            >
+                                                                {version.description || 'คลิกเพื่อเพิ่มคำอธิบาย...'}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Meta Info Row */}
+                                                        <div className="flex items-center gap-4 text-xs flex-wrap">
+                                                            {/* Uploaded By - Clickable with dropdown */}
+                                                            <div className="flex items-center gap-1.5 relative">
+                                                                <User className="w-3.5 h-3.5 flex-shrink-0" />
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setShowUserMenu(showUserMenu === version.id ? null : version.id);
+                                                                        setUserSearchTerm('');
+                                                                    }}
+                                                                    className="truncate hover:text-blue-200 transition-colors cursor-pointer underline bg-gradient-to-br from-gray-500 to-gray-600 hover:from-blue-600 hover:to-blue-700 rounded-xl"
+                                                                    title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
+                                                                >
+                                                                    {version.uploaded_by_name || 'Unknown'}
+                                                                </button>
+
+                                                                {/* User Dropdown - ใช้ z-index สูง */}
+                                                                {/* User Dropdown - ใช้ z-index สูง */}
+                                                                {showUserMenu === version.id && (
+                                                                    <>
+                                                                        <div className="absolute top-full left-0 mt-2 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl shadow-2xl z-[100] w-72 border border-slate-600/50 overflow-hidden ring-1 ring-white/5">
+                                                                            {/* Search Header */}
+                                                                            <div className="px-4 py-3 bg-gray-800 border-b border-gray-700/50">
+                                                                                <div className="flex items-center gap-2 mb-2">
+                                                                                    <User className="w-4 h-4 text-slate-400" />
+                                                                                    <span className="text-sm font-semibold text-slate-200">
+                                                                                        เลือกผู้อัปโหลด
+                                                                                    </span>
+                                                                                </div>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="ค้นหาชื่อ..."
+                                                                                    value={userSearchTerm}
+                                                                                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                    className="w-full px-3 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                                                                                />
+                                                                            </div>
+
+                                                                            {/* User List */}
+                                                                            <div className="max-h-64 overflow-y-auto">
+                                                                                {getFilteredUsers().length === 0 ? (
+                                                                                    <div className="p-4 text-center text-slate-500 text-sm">
+                                                                                        ไม่พบผู้ใช้
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    getFilteredUsers().map((user) => (
+                                                                                        <button
+                                                                                            key={user.id}
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                handleUpdateVersion(version.id, 'uploaded_by', user.id);
+                                                                                            }}
+                                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                                        >
+                                                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${version.uploaded_by === user.id
+                                                                                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-2 ring-blue-400/50'
+                                                                                                : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'
+                                                                                                }`}>
+                                                                                                {user.username[0].toUpperCase()}
+                                                                                            </div>
+                                                                                            <span className="flex-1 text-sm font-medium text-slate-200">
+                                                                                                {user.username}
+                                                                                            </span>
+                                                                                            {version.uploaded_by === user.id && (
+                                                                                                <span className="text-blue-400 text-sm">✓</span>
+                                                                                            )}
+                                                                                        </button>
+                                                                                    ))
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+
+                                                            {/* File size */}
+                                                            {version.file_size && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <File className="w-3.5 h-3.5" />
+                                                                    <span>{(version.file_size / 1024 / 1024).toFixed(1)} MB</span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Date */}
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Clock className="w-3.5 h-3.5" />
+                                                                <span>{formatDateThai(version.created_at)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -625,16 +649,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                 </div>
                             )}
 
-                            {/* Upload Zone */}
-                            <div className="mt-6 border-2 border-dashed border-gray-700/50 rounded-xl p-10 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer group">
-                                <div className="flex flex-col items-center">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Upload className="w-8 h-8 text-blue-500" />
-                                    </div>
-                                    <div className="text-sm text-gray-300 font-medium mb-1">Drag and drop your files here, or browse</div>
-                                    <div className="text-xs text-gray-500">Upload new version</div>
-                                </div>
-                            </div>
+
                         </div>
                     )}
                 </div>
