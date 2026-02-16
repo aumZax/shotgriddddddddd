@@ -1207,7 +1207,23 @@ export default function Project_Assets() {
                                             {category.assets.map((asset, assetIndex) => (
                                                 <div
                                                     key={asset.id}
-                                                    onClick={() => handleAssetClick(categoryIndex, assetIndex)}
+                                                    onClick={(e) => {
+                                                        // ⭐ ป้องกัน navigate ถ้าคลิกที่ input/button/textarea
+                                                        const target = e.target as HTMLElement;
+                                                        if (
+                                                            target.tagName === 'INPUT' ||
+                                                            target.tagName === 'TEXTAREA' ||
+                                                            target.tagName === 'BUTTON' ||
+                                                            target.closest('button') ||
+                                                            target.closest('input') ||
+                                                            target.closest('textarea')
+                                                        ) {
+                                                            return;
+                                                        }
+
+                                                        // ⭐ เรียกใช้ handleAssetClick
+                                                        handleAssetClick(categoryIndex, assetIndex);
+                                                    }}
                                                     onContextMenu={(e) => handleContextMenu(e, asset)}
                                                     className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, assetIndex)
                                                         ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
@@ -1217,27 +1233,8 @@ export default function Project_Assets() {
                                                     <div className="flex items-center gap-6 px-4 py-2.5">
                                                         {/* Thumbnail */}
                                                         <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
-                                                            <div
-                                                                className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-
-                                                                    const currentAsset = assetData[categoryIndex].assets[assetIndex];
-                                                                    localStorage.setItem(
-                                                                        "selectedAsset",
-                                                                        JSON.stringify({
-                                                                            id: currentAsset.id,
-                                                                            asset_name: currentAsset.asset_name,
-                                                                            description: currentAsset.description,
-                                                                            status: currentAsset.status,
-                                                                            file_url: currentAsset.file_url || "",
-                                                                            sequence: assetData[categoryIndex].category
-                                                                        })
-                                                                    );
-
-
-                                                                }}
-                                                            >
+                                                            <div className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm">
+                                                                {/* ⭐ ลบ onClick ออกจาก thumbnail */}
                                                                 {asset.file_url ? (
                                                                     asset.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
                                                                         <video
@@ -1246,7 +1243,6 @@ export default function Project_Assets() {
                                                                             muted
                                                                             loop
                                                                             autoPlay
-
                                                                         />
                                                                     ) : (
                                                                         <img
@@ -1261,8 +1257,6 @@ export default function Project_Assets() {
                                                                         <p className="text-gray-500 text-[9px]">No Image</p>
                                                                     </div>
                                                                 )}
-
-
 
                                                                 {/* Hover Overlay */}
                                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
@@ -1292,9 +1286,7 @@ export default function Project_Assets() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <h3 className="text-sm font-medium text-gray-100 truncate  border border-gray-500/20
-                                                                    hover:bg-gray-700
-                                                                    rounded">
+                                                                <h3 className="text-sm font-medium text-gray-100 truncate border border-gray-500/20 hover:bg-gray-700 rounded">
                                                                     {asset.asset_name}
                                                                 </h3>
                                                             )}
@@ -1302,17 +1294,12 @@ export default function Project_Assets() {
 
                                                         {/* Type */}
                                                         <div className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4">
-
                                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
                                                                 <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate" title={category.category}>
                                                                     {category.category}
                                                                 </span>
-
                                                             </div>
-
-
                                                         </div>
-
 
                                                         {/* Status */}
                                                         <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
@@ -1352,7 +1339,7 @@ export default function Project_Assets() {
                                                                                     <span className="inline-block w-8">{config.label}</span>
                                                                                     <span>{config.fullLabel}</span>
                                                                                 </div>
-                                                                                {asset.status === key && ( // ✅ แสดง checkmark
+                                                                                {asset.status === key && (
                                                                                     <Check className="w-4 h-4 text-blue-400 ml-auto" />
                                                                                 )}
                                                                             </button>
@@ -1364,7 +1351,7 @@ export default function Project_Assets() {
                                                         {/* Description */}
                                                         <div
                                                             onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1  cursor-text border-r border-gray-700/50"
+                                                            className="flex-1 min-w-0 px-2 py-1 cursor-text border-r border-gray-700/50"
                                                         >
                                                             {editingField?.categoryIndex === categoryIndex &&
                                                                 editingField?.assetIndex === assetIndex &&
@@ -1380,10 +1367,7 @@ export default function Project_Assets() {
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             ) : (
-                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed  border border-gray-500/20
-                                                                    hover:bg-gray-700
-                                                                    rounded
-                                                                " title={asset.description}>
+                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed border border-gray-500/20 hover:bg-gray-700 rounded" title={asset.description}>
                                                                     {asset.description || '\u00A0'}
                                                                 </p>
                                                             )}
@@ -1392,9 +1376,6 @@ export default function Project_Assets() {
                                                         {/* Shots */}
                                                         <div className="flex-1 min-w-0 px-2 py-1">
                                                             {(() => {
-                                                                // ดึงข้อมูล shots ของ asset นี้จาก assetShots state
-                                                                // โดยต้องกรองเฉพาะ shots ที่เป็นของ asset id นี้
-
                                                                 const currentAssetShots = allAssetShots[asset.id] || [];
 
                                                                 return currentAssetShots.length > 0 ? (
@@ -1422,9 +1403,7 @@ export default function Project_Assets() {
                                                                         ) : (
                                                                             <>
                                                                                 <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
-
                                                                                     <Box className="w-3.5 h-3.5 text-green-400" />
-
                                                                                     <span className="text-xs font-semibold text-green-300">
                                                                                         {currentAssetShots.length}
                                                                                     </span>
@@ -1450,8 +1429,6 @@ export default function Project_Assets() {
                                                                                     ))}
                                                                                     <span className="text-gray-500 text-xs">...</span>
                                                                                 </div>
-
-
                                                                             </>
                                                                         )}
                                                                     </div>

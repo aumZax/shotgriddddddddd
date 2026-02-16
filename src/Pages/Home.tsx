@@ -16,6 +16,8 @@ interface Project {
     creatorUid?: string;
     username?: string;
     permissionGroup?: string;
+    thumbnail?: string;
+    images?: string;
 }
 
 interface ProjectApiData {
@@ -28,6 +30,8 @@ interface ProjectApiData {
     status?: string;
     username?: string;
     permissionGroup?: string;
+    thumbnail?: string;
+    images?: string;
 }
 
 export default function Home() {
@@ -134,65 +138,66 @@ export default function Home() {
         }
     };
 
-    const fetchProjects = async () => {
-        setLoadingProjects(true);
+const fetchProjects = async () => {
+    setLoadingProjects(true);
 
-        try {
-            const authUser = getAuthUser();
-            const currentUserUid = authUser?.id ?? authUser?.uid;
+    try {
+        const authUser = getAuthUser();
+        const currentUserUid = authUser?.id ?? authUser?.uid;
 
-            // console.log("📋 Fetching projects for user:", currentUserUid);
+        const { data } = await axios.post<{ projects: ProjectApiData[] }>(
+            ENDPOINTS.PROJECTLIST,
+            { created_by: currentUserUid }
+        );
 
-            const { data } = await axios.post<{ projects: ProjectApiData[] }>(
-                ENDPOINTS.PROJECTLIST,
-                { created_by: currentUserUid }
-            );
+        console.log("📦 Raw API response:", data.projects);
 
-            console.log("📦 Raw API response:", data.projects);
+        const allProjects: Project[] = data.projects.map(p => {
+            const creatorUid = p.createdBy;
+            
+            // ✅ ใช้ thumbnail ที่มาจาก API ตรงนี้เลย
+            const thumbnail = p.thumbnail || 
+                             (p.images && p.images.length > 0 ? p.images[0] : undefined);
 
-            const allProjects: Project[] = data.projects.map(p => {
-                const creatorUid = p.createdBy;
-                return {
-                    id: p.projectId ?? p.id ?? "",
-                    name: p.projectName,
-                    status: p.status ?? "Active",
-                    lastModified: new Date(p.createdAt).toLocaleDateString("en-CA"),
-                    createdBy: p.createdBy ?? "Unknown",
-                    createdAt: p.createdAt,
-                    description: p.description ?? "No description",
-                    image: undefined,
-                    creatorUid: creatorUid,
-                    username: p.username || "",
-                    permissionGroup: p.permissionGroup,
+            return {
+                id: p.projectId ?? p.id ?? "",
+                name: p.projectName,
+                status: p.status ?? "Active",
+                lastModified: new Date(p.createdAt).toLocaleDateString("en-CA"),
+                createdBy: p.createdBy ?? "Unknown",
+                createdAt: p.createdAt,
+                description: p.description ?? "No description",
+                image: thumbnail, // ✅ ใช้ค่าที่ได้จาก API
+                creatorUid: creatorUid,
+                username: p.username || "",
+                permissionGroup: p.permissionGroup,
+            };
+        });
 
-                };
+        console.log("✅ Processed projects:", allProjects.length);
 
-            });
+        const myProjects = allProjects.filter(p => p.creatorUid === currentUserUid);
+        const sharedProjects = allProjects.filter(p => 
+            p.creatorUid !== currentUserUid && p.status === "Active"
+        );
 
-            console.log("✅ Processed projects:", allProjects.length);
+        console.log(`📊 My projects: ${myProjects.length}, Shared projects (Active): ${sharedProjects.length}`);
 
-            const myProjects = allProjects.filter(p => p.creatorUid === currentUserUid);
-            const sharedProjects = allProjects.filter(p => p.creatorUid !== currentUserUid);
+        const sortedProjects = [...myProjects, ...sharedProjects];
+        setProjectData(sortedProjects);
 
-            console.log(`📊 My projects: ${myProjects.length}, Shared projects: ${sharedProjects.length}`);
+        // ✅ ลบการเรียก fetchProjectImages ออกไปเลย หรือเก็บไว้เป็น fallback
+        // if (sortedProjects.length > 0) {
+        //     await fetchProjectImages(sortedProjects);
+        // }
 
-            const sortedProjects = [...myProjects, ...sharedProjects];
-            setProjectData(sortedProjects);
-
-            if (sortedProjects.length > 0) {
-                // console.log("🔄 Starting to fetch project images...");
-                await fetchProjectImages(sortedProjects);
-            } else {
-                // console.log("⚠️ No projects found, skipping image fetch");
-            }
-
-        } catch (err) {
-            console.error("❌ Error fetching projects:", err);
-            setProjectData([]);
-        } finally {
-            setLoadingProjects(false);
-        }
-    };
+    } catch (err) {
+        console.error("❌ Error fetching projects:", err);
+        setProjectData([]);
+    } finally {
+        setLoadingProjects(false);
+    }
+};
 
     const [deleteConfirm, setDeleteConfirm] = useState<{
         show: boolean;
@@ -303,9 +308,9 @@ export default function Home() {
             return;
         }
 
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/tiff'];
         if (!allowedTypes.includes(file.type)) {
-            alert('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.');
+            alert('Invalid file type. Only JPEG, PNG, GIF, WebP, and TIFF images are allowed.');
             return;
         }
 
@@ -337,7 +342,7 @@ export default function Home() {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('projectId', projectId);
-            formData.append('type', 'images');
+            formData.append('type', 'image');
             formData.append('description', 'project thumbnail');
 
             if (oldImageUrl) {
@@ -632,14 +637,14 @@ export default function Home() {
                     {project.image ? (
                         <>
                             <img
-                                src={ENDPOINTS.image_url+project.image}
+                                src={ ENDPOINTS.image_url + project.image}
                                 className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-40"
                                 alt=""
                             />
 
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60" />
                             <img
-                                src={ENDPOINTS.image_url+project.image}
+                                src={ENDPOINTS.image_url + project.image}
                                 alt={project.name}
                                 className="relative mx-auto h-full object-contain opacity-90"
                                 onError={(e) => {

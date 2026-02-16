@@ -118,6 +118,7 @@ const ENDPOINTS = {
   GETALLUSERS: `${BASE_URL}/getallusers`,
 
   TASK_VERSIONS: `${BASE_URL}/task-versions`,
+  UPDATE_VERSION: `${BASE_URL}/update-version`,
 
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
