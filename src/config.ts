@@ -122,6 +122,9 @@ const ENDPOINTS = {
 
   ADD_VERSION: `${BASE_URL}/add-version`,
   DELETE_VERSION: `${BASE_URL}/delete-version`,
+  EDIT_NOTE: `${BASE_URL}/edit-note`,
+
+  DELETE_TASK: `${BASE_URL}/delete-task`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

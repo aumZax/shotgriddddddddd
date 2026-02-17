@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus } from 'lucide-react';
+import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
+import { createPortal } from 'react-dom';
 
 
 type StatusType = keyof typeof statusConfig;
@@ -928,6 +929,86 @@ export default function Project_Tasks() {
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+    // เพิ่ม states สำหรับ context menu และ delete confirm (ประมาณบรรทัด 60-70)
+    const [taskContextMenu, setTaskContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        task: Task;
+    } | null>(null);
+
+    const [taskDeleteConfirm, setTaskDeleteConfirm] = useState<{
+        taskId: number;
+        taskName: string;
+    } | null>(null);
+
+    const [isDeletingTask, setIsDeletingTask] = useState(false);
+
+    // เพิ่ม useEffect สำหรับปิด context menu เมื่อคลิกนอก
+    useEffect(() => {
+        if (!taskContextMenu) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-task-context-menu="true"]') ||
+                target.closest('[data-task-delete-confirm="true"]')) {
+                return;
+            }
+            setTaskContextMenu(null);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside, true);
+        };
+    }, [taskContextMenu]);
+
+    // เพิ่มฟังก์ชันจัดการ context menu
+    const handleTaskContextMenu = (e: React.MouseEvent, task: Task) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTaskContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            task,
+        });
+    };
+
+    // เพิ่มฟังก์ชันลบ task
+    const handleDeleteTask = async (taskId: number) => {
+        setIsDeletingTask(true);
+        try {
+            await axios.delete(ENDPOINTS.DELETE_TASK, {
+                data: { taskId },
+            });
+
+            // อัพเดท state - ลบ task ออกจาก taskGroups
+            setTaskGroups(prev => {
+                return prev.map(group => ({
+                    ...group,
+                    tasks: group.tasks.filter(t => t.id !== taskId)
+                })).filter(group => group.tasks.length > 0); // ลบกลุ่มที่ไม่มี task
+            });
+
+            // ปิด right panel ถ้ากำลังเปิด task ที่ถูกลบอยู่
+            if (selectedTask?.id === taskId) {
+                setIsPanelOpen(false);
+                setTimeout(() => setSelectedTask(null), 300);
+            }
+
+            setTaskDeleteConfirm(null);
+            setTaskContextMenu(null);
+        } catch (err) {
+            console.error('❌ Delete task failed:', err);
+            alert('ไม่สามารถลบ Task ได้');
+        } finally {
+            setIsDeletingTask(false);
+        }
+    };
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
     return (
         <div
@@ -1093,6 +1174,7 @@ export default function Project_Tasks() {
                                                 {isExpanded && group.tasks.map((task, index) => (
                                                     <tr
                                                         key={task.id}
+                                                        onContextMenu={(e) => handleTaskContextMenu(e, task)}
                                                         className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
                                                     >
                                                         <td className="px-4 py-4">
@@ -2386,6 +2468,85 @@ export default function Project_Tasks() {
                         </div>
                     </div>
                 </div>
+            )}
+
+
+
+            {/* Task Context Menu */}
+            {taskContextMenu && createPortal(
+                <div
+                    data-task-context-menu="true"
+                    className="fixed z-[9999] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{ left: taskContextMenu.x, top: taskContextMenu.y }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setTaskDeleteConfirm({
+                                taskId: taskContextMenu.task.id,
+                                taskName: taskContextMenu.task.task_name,
+                            });
+                            setTaskContextMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm rounded-lg transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
+                    >
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                        Delete Task
+                    </button>
+                </div>,
+                document.body
+            )}
+
+            {/* Task Delete Confirm Modal */}
+            {taskDeleteConfirm && createPortal(
+                <div data-task-delete-confirm="true" className="fixed inset-0 z-[9999] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setTaskDeleteConfirm(null)}
+                    />
+                    <div className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">Delete Task</h3>
+                                    <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                                </div>
+                            </div>
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">Are you sure you want to delete this task?</p>
+                                <p className="font-semibold text-zinc-100 truncate">"{taskDeleteConfirm.taskName}"</p>
+                                <p className="text-xs text-zinc-500 mt-2">
+                                    This will also delete all related assignments, reviewers, and versions.
+                                </p>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setTaskDeleteConfirm(null)}
+                                    disabled={isDeletingTask}
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium disabled:opacity-50 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteTask(taskDeleteConfirm.taskId)}
+                                    disabled={isDeletingTask}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium disabled:opacity-50 flex items-center gap-2 bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
+                                >
+                                    {isDeletingTask && (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    )}
+                                    {isDeletingTask ? 'Deleting...' : 'Delete Task'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );

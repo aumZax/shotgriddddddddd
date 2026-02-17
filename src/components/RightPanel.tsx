@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Edit3, Package, Image, User, File, Clock, FileText } from 'lucide-react';
+import { X, Calendar, Edit3, Package, Image, User, File, Clock, FileText, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 
@@ -772,7 +772,8 @@ const handleAddVersion = async () => {
                         }}
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm rounded-lg transition-colors  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                     >
-                        🗑️ Delete Version
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                         Delete Version
                     </button>
                 </div>,
                 document.body

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../config";
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -138,66 +138,66 @@ export default function Home() {
         }
     };
 
-const fetchProjects = async () => {
-    setLoadingProjects(true);
+    const fetchProjects = async () => {
+        setLoadingProjects(true);
 
-    try {
-        const authUser = getAuthUser();
-        const currentUserUid = authUser?.id ?? authUser?.uid;
+        try {
+            const authUser = getAuthUser();
+            const currentUserUid = authUser?.id ?? authUser?.uid;
 
-        const { data } = await axios.post<{ projects: ProjectApiData[] }>(
-            ENDPOINTS.PROJECTLIST,
-            { created_by: currentUserUid }
-        );
+            const { data } = await axios.post<{ projects: ProjectApiData[] }>(
+                ENDPOINTS.PROJECTLIST,
+                { created_by: currentUserUid }
+            );
 
-        console.log("📦 Raw API response:", data.projects);
+            console.log("📦 Raw API response:", data.projects);
 
-        const allProjects: Project[] = data.projects.map(p => {
-            const creatorUid = p.createdBy;
-            
-            // ✅ ใช้ thumbnail ที่มาจาก API ตรงนี้เลย
-            const thumbnail = p.thumbnail || 
-                             (p.images && p.images.length > 0 ? p.images[0] : undefined);
+            const allProjects: Project[] = data.projects.map(p => {
+                const creatorUid = p.createdBy;
 
-            return {
-                id: p.projectId ?? p.id ?? "",
-                name: p.projectName,
-                status: p.status ?? "Active",
-                lastModified: new Date(p.createdAt).toLocaleDateString("en-CA"),
-                createdBy: p.createdBy ?? "Unknown",
-                createdAt: p.createdAt,
-                description: p.description ?? "No description",
-                image: thumbnail, // ✅ ใช้ค่าที่ได้จาก API
-                creatorUid: creatorUid,
-                username: p.username || "",
-                permissionGroup: p.permissionGroup,
-            };
-        });
+                // ✅ ใช้ thumbnail ที่มาจาก API ตรงนี้เลย
+                const thumbnail = p.thumbnail ||
+                    (p.images && p.images.length > 0 ? p.images[0] : undefined);
 
-        console.log("✅ Processed projects:", allProjects.length);
+                return {
+                    id: p.projectId ?? p.id ?? "",
+                    name: p.projectName,
+                    status: p.status ?? "Active",
+                    lastModified: new Date(p.createdAt).toLocaleDateString("en-CA"),
+                    createdBy: p.createdBy ?? "Unknown",
+                    createdAt: p.createdAt,
+                    description: p.description ?? "No description",
+                    image: thumbnail, // ✅ ใช้ค่าที่ได้จาก API
+                    creatorUid: creatorUid,
+                    username: p.username || "",
+                    permissionGroup: p.permissionGroup,
+                };
+            });
 
-        const myProjects = allProjects.filter(p => p.creatorUid === currentUserUid);
-        const sharedProjects = allProjects.filter(p => 
-            p.creatorUid !== currentUserUid && p.status === "Active"
-        );
+            console.log("✅ Processed projects:", allProjects.length);
 
-        console.log(`📊 My projects: ${myProjects.length}, Shared projects (Active): ${sharedProjects.length}`);
+            const myProjects = allProjects.filter(p => p.creatorUid === currentUserUid);
+            const sharedProjects = allProjects.filter(p =>
+                p.creatorUid !== currentUserUid && p.status === "Active"
+            );
 
-        const sortedProjects = [...myProjects, ...sharedProjects];
-        setProjectData(sortedProjects);
+            console.log(`📊 My projects: ${myProjects.length}, Shared projects (Active): ${sharedProjects.length}`);
 
-        // ✅ ลบการเรียก fetchProjectImages ออกไปเลย หรือเก็บไว้เป็น fallback
-        // if (sortedProjects.length > 0) {
-        //     await fetchProjectImages(sortedProjects);
-        // }
+            const sortedProjects = [...myProjects, ...sharedProjects];
+            setProjectData(sortedProjects);
 
-    } catch (err) {
-        console.error("❌ Error fetching projects:", err);
-        setProjectData([]);
-    } finally {
-        setLoadingProjects(false);
-    }
-};
+            // ✅ ลบการเรียก fetchProjectImages ออกไปเลย หรือเก็บไว้เป็น fallback
+            // if (sortedProjects.length > 0) {
+            //     await fetchProjectImages(sortedProjects);
+            // }
+
+        } catch (err) {
+            console.error("❌ Error fetching projects:", err);
+            setProjectData([]);
+        } finally {
+            setLoadingProjects(false);
+        }
+    };
 
     const [deleteConfirm, setDeleteConfirm] = useState<{
         show: boolean;
@@ -628,16 +628,16 @@ const fetchProjects = async () => {
                 <div
                     onClick={(e) => handleImageClick(project.id, e)}
                     className={`h-56 md:h-64 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center relative group ${isDisabled
-                            ? 'cursor-default'  // ✅ เปลี่ยนจาก cursor-not-allowed เป็น cursor-default
-                            : isUploading
-                                ? 'cursor-wait'
-                                : 'cursor-pointer hover:brightness-110'
+                        ? 'cursor-default'  // ✅ เปลี่ยนจาก cursor-not-allowed เป็น cursor-default
+                        : isUploading
+                            ? 'cursor-wait'
+                            : 'cursor-pointer hover:brightness-110'
                         } transition-all duration-300`}
                 >
                     {project.image ? (
                         <>
                             <img
-                                src={ ENDPOINTS.image_url + project.image}
+                                src={ENDPOINTS.image_url + project.image}
                                 className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-40"
                                 alt=""
                             />
@@ -701,7 +701,7 @@ const fetchProjects = async () => {
                     className="p-4 cursor-pointer hover:bg-gradient-to-br hover:from-gray-100 hover:to-blue-50 transition-all duration-300 "
                 >
                     <div className="flex items-start justify-between gap-2 mb-2 ">
-            
+
                         <h3 className="text-blue-400 text-lg font-bold truncate flex-1 transition-colors">
 
                             {project.name}
@@ -831,25 +831,25 @@ const fetchProjects = async () => {
                         </div>
 
                         <div className="border-t border-gray-700 p-6 flex items-center justify-between">
-                            
-                                <button
-                                    onClick={() => {
-                                        setShowModal(false);
-                                        setProjectName('');
-                                        setSelectedTemplate('');
-                                        setError('');
-                                    }}
-                                    className="px-4 py-2  bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 text-white rounded transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCreateProject}
-                                    disabled={loading || !selectedTemplate}
-                                    className="px-4 py-2  bg-gradient-to-r from-green-800 to-green-600 hover:from-green-700 hover:to-green-500 text-white rounded transition-colors"
-                                >
-                                    {loading ? "Creating..." : "Create Project"}
-                                </button>
+
+                            <button
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setProjectName('');
+                                    setSelectedTemplate('');
+                                    setError('');
+                                }}
+                                className="px-4 py-2  bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 text-white rounded transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateProject}
+                                disabled={loading || !selectedTemplate}
+                                className="px-4 py-2  bg-gradient-to-r from-green-800 to-green-600 hover:from-green-700 hover:to-green-500 text-white rounded transition-colors"
+                            >
+                                {loading ? "Creating..." : "Create Project"}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -923,7 +923,8 @@ const fetchProjects = async () => {
                             }}
                             className="w-full px-4 py-2 text-left text-red-600 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
                         >
-                            <span>🗑️</span>
+                            <Trash2 className="w-5 h-5 text-slate-50" />
+
                             Delete Project
                         </button>
                     </div>
