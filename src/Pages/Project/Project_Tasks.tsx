@@ -531,28 +531,26 @@ export default function Project_Tasks() {
 
     // แก้ไข handleDateUpdate
     const handleDateUpdate = async (taskId: number, field: 'start_date' | 'due_date', value: string) => {
-        // ตรวจสอบว่า value เป็นวันที่ที่ถูกต้อง
-        if (!value) {
-            setEditingStartDateTaskId(null);
-            setEditingDueDateTaskId(null);
-            return;
-        }
+        // ✅ ถ้า value เป็น empty string ให้ส่ง null ไปยัง API
+        const finalValue = value.trim() === "" ? null : value;
 
-        const success = await updateTask(taskId, field, value);
+        const success = await updateTask(taskId, field, finalValue);
+
         if (success) {
             setTaskGroups(prev => {
                 const updated = [...prev];
                 updated.forEach(group => {
                     group.tasks.forEach(task => {
                         if (task.id === taskId) {
-                            // เก็บวันที่แบบ string format YYYY-MM-DD
-                            (task as any)[field] = value;
+                            // ✅ update เป็น null หรือ value ที่ส่งมา
+                            (task as any)[field] = finalValue;
                         }
                     });
                 });
                 return updated;
             });
         }
+
         setEditingStartDateTaskId(null);
         setEditingDueDateTaskId(null);
     };
@@ -581,7 +579,7 @@ export default function Project_Tasks() {
         const diffTime = due.getTime() - start.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        return diffDays;
+        return diffDays + 1;
     };
 
 
@@ -2123,26 +2121,39 @@ export default function Project_Tasks() {
                                                         {/* ============= Column: Start Date ============= */}
                                                         <td className="px-4 py-4 whitespace-nowrap">
                                                             {editingStartDateTaskId === task.id ? (
-                                                                <input
-                                                                    type="date"
-                                                                    autoFocus
-                                                                    value={formatDateForInput(task.start_date)}
-                                                                    onChange={(e) => {
-                                                                        const newDate = e.target.value;
-                                                                        if (newDate && newDate !== formatDateForInput(task.start_date)) {
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="date"
+                                                                        autoFocus
+                                                                        value={formatDateForInput(task.start_date)}
+                                                                        onChange={(e) => {
+                                                                            const newDate = e.target.value;
                                                                             handleDateUpdate(task.id, 'start_date', newDate);
-                                                                        }
-                                                                    }}
-                                                                    onBlur={() => {
-                                                                        setEditingStartDateTaskId(null);
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                        }}
+                                                                        onBlur={() => {
                                                                             setEditingStartDateTaskId(null);
-                                                                        }
-                                                                    }}
-                                                                    className="px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm outline-none"
-                                                                />
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                                setEditingStartDateTaskId(null);
+                                                                            }
+                                                                        }}
+                                                                        className="px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm outline-none"
+                                                                    />
+                                                                    {/* ✅ เปลี่ยนจาก onClick เป็น onMouseDown */}
+                                                                    {task.start_date && (
+                                                                        <button
+                                                                            onMouseDown={(e) => {
+                                                                                e.preventDefault(); // ป้องกัน blur
+                                                                                handleDateUpdate(task.id, 'start_date', '');
+                                                                            }}
+                                                                            className="p-1 rounded hover:bg-red-500/20 transition-colors rounded-2xl bg-gradient-to-r from-red-600 to-red-600 hover:from-red-500 hover:to-red-500"
+                                                                            title="ลบวันที่"
+                                                                        >
+                                                                            <X className="w-4 h-4 text-slate-50 " />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             ) : (
                                                                 <div
                                                                     onClick={() => setEditingStartDateTaskId(task.id)}
@@ -2167,26 +2178,39 @@ export default function Project_Tasks() {
                                                         {/* ============= Column: Due Date ============= */}
                                                         <td className="px-4 py-4 whitespace-nowrap">
                                                             {editingDueDateTaskId === task.id ? (
-                                                                <input
-                                                                    type="date"
-                                                                    autoFocus
-                                                                    value={formatDateForInput(task.due_date)}
-                                                                    onChange={(e) => {
-                                                                        const newDate = e.target.value;
-                                                                        if (newDate && newDate !== formatDateForInput(task.due_date)) {
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="date"
+                                                                        autoFocus
+                                                                        value={formatDateForInput(task.due_date)}
+                                                                        onChange={(e) => {
+                                                                            const newDate = e.target.value;
                                                                             handleDateUpdate(task.id, 'due_date', newDate);
-                                                                        }
-                                                                    }}
-                                                                    onBlur={() => {
-                                                                        setEditingDueDateTaskId(null);
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                        }}
+                                                                        onBlur={() => {
                                                                             setEditingDueDateTaskId(null);
-                                                                        }
-                                                                    }}
-                                                                    className="px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm outline-none"
-                                                                />
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                                setEditingDueDateTaskId(null);
+                                                                            }
+                                                                        }}
+                                                                        className="px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm outline-none"
+                                                                    />
+                                                                    {/* ✅ เปลี่ยนจาก onClick เป็น onMouseDown */}
+                                                                    {task.due_date && (
+                                                                        <button
+                                                                            onMouseDown={(e) => {
+                                                                                e.preventDefault(); // ป้องกัน blur
+                                                                                handleDateUpdate(task.id, 'due_date', '');
+                                                                            }}
+                                                                            className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                                                                            title="ลบวันที่"
+                                                                        >
+                                                                            <X className="w-4 h-4 text-red-400" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             ) : (
                                                                 <div
                                                                     onClick={() => setEditingDueDateTaskId(task.id)}
