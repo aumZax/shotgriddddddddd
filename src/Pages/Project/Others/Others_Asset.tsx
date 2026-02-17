@@ -634,7 +634,6 @@ export default function Others_Asset() {
                 prev.map(v => {
                     if (v.id === versionId) {
                         if (field === 'uploaded_by') {
-                            const user = [] // ถ้ามี projectUsers ให้ใส่ไว้ตรงนี้
                             return { ...v, uploaded_by: value };
                         }
                         return { ...v, [field]: value };
