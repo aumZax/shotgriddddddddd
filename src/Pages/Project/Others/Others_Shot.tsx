@@ -720,6 +720,26 @@ export default function Others_Shot() {
         }
     }, [selectedTask]);
 
+    const updateVersion = async (versionId: number, field: string, value: any) => {
+        try {
+            await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
+            setTaskVersions(prev =>
+                prev.map(v => {
+                    if (v.id === versionId) {
+                        if (field === 'uploaded_by') return { ...v, uploaded_by: value, uploaded_by_name: 'Updated' };
+                        return { ...v, [field]: value };
+                    }
+                    return v;
+                })
+            );
+            return true;
+        } catch (err) {
+            console.error('Update version error:', err);
+            alert('ไม่สามารถอัปเดทข้อมูลได้');
+            return false;
+        }
+    };
+
     // ++++++++++++++++++++++++++++++++++ task create ++++++++++++++++++++++++++
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [createTaskForm, setCreateTaskForm] = useState({
@@ -2085,14 +2105,10 @@ export default function Others_Shot() {
                 }}
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
-                onUpdateVersion={async () => false}
+                onUpdateVersion={updateVersion}
+                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}    // ✅ เพิ่ม
+                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)} // ✅ เพิ่ม
             />
-
-
-
-
-
-
 
             {selectedNote && (
                 <div

@@ -2177,6 +2177,8 @@ export default function Project_Tasks() {
                     onResize={handleMouseDown}
                     onTabChange={setActiveTab}
                     onUpdateVersion={updateVersion}
+                    onAddVersionSuccess={() => fetchTaskVersions(selectedTask!.id)}   // ✅ เพิ่ม
+                    onDeleteVersionSuccess={() => fetchTaskVersions(selectedTask!.id)} // ✅ เพิ่ม
                 />
             </main>
 

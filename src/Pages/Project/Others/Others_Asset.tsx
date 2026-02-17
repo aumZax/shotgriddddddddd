@@ -621,6 +621,34 @@ export default function Others_Asset() {
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
+
+    const updateVersion = async (versionId: number, field: string, value: any) => {
+        try {
+            await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, {
+                versionId,
+                field,
+                value
+            });
+
+            setTaskVersions(prev =>
+                prev.map(v => {
+                    if (v.id === versionId) {
+                        if (field === 'uploaded_by') {
+                            const user = [] // ถ้ามี projectUsers ให้ใส่ไว้ตรงนี้
+                            return { ...v, uploaded_by: value };
+                        }
+                        return { ...v, [field]: value };
+                    }
+                    return v;
+                })
+            );
+            return true;
+        } catch (err) {
+            console.error('Update version error:', err);
+            alert('ไม่สามารถอัปเดทข้อมูลได้');
+            return false;
+        }
+    };
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Create Task Form States
     const [isCreatingTask, setIsCreatingTask] = useState(false);
@@ -1718,7 +1746,9 @@ export default function Others_Asset() {
                 }}
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
-                onUpdateVersion={async () => false}
+                onUpdateVersion={updateVersion}
+                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}    // ✅ เพิ่ม
+                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)} // ✅ เพิ่ม
             />
 
             {/* Right Panel - Note Details */}
