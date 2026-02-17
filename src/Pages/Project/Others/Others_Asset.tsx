@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
-
+import RightPanel from "../../../components/RightPanel";
 
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
@@ -64,8 +64,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers?: TaskReviewer[];
-    pipeline_step?: PipelineStep | null;
+    reviewers: TaskReviewer[];
+    pipeline_step: PipelineStep | null;
 };
 
 interface Person {
@@ -170,6 +170,9 @@ export default function Others_Asset() {
     const [body, setBody] = useState('');
     const [notes, setNotes] = useState<Note[]>([]);
     const [loadingNotes, setLoadingNotes] = useState(false);
+    const [taskVersions, setTaskVersions] = useState<any[]>([]);
+    const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+    const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
 
     // Context menu for notes
     const [noteContextMenu, setNoteContextMenu] = useState<{
@@ -611,7 +614,10 @@ export default function Others_Asset() {
     useEffect(() => {
         if (selectedTask) {
             setIsPanelOpen(false);
-            const t = setTimeout(() => setIsPanelOpen(true), 10);
+            const t = setTimeout(() => {
+                setIsPanelOpen(true);
+                fetchTaskVersions(selectedTask.id);
+            }, 10);
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
@@ -775,6 +781,21 @@ export default function Others_Asset() {
             </div>
         );
     }
+    const fetchTaskVersions = async (taskId: number) => {
+        setIsLoadingVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+                entityType: 'task',
+                entityId: taskId
+            });
+            setTaskVersions(res.data);
+        } catch (err) {
+            console.error("Failed to fetch versions:", err);
+            setTaskVersions([]);
+        } finally {
+            setIsLoadingVersions(false);
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1056,12 +1077,12 @@ export default function Others_Asset() {
                                                     ) : (
                                                         <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
                                                     )}
-                                                   <div className="text-xs text-gray-200 flex items-center gap-5">
-                                                                    <span className="inline-block w-8">
-                                                                        {config.label}
-                                                                    </span>
-                                                                    <span>{config.fullLabel}</span>
-                                                                </div>
+                                                    <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                        <span className="inline-block w-8">
+                                                            {config.label}
+                                                        </span>
+                                                        <span>{config.fullLabel}</span>
+                                                    </div>
                                                     {assetData.status === key && ( // ✅ แสดง checkmark
                                                         <Check className="w-4 h-4 text-blue-400 ml-auto " />
                                                     )}
@@ -1683,176 +1704,22 @@ export default function Others_Asset() {
             )}
 
             {/* Right Panel - Task Details */}
-            {selectedTask && (
-                <div
-                    className={`
-                        fixed right-0 top-26 bottom-0
-                        bg-[#2a2d35] shadow-2xl flex z-40
-                        transform transition-transform duration-300 ease-out
-                        ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
-                    `}
-                    style={{ width: `${rightPanelWidth}px` }}
-                >
-                    {/* Resize Handle */}
-                    <div
-                        className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
-                        onMouseDown={handleMouseDown}
-                    />
-
-                    {/* Panel Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-[#1a1d24] border-b border-gray-700">
-                            <div className="flex items-center justify-between px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <img src={ENDPOINTS.image_url + selectedTask.file_url} alt="" className="w-12 h-12 object-cover rounded" />
-                                    <div>
-                                        <div className="text-sm text-gray-400">
-                                            Asset › {selectedTask.task_name.split('/')[0].trim()}
-                                        </div>
-                                        <h2 className="text-xl text-white font-normal mt-1">
-                                            {selectedTask?.task_name.split('/').pop()?.trim()}
-                                        </h2>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setIsPanelOpen(false);
-                                        setTimeout(() => setSelectedTask(null), 300);
-                                    }}
-                                    className="text-gray-400 hover:text-white text-2xl"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            {/* Status bar */}
-                            <div className="flex items-center gap-4 px-4 py-3">
-                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedTask.status === 'wtg'
-                                    ? 'text-gray-400 bg-gray-500/20'
-                                    : selectedTask.status === 'ip'
-                                        ? 'text-blue-400 bg-blue-500/20'
-                                        : 'text-green-400 bg-green-500/20'
-                                    }`}>
-                                    {selectedTask.status}
-                                </span>
-                                <div className="flex items-center gap-2 text-sm text-gray-400">
-                                    <span>📅</span>
-                                    <span>ครบกำหนด {formatDateThai(selectedTask.due_date)}</span>
-                                </div>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="flex border-t border-gray-700">
-                                <button
-                                    onClick={() => setRightPanelTab('notes')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
-                                        ? 'text-white border-b-2 border-blue-500'
-                                        : 'text-gray-400 hover:text-white'
-                                        }`}
-                                >
-                                    <span>📝</span>
-                                    <span>NOTES</span>
-                                </button>
-                                <button
-                                    onClick={() => setRightPanelTab('versions')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'versions'
-                                        ? 'text-white border-b-2 border-blue-500'
-                                        : 'text-gray-400 hover:text-white'
-                                        }`}
-                                >
-                                    <span>💎</span>
-                                    <span>VERSIONS</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content Area */}
-                        <div className="flex-1 overflow-auto p-4">
-                            {rightPanelTab === 'notes' && (
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder="Write a note..."
-                                        className="w-full px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500 mb-4"
-                                    />
-                                    <div className="flex gap-2 mb-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Type to filter"
-                                            className="flex-1 px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500"
-                                        />
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any label</option>
-                                        </select>
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any time</option>
-                                        </select>
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any note</option>
-                                        </select>
-                                    </div>
-                                    <div className="text-center text-gray-500 py-12">
-                                        No notes
-                                    </div>
-                                </div>
-                            )}
-
-                            {rightPanelTab === 'versions' && (
-                                <div>
-                                    <div className="flex gap-2 mb-4 flex-wrap">
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any type</option>
-                                        </select>
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any asset type</option>
-                                        </select>
-                                        <select className="px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500">
-                                            <option>Any status</option>
-                                        </select>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm">
-                                            <input type="checkbox" id="latestVersion" />
-                                            <label htmlFor="latestVersion">Latest version</label>
-                                        </div>
-                                        <div className="flex-1"></div>
-                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">⊞</button>
-                                        <button className="p-2 bg-[#1a1d24] border border-gray-700 rounded hover:bg-gray-700">☰</button>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {[1, 2, 3, 4].map((v) => (
-                                            <div key={v} className="bg-[#1a1d24] rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors">
-                                                <div className="relative aspect-video bg-gray-800">
-                                                    <img
-                                                        src={ENDPOINTS.image_url + selectedTask.file_url}
-                                                        alt=""
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                    <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
-                                                        v{v}
-                                                    </div>
-                                                </div>
-                                                <div className="p-3">
-                                                    <div className="text-sm text-white mb-1">Version v{v}</div>
-                                                    <div className="text-xs text-gray-400 mb-2">{selectedTask.task_name.split('/')[0].trim()}</div>
-                                                    <div className="text-xs text-gray-500 mb-2">Asset task</div>
-                                                    <div className="text-xs text-gray-400">Task</div>
-                                                    <div className={`mt-2 h-1 rounded ${v === 3 ? 'bg-emerald-500' : v === 2 ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-4 border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
-                                        <div className="text-4xl text-gray-600 mb-2">☁️</div>
-                                        <div className="text-sm text-gray-400">Drag and drop your files here, or browse</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <RightPanel
+                selectedTask={selectedTask}
+                isPanelOpen={isPanelOpen && !selectedNote}
+                rightPanelWidth={rightPanelWidth}
+                activeTab={rightPanelActiveTab}
+                taskVersions={taskVersions}
+                isLoadingVersions={isLoadingVersions}
+                projectUsers={[]}
+                onClose={() => {
+                    setIsPanelOpen(false);
+                    setTimeout(() => setSelectedTask(null), 300);
+                }}
+                onResize={handleMouseDown}
+                onTabChange={setRightPanelActiveTab}
+                onUpdateVersion={async () => false}
+            />
 
             {/* Right Panel - Note Details */}
             {selectedNote && (

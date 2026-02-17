@@ -170,7 +170,7 @@ export default function Project_Tasks() {
         }
     };
 
-    
+
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Loading State ++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -891,42 +891,42 @@ export default function Project_Tasks() {
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // เพิ่มฟังก์ชันนี้ใน Project_Tasks.tsx (ใกล้ๆ กับ fetchTaskVersions)
 
-const updateVersion = async (versionId: number, field: string, value: any) => {
-    try {
-        await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, {
-            versionId,
-            field,
-            value
-        });
+    const updateVersion = async (versionId: number, field: string, value: any) => {
+        try {
+            await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, {
+                versionId,
+                field,
+                value
+            });
 
-        // อัปเดต state
-        setTaskVersions(prev => 
-            prev.map(v => {
-                if (v.id === versionId) {
-                    // ถ้าเปลี่ยน uploaded_by ต้องอัปเดต uploaded_by_name ด้วย
-                    if (field === 'uploaded_by') {
-                        const user = projectUsers.find(u => u.id === value);
-                        return { 
-                            ...v, 
-                            uploaded_by: value,
-                            uploaded_by_name: user?.username || 'Unknown'
-                        };
+            // อัปเดต state
+            setTaskVersions(prev =>
+                prev.map(v => {
+                    if (v.id === versionId) {
+                        // ถ้าเปลี่ยน uploaded_by ต้องอัปเดต uploaded_by_name ด้วย
+                        if (field === 'uploaded_by') {
+                            const user = projectUsers.find(u => u.id === value);
+                            return {
+                                ...v,
+                                uploaded_by: value,
+                                uploaded_by_name: user?.username || 'Unknown'
+                            };
+                        }
+                        return { ...v, [field]: value };
                     }
-                    return { ...v, [field]: value };
-                }
-                return v;
-            })
-        );
+                    return v;
+                })
+            );
 
-        return true;
-    } catch (err) {
-        console.error('Update version error:', err);
-        alert('ไม่สามารถอัปเดทข้อมูลได้');
-        return false;
-    }
-};
+            return true;
+        } catch (err) {
+            console.error('Update version error:', err);
+            alert('ไม่สามารถอัปเดทข้อมูลได้');
+            return false;
+        }
+    };
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
     return (
@@ -2162,22 +2162,22 @@ const updateVersion = async (versionId: number, field: string, value: any) => {
                 </div>
 
                 {/* Right Panel - Floating Card */}
-               <RightPanel
-    selectedTask={selectedTask}
-    isPanelOpen={isPanelOpen}
-    rightPanelWidth={rightPanelWidth}
-    activeTab={activeTab}
-    taskVersions={taskVersions}
-    isLoadingVersions={isLoadingVersions}
-    projectUsers={projectUsers}        // ⭐ เพิ่มบรรทัดนี้
-    onClose={() => {
-        setIsPanelOpen(false);
-        setTimeout(() => setSelectedTask(null), 300);
-    }}
-    onResize={handleMouseDown}
-    onTabChange={setActiveTab}
-    onUpdateVersion={updateVersion}
-/>
+                <RightPanel
+                    selectedTask={selectedTask}
+                    isPanelOpen={isPanelOpen}
+                    rightPanelWidth={rightPanelWidth}
+                    activeTab={activeTab}
+                    taskVersions={taskVersions}
+                    isLoadingVersions={isLoadingVersions}
+                    projectUsers={projectUsers}        // ⭐ เพิ่มบรรทัดนี้
+                    onClose={() => {
+                        setIsPanelOpen(false);
+                        setTimeout(() => setSelectedTask(null), 300);
+                    }}
+                    onResize={handleMouseDown}
+                    onTabChange={setActiveTab}
+                    onUpdateVersion={updateVersion}
+                />
             </main>
 
             {showCreateMytask && (

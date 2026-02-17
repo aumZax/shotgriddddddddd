@@ -120,6 +120,8 @@ const ENDPOINTS = {
   TASK_VERSIONS: `${BASE_URL}/task-versions`,
   UPDATE_VERSION: `${BASE_URL}/update-version`,
 
+  ADD_VERSION: `${BASE_URL}/add-version`,
+  DELETE_VERSION: `${BASE_URL}/delete-version`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

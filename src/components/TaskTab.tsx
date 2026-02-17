@@ -65,8 +65,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers?: TaskReviewer[];
-    pipeline_step?: PipelineStep | null;
+    reviewers: TaskReviewer[];
+    pipeline_step: PipelineStep | null;
 };
 
 interface TasksTabProps {
