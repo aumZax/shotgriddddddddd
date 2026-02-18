@@ -1,7 +1,11 @@
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from 'react';
-import { Calendar, Check, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus } from 'lucide-react';
+import { Calendar, Check, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
+import { createPortal } from 'react-dom';
+
 
 type StatusType = keyof typeof statusConfig;
 
@@ -110,6 +114,44 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
     // Date Editing
     const [editingStartDateTaskId, setEditingStartDateTaskId] = useState<number | null>(null);
     const [editingDueDateTaskId, setEditingDueDateTaskId] = useState<number | null>(null);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ DELETE_TASK
+
+
+    const [taskContextMenu, setTaskContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        task: Task;
+    } | null>(null);
+
+    const [taskDeleteConfirm, setTaskDeleteConfirm] = useState<{
+        taskId: number;
+        taskName: string;
+    } | null>(null);
+
+    const [isDeletingTask, setIsDeletingTask] = useState(false);
+
+    const handleTaskContextMenu = (e: React.MouseEvent, task: Task) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTaskContextMenu({ visible: true, x: e.clientX, y: e.clientY, task });
+    };
+
+    const handleDeleteTask = async (taskId: number) => {
+        setIsDeletingTask(true);
+        try {
+            await axios.delete(ENDPOINTS.DELETE_TASK, { data: { taskId } });
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            setTaskDeleteConfirm(null);
+            setTaskContextMenu(null);
+        } catch (err) {
+            console.error('Delete task failed:', err);
+            alert('ไม่สามารถลบ Task ได้');
+        } finally {
+            setIsDeletingTask(false);
+        }
+    };
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     // Format date for input (YYYY-MM-DD)
     const formatDateForInput = (dateString: string) => {
@@ -444,6 +486,21 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
             }
         }
     }, [editingPipelineTaskId]);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    useEffect(() => {
+        if (!taskContextMenu) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-task-context-menu="true"]') ||
+                target.closest('[data-task-delete-confirm="true"]')) return;
+            setTaskContextMenu(null);
+        };
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => document.removeEventListener('mousedown', handleClickOutside, true);
+    }, [taskContextMenu]);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
     return (
         <div className="space-y-4 overflow-visible">
@@ -528,6 +585,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                             tasks.map((task, index) => (
                                 <tr
                                     key={task.id}
+                                    onContextMenu={(e) => handleTaskContextMenu(e, task)}
+                                    onClick={() => onTaskClick(task)}
                                     className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
                                 >
                                     {/* Column #1: Index */}
@@ -621,7 +680,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     <td className="px-4 py-4">
                                         <div className="relative inline-block" ref={pipelineDropdownRef}>
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     if (editingPipelineTaskId === task.id) {
                                                         setEditingPipelineTaskId(null);
                                                     } else {
@@ -672,7 +732,10 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                                     เลือก Pipeline Step
                                                                 </span>
                                                                 <button
-                                                                    onClick={() => setEditingPipelineTaskId(null)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setEditingPipelineTaskId(null);
+                                                                    }}
                                                                     className="p-1 hover:bg-gray-700/50 rounded transition-colors"
                                                                 >
                                                                     <X className="w-4 h-4 text-gray-400 hover:text-gray-200" />
@@ -806,7 +869,10 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                 <>
                                                     <div
                                                         className="fixed inset-0 z-10"
-                                                        onClick={() => setShowStatusMenu(null)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowStatusMenu(null);
+                                                        }}
                                                     />
                                                     <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-[100] border border-gray-600  min-w-[200px] 
                                                                                 max-h-[350px] overflow-y-auto whitespace-nowrap
@@ -846,7 +912,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     <td className="px-4 py-4">
                                         <div className="relative inline-block" ref={assigneeDropdownRef}>
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     if (editingAssigneeTaskId === task.id) {
                                                         setEditingAssigneeTaskId(null);
                                                     } else {
@@ -1030,7 +1097,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                     <td className="px-4 py-4">
                                         <div className="relative inline-block" ref={reviewerDropdownRef}>
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     if (editingReviewerTaskId === task.id) {
                                                         setEditingReviewerTaskId(null);
                                                     } else {
@@ -1213,6 +1281,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                             <input
                                                 type="date"
                                                 autoFocus
+                                                onClick={(e) => e.stopPropagation()}
                                                 value={formatDateForInput(task.start_date)}
                                                 onChange={(e) => {
                                                     const newDate = e.target.value;
@@ -1232,7 +1301,10 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                             />
                                         ) : (
                                             <div
-                                                onClick={() => setEditingStartDateTaskId(task.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingStartDateTaskId(task.id);
+                                                }}
                                                 className="group/date flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-800/50 rounded px-2 py-1 transition-colors"
                                             >
                                                 {task.start_date ? (
@@ -1259,11 +1331,13 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                 autoFocus
                                                 value={formatDateForInput(task.due_date)}
                                                 onChange={(e) => {
+
                                                     const newDate = e.target.value;
                                                     if (newDate && newDate !== formatDateForInput(task.due_date)) {
                                                         handleDateUpdate(task.id, 'due_date', newDate);
                                                     }
                                                 }}
+                                                onClick={(e) => e.stopPropagation()}
                                                 onBlur={() => {
                                                     setEditingDueDateTaskId(null);
                                                 }}
@@ -1276,7 +1350,10 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                             />
                                         ) : (
                                             <div
-                                                onClick={() => setEditingDueDateTaskId(task.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingDueDateTaskId(task.id);
+                                                }}
                                                 className="group/date flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-800/50 rounded px-2 py-1 transition-colors"
                                             >
                                                 {task.due_date ? (
@@ -1318,6 +1395,68 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                     </tbody>
                 </table>
             </div>
+
+
+
+
+            {taskContextMenu && createPortal(
+                <div
+                    data-task-context-menu="true"
+                    className="fixed z-[9999] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{ left: taskContextMenu.x, top: taskContextMenu.y }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setTaskDeleteConfirm({ taskId: taskContextMenu.task.id, taskName: taskContextMenu.task.task_name });
+                            setTaskContextMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm rounded-lg transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
+                    >
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                        Delete Task
+                    </button>
+                </div>,
+                document.body
+            )}
+
+            {taskDeleteConfirm && createPortal(
+                <div data-task-delete-confirm="true" className="fixed inset-0 z-[9999] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setTaskDeleteConfirm(null)} />
+                    <div className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">Delete Task</h3>
+                                    <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                                </div>
+                            </div>
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">Are you sure you want to delete this task?</p>
+                                <p className="font-semibold text-zinc-100 truncate">"{taskDeleteConfirm.taskName}"</p>
+                                <p className="text-xs text-zinc-500 mt-2">This will also delete all related assignments, reviewers, and versions.</p>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button onClick={() => setTaskDeleteConfirm(null)} disabled={isDeletingTask}
+                                    className="px-4 py-2 rounded-lg text-zinc-200 font-medium disabled:opacity-50 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600">
+                                    Cancel
+                                </button>
+                                <button onClick={() => handleDeleteTask(taskDeleteConfirm.taskId)} disabled={isDeletingTask}
+                                    className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50 flex items-center gap-2 bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600">
+                                    {isDeletingTask && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                    {isDeletingTask ? 'Deleting...' : 'Delete Task'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+
         </div>
     );
 };
