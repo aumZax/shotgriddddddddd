@@ -1,7 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, Download, MessageSquare, X, Reply, Info } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, ChevronLeft, Trash2 } from 'lucide-react';
+
+const getVideoData = () => {
+    const stored = localStorage.getItem("selectedVideo");
+    if (stored) return JSON.parse(stored);
+    return {
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        shotCode: "Unknown",
+        sequence: "Unknown",
+        status: "wtg",
+        description: "",
+        dueDate: "",
+        shotId: null,
+    };
+};
+
+// Status badge colors
+const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+    wtg: { bg: 'bg-gray-700/60', text: 'text-gray-300', dot: 'bg-gray-400' },
+    ip: { bg: 'bg-blue-900/50', text: 'text-blue-300', dot: 'bg-blue-400' },
+    fin: { bg: 'bg-emerald-900/50', text: 'text-emerald-300', dot: 'bg-emerald-400' },
+    wtc: { bg: 'bg-yellow-900/50', text: 'text-yellow-300', dot: 'bg-yellow-400' },
+    arp: { bg: 'bg-green-900/50', text: 'text-green-300', dot: 'bg-green-400' },
+    nef: { bg: 'bg-red-900/50', text: 'text-red-300', dot: 'bg-red-400' },
+};
 
 export default function VideoReviewSystem() {
+    const videoData = getVideoData();
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -17,91 +43,25 @@ export default function VideoReviewSystem() {
     const [activeTab, setActiveTab] = useState('feedback');
     const [isScrubbing, setIsScrubbing] = useState(false);
 
-const [comments, setComments] = useState<Comment[]>([
-    {
-        id: 1,
-        author: 'Chanitkan Donthaisong',
-        timestamp: '00:15',
-        timestampSeconds: 15,
-        timeAgo: '2 months ago',
-        text: 'Are the reflections around the face plate wrapping around it? Looks flat.',
-        completed: false,
-        replies: [
-            {
-                id: 101,
-                author: 'Artist',
-                text: 'Fixed in next version',
-                timeAgo: '2 months ago'
-            }
-        ],
-        drawings: []
-    },
-    {
-        id: 2,
-        author: 'Chanitkan Donthaisong',
-        timestamp: '00:45',
-        timestampSeconds: 45,
-        timeAgo: '2 months ago',
-        text: 'Approved. Will send to client for Final',
-        completed: true,
-        replies: [],
-        drawings: []
-    }
-]);
+    const videoUrl = videoData.videoUrl;
 
+    const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const progressBarRef = useRef<HTMLDivElement | null>(null);
 
-    const videoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    type Point = { x: number; y: number };
+    type Drawing = { id: number; path: Point[]; color: string; width: number; timestamp: number };
+    type Reply = { id: number; author: string; text: string; timeAgo: string };
+    type Comment = { id: number; author: string; timestamp: string; timestampSeconds: number; timeAgo: string; text: string; completed: boolean; replies: Reply[]; drawings: Drawing[] };
 
-    type Point = {
-        x: number;
-        y: number;
-    };
-
-    type Drawing = {
-        id: number;
-        path: Point[];
-        color: string;
-        width: number;
-        timestamp: number;
-    };
-
-    type Reply = {
-    id: number;
-    author: string;
-    text: string;
-    timeAgo: string;
-};
-
-type Comment = {
-    id: number;
-    author: string;
-    timestamp: string;
-    timestampSeconds: number;
-    timeAgo: string;
-    text: string;
-    completed: boolean;
-    replies: Reply[];
-    drawings: Drawing[];
-};
-
-
-    // Keyboard shortcuts
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                togglePlay();
-            } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                undoDrawing();
-            } else if (e.key === 'd') {
-                setSelectedTool(selectedTool === 'cursor' ? 'pen' : 'cursor');
-            }
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undoDrawing(); }
+            else if (e.key === 'd') { setSelectedTool(selectedTool === 'cursor' ? 'pen' : 'cursor'); }
         };
         window.addEventListener('keydown', handleKeyPress);
         return () => window.removeEventListener('keydown', handleKeyPress);
@@ -112,109 +72,53 @@ type Comment = {
         if (video) {
             const updateTime = () => setCurrentTime(video.currentTime);
             const updateDuration = () => setDuration(video.duration);
-
             video.addEventListener('timeupdate', updateTime);
             video.addEventListener('loadedmetadata', updateDuration);
-
-            return () => {
-                video.removeEventListener('timeupdate', updateTime);
-                video.removeEventListener('loadedmetadata', updateDuration);
-            };
+            return () => { video.removeEventListener('timeupdate', updateTime); video.removeEventListener('loadedmetadata', updateDuration); };
         }
     }, []);
 
     useEffect(() => {
         if (!isScrubbing) return;
-
         const handleMouseMove = (e: MouseEvent) => {
             if (!progressBarRef.current) return;
-            
             const rect = progressBarRef.current.getBoundingClientRect();
             const pos = (e.clientX - rect.left) / rect.width;
             const newTime = Math.max(0, Math.min(pos * duration, duration));
-
-            if (videoRef.current) {
-                videoRef.current.currentTime = newTime;
-                setCurrentTime(newTime);
-            }
+            if (videoRef.current) { videoRef.current.currentTime = newTime; setCurrentTime(newTime); }
         };
-
-        const handleMouseUp = () => {
-            setIsScrubbing(false);
-        };
-
+        const handleMouseUp = () => setIsScrubbing(false);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
-
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
+        return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
     }, [isScrubbing, duration]);
 
     const togglePlay = () => {
         if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play();
-            }
+            if (isPlaying) videoRef.current.pause(); else videoRef.current.play();
             setIsPlaying(!isPlaying);
         }
     };
 
-    // const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    //     const rect = e.currentTarget.getBoundingClientRect();
-    //     const pos = (e.clientX - rect.left) / rect.width;
-    //     const newTime = pos * duration;
-
-    //     if (videoRef.current) {
-    //         videoRef.current.currentTime = newTime;
-    //         setCurrentTime(newTime);
-    //     }
-    // };
-
-    const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        setIsScrubbing(true);
-        updateProgressTime(e);
-    };
-
-    const handleProgressMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isScrubbing) return;
-        updateProgressTime(e);
-    };
-
-    const handleProgressMouseUp = () => {
-        setIsScrubbing(false);
-    };
+    const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => { setIsScrubbing(true); updateProgressTime(e); };
+    const handleProgressMouseMove = (e: React.MouseEvent<HTMLDivElement>) => { if (!isScrubbing) return; updateProgressTime(e); };
+    const handleProgressMouseUp = () => setIsScrubbing(false);
 
     const updateProgressTime = (e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const pos = (e.clientX - rect.left) / rect.width;
         const newTime = Math.max(0, Math.min(pos * duration, duration));
-
-        if (videoRef.current) {
-            videoRef.current.currentTime = newTime;
-            setCurrentTime(newTime);
-        }
+        if (videoRef.current) { videoRef.current.currentTime = newTime; setCurrentTime(newTime); }
     };
 
     const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
-
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        return {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY,
-        };
+        return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
     };
 
     const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (selectedTool !== 'pen' || !canvasRef.current) return;
-
         setIsDrawing(true);
         const { x, y } = getCanvasPoint(e);
         setCurrentPath([{ x, y }]);
@@ -222,27 +126,15 @@ type Comment = {
 
     const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || selectedTool !== 'pen' || !canvasRef.current) return;
-
         const { x, y } = getCanvasPoint(e);
         setCurrentPath(prev => [...prev, { x, y }]);
     };
 
     const handleCanvasMouseUp = () => {
         if (!isDrawing) return;
-
         setIsDrawing(false);
-
         if (currentPath.length > 0) {
-            setDrawings(prev => [
-                ...prev,
-                {
-                    id: Date.now() + Math.random(),
-                    path: currentPath,
-                    color: strokeColor,
-                    width: strokeWidth,
-                    timestamp: currentTime
-                }
-            ]);
+            setDrawings(prev => [...prev, { id: Date.now() + Math.random(), path: currentPath, color: strokeColor, width: strokeWidth, timestamp: currentTime }]);
             setCurrentPath([]);
         }
     };
@@ -250,60 +142,33 @@ type Comment = {
     const drawCanvas = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // กรอง drawings ที่ใกล้เคียงกับเวลาปัจจุบัน (±0.5 วินาที)
         const tolerance = 0.5;
-        const visibleDrawings = drawings.filter(drawing => 
-            Math.abs(drawing.timestamp - currentTime) < tolerance
-        );
-
-        visibleDrawings.forEach(drawing => {
+        drawings.filter(d => Math.abs(d.timestamp - currentTime) < tolerance).forEach(drawing => {
             if (drawing.path.length < 2) return;
-
-            ctx.beginPath();
-            ctx.strokeStyle = drawing.color;
-            ctx.lineWidth = drawing.width;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
+            ctx.beginPath(); ctx.strokeStyle = drawing.color; ctx.lineWidth = drawing.width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.moveTo(drawing.path[0].x, drawing.path[0].y);
             drawing.path.forEach(p => ctx.lineTo(p.x, p.y));
             ctx.stroke();
         });
-
-        // วาดเส้นที่กำลังวาดอยู่
         if (currentPath.length > 1) {
-            ctx.beginPath();
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = strokeWidth;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
+            ctx.beginPath(); ctx.strokeStyle = strokeColor; ctx.lineWidth = strokeWidth; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.moveTo(currentPath[0].x, currentPath[0].y);
             currentPath.forEach(p => ctx.lineTo(p.x, p.y));
             ctx.stroke();
         }
     };
 
-    const clearDrawings = () => {
-        // เก็บเฉพาะ drawings ที่โพสต์ไปแล้ว
-        setDrawings(drawings.filter(d => postedDrawingIds.includes(d.id)));
-        setCurrentPath([]);
-    };
+    const clearDrawings = () => { setDrawings(drawings.filter(d => postedDrawingIds.includes(d.id))); setCurrentPath([]); };
 
     const undoDrawing = () => {
-        // ลบ drawing ล่าสุดที่ยังไม่ได้โพสต์
         setDrawings(prev => {
-            const unpostedDrawings = prev.filter(d => !postedDrawingIds.includes(d.id));
-            if (unpostedDrawings.length === 0) return prev;
-            
-            const indexToRemove = prev.lastIndexOf(unpostedDrawings[unpostedDrawings.length - 1]);
-            return prev.filter((_, index) => index !== indexToRemove);
+            const unposted = prev.filter(d => !postedDrawingIds.includes(d.id));
+            if (unposted.length === 0) return prev;
+            const idx = prev.lastIndexOf(unposted[unposted.length - 1]);
+            return prev.filter((_, i) => i !== idx);
         });
     };
 
@@ -316,502 +181,370 @@ type Comment = {
     const addComment = () => {
         if (newComment.trim()) {
             if (replyTo !== null) {
-                setComments(prev => prev.map(comment => {
-                    if (comment.id === replyTo) {
-                        return {
-                            ...comment,
-                            replies: [...(comment.replies || []), {
-                                id: Date.now(),
-                                author: 'Current User',
-                                text: newComment,
-                                timeAgo: 'Just now'
-                            }]
-                        };
-                    }
-                    return comment;
-                }));
+                setComments(prev => prev.map(c => c.id === replyTo ? { ...c, replies: [...(c.replies || []), { id: Date.now(), author: 'Current User', text: newComment, timeAgo: 'Just now' }] } : c));
                 setReplyTo(null);
             } else {
-                // กรอง drawings ที่วาดในช่วงเวลานี้
                 const tolerance = 0.5;
-                const currentDrawings = drawings.filter(drawing => 
-                    Math.abs(drawing.timestamp - currentTime) < tolerance
-                );
-
-                // บันทึก IDs ของ drawings ที่โพสต์ไป
-                const postedIds = currentDrawings.map(d => d.id);
-                setPostedDrawingIds(prev => [...prev, ...postedIds]);
-
-                setComments(prev => [...prev, {
-                    id: Date.now(),
-                    author: 'Current User',
-                    timestamp: formatTime(currentTime),
-                    timestampSeconds: currentTime,
-                    timeAgo: 'Just now',
-                    text: newComment,
-                    completed: false,
-                    replies: [],
-                    drawings: currentDrawings
-                }]);
+                const currentDrawings = drawings.filter(d => Math.abs(d.timestamp - currentTime) < tolerance);
+                setPostedDrawingIds(prev => [...prev, ...currentDrawings.map(d => d.id)]);
+                setComments(prev => [...prev, { id: Date.now(), author: 'Current User', timestamp: formatTime(currentTime), timestampSeconds: currentTime, timeAgo: 'Just now', text: newComment, completed: false, replies: [], drawings: currentDrawings }]);
             }
             setNewComment('');
         }
     };
 
-    // const toggleComplete = (id: number) => {
-    //     setComments(prev =>
-    //         prev.map(comment =>
-    //             comment.id === id
-    //                 ? { ...comment, completed: !comment.completed }
-    //                 : comment
-    //         )
-    //     );
-    // };
-
     const jumpToTimestamp = (seconds: number) => {
-        if (videoRef.current) {
-            videoRef.current.currentTime = seconds;
-            setCurrentTime(seconds);
-        }
+        if (videoRef.current) { videoRef.current.currentTime = seconds; setCurrentTime(seconds); }
     };
 
-    const saveAnnotations = () => {
-        const data = {
-            drawings,
-            comments,
-            videoUrl,
-            exportedAt: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `review-${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
 
-    const filteredComments = comments.filter(comment => {
-        if (filterStatus === 'completed') return comment.completed;
-        if (filterStatus === 'pending') return !comment.completed;
+
+    const filteredComments = comments.filter(c => {
+        if (filterStatus === 'completed') return c.completed;
+        if (filterStatus === 'pending') return !c.completed;
         return true;
     });
 
-    useEffect(() => {
-        drawCanvas();
-    }, [drawings, currentPath, currentTime]);
+    useEffect(() => { drawCanvas(); }, [drawings, currentPath, currentTime]);
+
+    const unpostedCount = drawings.filter(d => !postedDrawingIds.includes(d.id)).length;
+    const statusStyle = statusColors[videoData.status] || statusColors['wtg'];
 
     return (
-        <div className="min-h-screen max-h-screen bg-[#1a1d24] text-white overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-[#0f1115] border-b border-gray-800 px-6 py-3 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-semibold">BUNNY_080_0010</h1>
-                    <span className="text-gray-400 text-sm">Animation Project</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={saveAnnotations}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-                    >
-                        <Download className="w-4 h-4" />
-                        Export Review
-                    </button>
-                </div>
-            </div>
+        <div className="min-h-screen max-h-screen bg-[#0d0f14] text-white overflow-hidden flex flex-col font-sans">
 
-            <div className="flex h-[calc(100vh-64px)]">
-                {/* Main Video Area */}
-                <div className="flex-1 flex flex-col bg-black overflow-hidden">
-                    {/* Drawing Tools */}
-                    <div className="bg-[#0f1115] border-b border-gray-800 px-4 py-2 flex items-center gap-4 flex-shrink-0">
-                        <div className="flex gap-1 bg-[#1a1d24] rounded p-1">
+            {/* ── Header ── */}
+            <header className="h-14 bg-[#0a0c10]/95 backdrop-blur border-b border-white/[0.06] px-5 flex items-center justify-between flex-shrink-0 z-20">
+                <div className="flex items-center gap-3">
+
+                    <div className="flex items-center gap-2.5">
+
+                        <div>
+                            <h1 className="text-sm font-semibold text-white leading-none">{videoData.shotCode}</h1>
+                        </div>
+                    </div>
+                    {/* Status pill */}
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusStyle.bg} ${statusStyle.text} ml-1`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                        {videoData.status.toUpperCase()}
+                    </div>
+                </div>
+
+
+            </header>
+
+            <div className="flex flex-1 overflow-hidden">
+
+                {/* ── Main Video Area ── */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+
+                    {/* Drawing Toolbar */}
+                    <div className="h-11 bg-[#0d0f14] border-b border-white/[0.05] px-4 flex items-center gap-3 flex-shrink-0">
+                        {/* Tool switcher */}
+                        <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06] gap-2">
                             <button
                                 onClick={() => setSelectedTool('cursor')}
-                                className={`px-3 py-2 rounded transition-colors ${selectedTool === 'cursor'
-                                    ? 'bg-blue-600'
-                                    : 'hover:bg-gray-700'
-                                    }`}
+                                className={`px-3 py-1 rounded-md text-slate-50 shadow-sm font-medium transition-all ${selectedTool === 'cursor'
+                                    ? 'bg-gradient-to-r from-blue-400 to-blue-400'
+                                    : 'bg-gradient-to-r from-gray-600 to-gray-500 '}`}
                             >
-                                <span className="text-sm">Select</span>
+                                Select
                             </button>
                             <button
                                 onClick={() => setSelectedTool('pen')}
-                                className={`p-2 rounded transition-colors ${selectedTool === 'pen'
-                                    ? 'bg-blue-600'
-                                    : 'hover:bg-gray-700'
-                                    }`}
                                 title="Draw (D)"
+                                className={`p-1.5 rounded-md transition-all ${selectedTool === 'pen'
+                                    ? 'bg-gradient-to-r from-blue-400 to-blue-400'
+                                    : 'bg-gradient-to-r from-gray-600 to-gray-500 '}`}
                             >
-                                <Pencil className="w-5 h-5" />
+                                <Pencil className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
                         {selectedTool === 'pen' && (
-                            <>
+                            <div className="flex items-center gap-3 pl-2 border-l border-white/[0.06]">
                                 <div className="flex items-center gap-2">
-                                    <label className="text-sm text-gray-400">Size</label>
-                                    <input
-                                        type="range"
-                                        value={strokeWidth}
-                                        onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                                        className="w-24"
-                                        min="1"
-                                        max="20"
-                                    />
-                                    <span className="text-sm text-gray-400 w-8">{strokeWidth}px</span>
+                                    <span className="text-[11px] text-gray-500">Size</span>
+                                    <input type="range" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="w-20 accent-violet-500" min="1" max="20" />
+                                    <span className="text-[11px] text-gray-400 w-6">{strokeWidth}</span>
                                 </div>
-
                                 <div className="flex items-center gap-2">
-                                    <label className="text-sm text-gray-400">Color</label>
-                                    <input
-                                        type="color"
-                                        value={strokeColor}
-                                        onChange={(e) => setStrokeColor(e.target.value)}
-                                        className="w-10 h-8 rounded cursor-pointer"
-                                    />
+                                    <span className="text-[11px] text-gray-500">Color</span>
+                                    <div className="relative w-6 h-6 rounded-md overflow-hidden border border-white/20 cursor-pointer">
+                                        <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="absolute inset-0 w-8 h-8 -top-1 -left-1 cursor-pointer opacity-0" />
+                                        <div className="w-full h-full rounded-md" style={{ background: strokeColor }} />
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         )}
 
-                        <div className="flex-1"></div>
+                        <div className="flex-1" />
 
-                        <button
-                            onClick={undoDrawing}
-                            className="p-2 hover:bg-gray-700 rounded"
-                            title="Undo (Ctrl+Z)"
-                            disabled={drawings.filter(d => !postedDrawingIds.includes(d.id)).length === 0}
-                        >
-                            <Undo2 className={`w-5 h-5 ${drawings.filter(d => !postedDrawingIds.includes(d.id)).length === 0 ? 'opacity-30' : ''}`} />
-                        </button>
-                        <button
-                            onClick={clearDrawings}
-                            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 rounded text-sm"
-                            disabled={drawings.filter(d => !postedDrawingIds.includes(d.id)).length === 0}
-                        >
-                            Clear All
-                        </button>
-
-                        <span className="text-xs text-gray-500">
-                            Shortcuts: Space = Play/Pause | D = Draw | Ctrl+Z = Undo
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={undoDrawing}
+                                disabled={unpostedCount === 0}
+                                title="Undo (Ctrl+Z)"
+                                className={`p-1.5 rounded-lg transition-all ${unpostedCount === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/[0.06]'}`}
+                            >
+                                <Undo2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={clearDrawings}
+                                disabled={unpostedCount === 0}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${unpostedCount === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'}`}
+                            >
+                                <Trash2 className="w-3 h-3" />
+                                Clear
+                            </button>
+                            <div className="w-px h-4 bg-white/[0.06] mx-1" />
+                            <span className="text-[10px] text-gray-600">Space · D · Ctrl+Z</span>
+                        </div>
                     </div>
 
-                    {/* Video Player */}
+                    {/* Video */}
                     <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden min-h-0">
                         <div className="relative w-full h-full">
-                            <video
-                                ref={videoRef}
-                                src={videoUrl}
-                                className="w-full h-full object-contain"
-                            />
+                            <video ref={videoRef} src={videoUrl} className="w-full h-full object-contain" />
                             <canvas
-                                ref={canvasRef}
-                                width={1920}
-                                height={1080}
-                                className={`absolute top-0 left-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
-                                onMouseDown={handleCanvasMouseDown}
-                                onMouseMove={handleCanvasMouseMove}
-                                onMouseUp={handleCanvasMouseUp}
-                                onMouseLeave={handleCanvasMouseUp}
+                                ref={canvasRef} width={1920} height={1080}
+                                className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
+                                onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp}
                             />
-                            <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-sm">
-                                BBB_08_a-team_001_COMP_001.mov
+                            {/* File label */}
+                            <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-white/[0.08]">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                <span className="text-[11px] text-gray-300 font-mono">{videoData.shotCode}</span>
                             </div>
+                            {/* Annotation count badge */}
+                            {unpostedCount > 0 && (
+                                <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-violet-600/90 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                                    <Pencil className="w-3 h-3" />
+                                    <span className="text-[11px] font-medium">{unpostedCount} unsaved</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Video Controls */}
-                    <div className="bg-[#0f1115] border-t border-gray-800 px-4 py-2 flex-shrink-0">
+                    <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
-                            <button
-                                onClick={togglePlay}
-                                className="p-2 hover:bg-gray-700 rounded transition-colors"
-                            >
-                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+                                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                             </button>
-
-                            <span className="text-sm font-mono tabular-nums">
-                                {formatTime(currentTime)} / {formatTime(duration)}
+                            <span className="text-xs font-mono tabular-nums text-gray-400">
+                                <span className="text-white">{formatTime(currentTime)}</span>
+                                <span className="text-gray-600 mx-1">/</span>
+                                {formatTime(duration)}
                             </span>
                         </div>
 
-                        <div className="relative">
-                            {/* Progress Bar */}
+                        {/* Progress bar */}
+                        <div className="relative group"
+                            ref={progressBarRef}
+                            onMouseDown={handleProgressMouseDown}
+                            onMouseMove={handleProgressMouseMove}
+                            onMouseUp={handleProgressMouseUp}
+                        >
+                            <div className="h-1.5 bg-white/[0.06] rounded-full cursor-pointer relative overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-violet-500 to-blue-500 rounded-full transition-none" style={{ width: `${(currentTime / duration) * 100 || 0}%` }} />
+                            </div>
+                            {/* Scrubber thumb */}
                             <div
-                                ref={progressBarRef}
-                                className="h-2 bg-gray-700 rounded-full cursor-pointer relative"
-                                onMouseDown={handleProgressMouseDown}
-                                onMouseMove={handleProgressMouseMove}
-                                onMouseUp={handleProgressMouseUp}
-                            >
+                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                                style={{ left: `${(currentTime / duration) * 100 || 0}%` }}
+                            />
+                            {/* Comment markers */}
+                            {comments.map(c => (
                                 <div
-                                    className="h-full bg-blue-500 rounded-full transition-all"
-                                    style={{ width: `${(currentTime / duration) * 100}%` }}
-                                />
-                            </div>
-
-                            {/* Comment Markers */}
-                            <div className="relative h-4 mt-1">
-                                {comments.map(comment => (
-                                    <div
-                                        key={comment.id}
-                                        onClick={() => jumpToTimestamp(comment.timestampSeconds)}
-                                        title={`${comment.timestamp} - ${comment.text}`}
-                                        className="absolute top-0 -translate-x-3 p-1 rounded-full w-0 cursor-pointer"
-                                        style={{
-                                            left: `${(comment.timestampSeconds / duration) * 100}%`,
-                                        }}
-                                    >
-                                        <span
-                                            className={`
-                                                block w-[8px] h-[8px] rounded-full
-                                                ${Math.abs(comment.timestampSeconds - currentTime) < 0.3
-                                                    ? 'bg-orange-600 scale-200'
-                                                    : 'bg-yellow-500'}
-                                            `}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                                    key={c.id}
+                                    onClick={() => jumpToTimestamp(c.timestampSeconds)}
+                                    title={`${c.timestamp} — ${c.text}`}
+                                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
+                                    style={{ left: `${(c.timestampSeconds / duration) * 100}%` }}
+                                >
+                                    <span className={`block w-2 h-2 rounded-full border border-black/40 transition-transform hover:scale-150 ${Math.abs(c.timestampSeconds - currentTime) < 0.3 ? 'bg-orange-400 scale-125' : 'bg-yellow-400'}`} />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Sidebar with Tabs */}
-                <div className="w-96 bg-[#0f1115] border-l border-gray-800 flex flex-col">
-                    {/* Tab Navigation */}
-                    <div className="border-b border-gray-800 flex-shrink-0">
-                        <div className="flex">
-                            <button
-                                onClick={() => setActiveTab('feedback')}
-                                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'feedback'
-                                    ? 'text-white'
-                                    : 'text-gray-400 hover:text-white'
-                                    }`}
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <MessageSquare className="w-4 h-4" />
-                                    Feedback ({comments.length})
-                                </span>
-                                {activeTab === 'feedback' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
-                                )}
-                            </button>
+                {/* ── Sidebar ── */}
+                <div className="w-[360px] bg-[#0a0c10] border-l border-white/[0.05] flex flex-col flex-shrink-0">
 
+                    {/* Tab bar */}
+                    <div className="flex border-b border-white/[0.05] flex-shrink-0">
+                        {[
+                            { key: 'feedback', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Feedback`, count: comments.length },
+                            { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Asset Info', count: null },
+                        ].map(tab => (
                             <button
-                                onClick={() => setActiveTab('info')}
-                                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'info'
-                                    ? 'text-white'
-                                    : 'text-gray-400 hover:text-white'
-                                    }`}
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-all relative ${activeTab === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
-                                <span className="flex items-center justify-center gap-2">
-                                    <Info className="w-4 h-4" />
-                                    Asset Info
-                                </span>
-                                {activeTab === 'info' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+                                {tab.icon}
+                                {tab.label}
+                                {tab.count !== null && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'bg-white/[0.06] text-gray-400'}`}>{tab.count}</span>
                                 )}
+                                {activeTab === tab.key && <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-violet-500 to-blue-500 rounded-full" />}
                             </button>
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Tab Content */}
+                    {/* ── Asset Info Tab ── */}
                     {activeTab === 'info' ? (
-                        // Asset Information Tab
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="p-4">
-                                <h2 className="text-lg font-semibold mb-4">Asset Information</h2>
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-10 h-10 bg-purple-600 rounded flex items-center justify-center">
-                                                <span className="text-sm font-semibold">C</span>
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold">Comp</div>
-                                                <div className="text-xs text-gray-400">Type</div>
-                                            </div>
-                                            <div className="ml-auto">
-                                                <span className="px-3 py-1 bg-green-600 rounded text-xs font-semibold">Approved</span>
-                                            </div>
-                                        </div>
+                        <div className="flex-1 overflow-y-auto p-5">
+                            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Shot Details</h2>
+                            <div className="space-y-px">
+                                {[
+                                    { label: 'Shot Code', value: videoData.shotCode, mono: true },
+                                    { label: 'Sequence', value: videoData.sequence },
+                                    { label: 'Due Date', value: videoData.dueDate || '—' },
+                                    { label: 'Description', value: videoData.description || '—' },
+                                ].map(row => (
+                                    <div key={row.label} className="flex items-start justify-between py-2.5 border-b border-white/[0.04]">
+                                        <span className="text-[11px] text-gray-500 w-24 flex-shrink-0">{row.label}</span>
+                                        <span className={`text-[12px] text-gray-200 text-right ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
                                     </div>
+                                ))}
+                                {/* Status */}
+                                <div className="flex items-center justify-between py-2.5 border-b border-white/[0.04]">
+                                    <span className="text-[11px] text-gray-500">Status</span>
+                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                                        {videoData.status.toUpperCase()}
+                                    </div>
+                                </div>
+                            </div>
 
-                                    <div className="border-t border-gray-800 pt-4">
-                                        <div className="text-xs text-gray-400 mb-1">Shot ID</div>
-                                        <div className="text-sm font-mono">C005 / S1010</div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Name</div>
-                                        <div className="text-sm">Compositing</div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Version</div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-xs font-semibold">
-                                                A
-                                            </div>
-                                            <div>
-                                                <div className="text-sm">Version 1</div>
-                                                <div className="text-xs text-gray-400">11/15/2025, 7:00:00 AM (2 months ago)</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Stage</div>
-                                        <div className="text-sm">4 Final</div>
-                                    </div>
-
-                                    <div className="border-t border-gray-800 pt-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-6 h-6 bg-teal-600 rounded flex items-center justify-center">
-                                                <span className="text-xs">📄</span>
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold">Compositing</div>
-                                                <div className="text-xs text-gray-400">Task</div>
-                                            </div>
-                                            <div className="ml-auto">
-                                                <span className="px-3 py-1 bg-green-600 rounded text-xs font-semibold">Approved</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-gray-800 pt-4">
-                                        <div className="text-xs text-gray-400 mb-1">Artist</div>
-                                        <div className="text-sm">ShotGrid Support</div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Annotations</div>
-                                        <div className="text-sm">{drawings.length} drawings</div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Comments</div>
-                                        <div className="text-sm">{comments.length} feedback items</div>
-                                    </div>
+                            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-6 mb-4">Review Stats</h2>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
+                                    <div className="text-2xl font-bold text-white">{drawings.length}</div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">Annotations</div>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
+                                    <div className="text-2xl font-bold text-white">{comments.length}</div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">Comments</div>
                                 </div>
                             </div>
                         </div>
+
                     ) : (
-                        // Feedback Tab
+                        /* ── Feedback Tab ── */
                         <>
-                            <div className="flex-1 overflow-y-auto p-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold">Feedback ({filteredComments.length})</h3>
-                                    <select
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                        className="bg-[#1a1d24] border border-gray-700 rounded px-2 py-1 text-sm"
-                                    >
-                                        <option value="all">All versions</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="completed">Completed</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {filteredComments.map(comment => (
-                                        <div key={comment.id} className={`border-l-2 ${comment.completed ? 'border-green-500' : 'border-gray-700'} pl-3 pb-3`}>
-                                            <div className="flex items-start gap-2 mb-2">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                                                    {comment.author[0]}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-semibold">{comment.author}</div>
-                                                    <div className="text-xs text-gray-400 flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => jumpToTimestamp(comment.timestampSeconds)}
-                                                            className="hover:text-blue-400 transition-colors"
-                                                        >
-                                                            {comment.timestamp}
-                                                        </button>
-                                                        · {comment.timeAgo}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {comment.completed && (
-                                                <span className="inline-block px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs mb-2">
-                                                    Internal
-                                                </span>
-                                            )}
-
-                                            <p className="text-sm text-gray-300 mb-2">{comment.text}</p>
-
-                                            {/* แสดงจำนวน drawings ที่เกี่ยวข้อง */}
-                                            {comment.drawings && comment.drawings.length > 0 && (
-                                                <div className="text-xs text-gray-500 mb-2">
-                                                    📝 {comment.drawings.length} annotation{comment.drawings.length > 1 ? 's' : ''}
-                                                </div>
-                                            )}
-
-                                            {/* Replies */}
-                                            {comment.replies && comment.replies.length > 0 && (
-                                                <div className="ml-4 mt-2 space-y-2 border-l-2 border-gray-700 pl-3">
-                                                    {comment.replies.map(reply => (
-                                                        <div key={reply.id} className="text-sm">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs">
-                                                                    {reply.author[0]}
-                                                                </div>
-                                                                <span className="font-semibold text-xs">{reply.author}</span>
-                                                                <span className="text-xs text-gray-500">· {reply.timeAgo}</span>
-                                                            </div>
-                                                            <p className="text-gray-400 text-xs ml-8">{reply.text}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setReplyTo(comment.id);
-                                                        setNewComment('');
-                                                    }}
-                                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-white"
-                                                >
-                                                    <Reply className="w-3 h-3" />
-                                                    REPLY
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
+                                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{filteredComments.length} Comments</span>
+                                <select
+                                    value={filterStatus}
+                                    onChange={e => setFilterStatus(e.target.value)}
+                                    className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-violet-500/50"
+                                >
+                                    <option value="all">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                </select>
                             </div>
 
-                            <div className="border-t border-gray-800 p-4 flex-shrink-0">
+                            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+                                {filteredComments.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-40 text-center">
+                                        <MessageSquare className="w-8 h-8 text-gray-700 mb-2" />
+                                        <p className="text-xs text-gray-600">No feedback yet</p>
+                                        <p className="text-[11px] text-gray-700 mt-0.5">Pause and type to leave a note</p>
+                                    </div>
+                                )}
+                                {filteredComments.map(comment => (
+                                    <div key={comment.id} className={`rounded-xl border p-3 transition-all ${comment.completed ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.10]'}`}>
+                                        <div className="flex items-start gap-2.5 mb-2">
+                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                {comment.author[0]}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-semibold text-white truncate">{comment.author}</span>
+                                                    {comment.completed && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">Done</span>}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="text-[11px] text-violet-400 hover:text-violet-300 font-mono font-medium transition-colors">
+                                                        {comment.timestamp}
+                                                    </button>
+                                                    <span className="text-gray-700">·</span>
+                                                    <span className="text-[11px] text-gray-600">{comment.timeAgo}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-xs text-gray-300 leading-relaxed mb-2 ml-9">{comment.text}</p>
+
+                                        {comment.drawings?.length > 0 && (
+                                            <div className="ml-9 mb-2 flex items-center gap-1 text-[10px] text-gray-600">
+                                                <Pencil className="w-2.5 h-2.5" />
+                                                {comment.drawings.length} annotation{comment.drawings.length > 1 ? 's' : ''}
+                                            </div>
+                                        )}
+
+                                        {comment.replies?.length > 0 && (
+                                            <div className="ml-9 mt-2 space-y-2 pl-3 border-l border-white/[0.06]">
+                                                {comment.replies.map(reply => (
+                                                    <div key={reply.id}>
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <div className="w-4 h-4 rounded-full bg-gray-700 flex items-center justify-center text-[9px] font-bold">{reply.author[0]}</div>
+                                                            <span className="text-[11px] font-semibold text-gray-300">{reply.author}</span>
+                                                            <span className="text-[10px] text-gray-600">· {reply.timeAgo}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-400 ml-5.5">{reply.text}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="ml-9 mt-2">
+                                            <button
+                                                onClick={() => { setReplyTo(comment.id); setNewComment(''); }}
+                                                className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+                                            >
+                                                <Reply className="w-3 h-3" />
+                                                Reply
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Comment Input */}
+                            <div className="border-t border-white/[0.05] p-3 flex-shrink-0 bg-[#0a0c10]">
                                 {replyTo !== null && (
-                                    <div className="flex items-center justify-between mb-2 text-sm bg-blue-600/20 px-3 py-2 rounded">
-                                        <span className="text-blue-400">
-                                            Replying to {comments.find(c => c.id === replyTo)?.author}
+                                    <div className="flex items-center justify-between mb-2 px-2.5 py-1.5 bg-violet-600/10 border border-violet-500/20 rounded-lg">
+                                        <span className="text-[11px] text-violet-400 flex items-center gap-1">
+                                            <Reply className="w-3 h-3" />
+                                            Replying to <span className="font-semibold ml-1">{comments.find(c => c.id === replyTo)?.author}</span>
                                         </span>
-                                        <button onClick={() => setReplyTo(null)}>
-                                            <X className="w-4 h-4" />
+                                        <button onClick={() => setReplyTo(null)} className="text-gray-500 hover:text-white transition-colors">
+                                            <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 )}
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && addComment()}
-                                        placeholder={replyTo ? "Write a reply..." : "Leave feedback at current time..."}
-                                        className="flex-1 bg-[#1a1d24] border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                                    />
+                                <div className="flex gap-2 items-end">
+                                    <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-violet-500/40 transition-colors">
+                                        <div className="text-[10px] text-gray-600 mb-1 font-mono">{formatTime(currentTime)}</div>
+                                        <input
+                                            type="text"
+                                            value={newComment}
+                                            onChange={e => setNewComment(e.target.value)}
+                                            onKeyPress={e => e.key === 'Enter' && addComment()}
+                                            placeholder={replyTo ? "Write a reply…" : "Leave feedback…"}
+                                            className="w-full bg-transparent text-xs text-white placeholder-gray-600 focus:outline-none"
+                                        />
+                                    </div>
                                     <button
                                         onClick={addComment}
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-semibold transition-colors"
+                                        className="px-3 py-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 rounded-xl text-xs font-semibold transition-all hover:shadow-lg hover:shadow-violet-500/20 active:scale-95 flex-shrink-0"
                                     >
-                                        {replyTo ? 'REPLY' : 'POST'}
+                                        {replyTo ? 'Reply' : 'Post'}
                                     </button>
                                 </div>
                             </div>

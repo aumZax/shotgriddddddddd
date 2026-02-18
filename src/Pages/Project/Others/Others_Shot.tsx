@@ -1069,15 +1069,26 @@ export default function Others_Shot() {
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
                                             <div className="flex gap-3">
                                                 <button
-    onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-            navigate('/Others_Video'); // ← เปลี่ยน path ให้ตรงกับ route จริง
-        } else {
-            setShowPreview(true);
-        }
-    }}
+   // เปลี่ยนจากเดิมที่ navigate('/Others_Video') เป็น:
+onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
+        // Save ข้อมูลลง localStorage ก่อน navigate
+        localStorage.setItem("selectedVideo", JSON.stringify({
+            videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
+            shotCode: shotData.shotCode,
+            sequence: shotData.sequence,
+            status: shotData.status,
+            description: shotData.description,
+            dueDate: shotData.dueDate,
+            shotId: shotData.id,
+        }));
+        navigate('/Others_Video');
+    } else {
+        setShowPreview(true);
+    }
+}}
     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-400 hover:to-blue-400 active:scale-95 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-blue-500/50 transition-all duration-200"
 >
     <Eye className="w-4 h-4" />
