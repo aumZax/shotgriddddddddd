@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
@@ -6,6 +7,7 @@ import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
+import VersionTab from "../../../components/VersionTab";
 
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
@@ -37,6 +39,22 @@ interface Note {
     created_at: string;
     tasks?: string[];
     assigned_people?: string[];
+}
+
+
+interface Version {
+    id: number;
+    entity_type: string;
+    entity_id: number;
+    version_number: number;
+    version_name?: string;
+    status: string;
+    file_url?: string;
+    description?: string;
+    uploaded_by?: string;
+    uploaded_by_name?: string;
+    created_at: string;
+    task_name?: string;
 }
 
 interface AssetData {
@@ -136,6 +154,11 @@ export default function Others_Asset() {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showCreateAsset_Task, setShowCreateAsset_Task] = useState(false);
     const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
+    const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
+const [uploaderQuery, setUploaderQuery] = useState('');
+const [uploaderOpen, setUploaderOpen] = useState(false);
+
+
     const [editingField, setEditingField] = useState<string | null>(null);
 
     const [showPreview, setShowPreview] = useState(false);
@@ -149,7 +172,7 @@ export default function Others_Asset() {
         RIG: false,
         TXT: false,
     });
-    const currentUser = localStorage.getItem('currentUser') || 'Unknown';
+    const currentUser = localStorage.getItem('currentUser') || 'Manager';
 
     const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
     const [query, setQuery] = useState('');
@@ -174,6 +197,10 @@ export default function Others_Asset() {
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
 
+    const [assetVersions, setAssetVersions] = useState<any[]>([]);
+    const [isLoadingAssetVersions, setIsLoadingAssetVersions] = useState(false);
+ 
+
     // Context menu for notes
     const [noteContextMenu, setNoteContextMenu] = useState<{
         visible: boolean;
@@ -187,6 +214,12 @@ export default function Others_Asset() {
         noteId: number;
         subject: string;
     } | null>(null);
+
+    useEffect(() => {
+        if (activeTab === 'Versions') {
+            fetchAssetVersions();
+        }
+    }, [activeTab, assetData?.id]);
 
     const handleFiletaskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
@@ -278,6 +311,8 @@ export default function Others_Asset() {
             setLoadingNotes(false);
         }
     };
+
+
 
     const handleDeleteNote = async (noteId: number) => {
         try {
@@ -534,6 +569,9 @@ export default function Others_Asset() {
         }
     };
 
+
+
+
     const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
     const AssetID = stored.id;
     console.log(AssetID)
@@ -543,6 +581,57 @@ export default function Others_Asset() {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
+
+    const [,] = useState<Version | null>(null);
+
+    const [showCreateVersion, setShowCreateVersion] = useState(false);
+    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [versionFiles, setVersionFiles] = useState<File[]>([]);
+const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
+    const [createVersionForm, setCreateVersionForm] = useState({
+
+        
+        version_name: '', status: 'wtg', description: '', link: '', task: '',
+    });
+
+
+    const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setVersionFiles(prev => [...prev, ...files]);
+    setVersionFilePreviews(prev => [
+        ...prev,
+        ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+    ]);
+    // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
+    setCreateVersionForm(p => ({
+        ...p,
+        version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+    }));
+};
+
+// handler drag & drop
+const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    setVersionFiles(prev => [...prev, ...files]);
+    setVersionFilePreviews(prev => [
+        ...prev,
+        ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+    ]);
+    setCreateVersionForm(p => ({
+        ...p,
+        version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+    }));
+};
+
+// ลบไฟล์เดี่ยว
+const removeVersionFile = (index: number) => {
+    setVersionFiles(prev => prev.filter((_, i) => i !== index));
+    setVersionFilePreviews(prev => prev.filter((_, i) => i !== index));
+};
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -559,6 +648,8 @@ export default function Others_Asset() {
     };
 
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [versionModalPosition, setVersionModalPosition] = useState({ x: 0, y: 0 });
+
 
     useEffect(() => {
         console.log("🔍 AssetID:", AssetID);
@@ -583,6 +674,9 @@ export default function Others_Asset() {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
             });
     }, [AssetID, projectId]);
+
+
+
 
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
@@ -648,6 +742,87 @@ export default function Others_Asset() {
             return false;
         }
     };
+
+
+    const handleCreateVersion = async () => {
+    if (isCreatingVersion) return;
+    if (!createVersionForm.version_name.trim()) {
+        alert('กรุณาระบุชื่อ Version'); return;
+    }
+    setIsCreatingVersion(true);
+    try {
+        if (versionFiles.length === 0) {
+            // ไม่มีไฟล์ — สร้าง 1 version เปล่า
+            await createSingleVersion(null);
+        } else {
+            // มีไฟล์ — สร้างทีละไฟล์
+            for (let i = 0; i < versionFiles.length; i++) {
+                const file = versionFiles[i];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('assetId', assetData?.id.toString() || '');
+                formData.append('fileName', file.name);
+                formData.append('type', 'version');
+
+                const uploadRes = await fetch(ENDPOINTS.UPLOAD_ASSET, { method: 'POST', body: formData });
+                if (!uploadRes.ok) throw new Error(`Upload failed: ${file.name}`);
+                const uploadData = await uploadRes.json();
+                const fileUrl = uploadData.file.fileUrl;
+
+                // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
+                const vName = i === 0
+                    ? createVersionForm.version_name.trim()
+                    : file.name.replace(/\.[^/.]+$/, '');
+
+                await createSingleVersion(fileUrl, vName);
+
+                // set thumbnail จากไฟล์แรก
+                if (i === 0) {
+                    setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
+                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                    localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: fileUrl }));
+                }
+            }
+        }
+
+        alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
+        setShowCreateVersion(false);
+        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+        setVersionFiles([]);
+        setVersionFilePreviews([]);
+        fetchAssetVersions();
+        setSelectedUploader(null);
+        setUploaderQuery('');
+
+    } catch (error: any) {
+        console.error('Error creating version:', error);
+        alert('Failed to create version. Please try again.');
+    } finally {
+        setIsCreatingVersion(false);
+    }
+};
+
+// helper
+const createSingleVersion = async (fileUrl: string | null, versionName?: string) => {
+    const res = await fetch(ENDPOINTS.CREATE_ASSET_VERSION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            entityType: 'asset',
+            entityId: assetData?.id,
+            version_name: versionName || createVersionForm.version_name.trim(),
+            status: createVersionForm.status,
+            description: createVersionForm.description || null,
+            link: createVersionForm.link || null,
+            task: createVersionForm.task || null,
+            file_url: fileUrl,
+            uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
+            project_id: projectId,
+        })
+    });
+    if (!res.ok) throw new Error('Create version failed');
+};
+
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Create Task Form States
     const [isCreatingTask, setIsCreatingTask] = useState(false);
@@ -666,6 +841,20 @@ export default function Others_Asset() {
             [field]: value
         }));
     };
+
+    const fetchAssetVersions = async () => {
+        if (!AssetID) return;
+        setIsLoadingAssetVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.GET_ASSET_VERSION}`, { entityType: 'asset', entityId: AssetID });
+            const data = res.data;
+            if (Array.isArray(data) && data.length > 0) { setAssetVersions(data); }
+           
+        } 
+        finally { setIsLoadingAssetVersions(false); }
+    };
+
+
 
     // Handle create task submission
     const handleCreateTask = async () => {
@@ -772,11 +961,26 @@ export default function Others_Asset() {
 
             case 'Versions':
                 return (
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
-                        <p className="text-gray-300">Versions content will be displayed here</p>
-                    </div>
+                    <VersionTab
+                        versions={assetVersions}
+                        isLoadingVersions={isLoadingAssetVersions}
+                       
+                        onUpdateVersion={async (versionId, field, value) => {
+                            try {
+                                await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
+                                setAssetVersions(prev => prev.map(v => v.id === versionId ? { ...v, [field]: value } : v));
+                                return true;
+                            } catch { alert('ไม่สามารถอัปเดทได้'); return false; }
+                        }}
+                        onDeleteVersion={async (versionId: number) => {
+                            try {
+                                await axios.delete(`${ENDPOINTS.DELETE_VERSION}/${versionId}`);
+                                setAssetVersions(prev => prev.filter(v => v.id !== versionId));
+                            } catch { alert('ไม่สามารถลบได้'); }
+                        }}
+                        formatDate={formatDate}
+                    />
                 );
-
             case 'Sub Assets':
                 return (
                     <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
@@ -1214,6 +1418,14 @@ export default function Others_Asset() {
                                         Add Note
                                     </button>
                                 )}
+                                {activeTab === 'Versions' && (
+                                    <button
+                                        onClick={() => setShowCreateVersion(true)}
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
+                                    >
+                                        <span>+</span> Add Version
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1225,7 +1437,6 @@ export default function Others_Asset() {
                 </div>
             </div>
 
-            {/* Create Task Modal */}
             {/* Create Task Modal */}
             {showCreateAsset_Task && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1637,7 +1848,273 @@ export default function Others_Asset() {
                     </div>
                 </>
             )}
+            {/* Create Version Modal */}
 
+
+            {showCreateVersion && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/60"
+                        onClick={() => !isCreatingVersion && setShowCreateVersion(false)}
+                    />
+
+                    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                        <div
+                            style={{
+                                transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
+                                maxHeight: 'calc(100vh - 80px)',
+                            }}
+                            className="relative w-full max-w-xl pointer-events-auto flex flex-col bg-[#1a1d26] rounded-2xl shadow-2xl border border-gray-700/60 overflow-hidden"
+                        >
+                            {/* Header — ลากได้ */}
+                            <div
+                                onMouseDown={(e) => {
+                                    const startX = e.clientX;
+                                    const startY = e.clientY;
+                                    const startPos = { ...versionModalPosition };
+                                    const onMove = (me: MouseEvent) => {
+                                        setVersionModalPosition({
+                                            x: startPos.x + me.clientX - startX,
+                                            y: startPos.y + me.clientY - startY,
+                                        });
+                                    };
+                                    const onUp = () => {
+                                        document.removeEventListener('mousemove', onMove);
+                                        document.removeEventListener('mouseup', onUp);
+                                    };
+                                    document.addEventListener('mousemove', onMove);
+                                    document.addEventListener('mouseup', onUp);
+                                }}
+                                className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                            >
+                                <h2 className="text-lg font-semibold text-gray-100 tracking-tight">Create Versions</h2>
+                                <button
+                                    onMouseDown={e => e.stopPropagation()}
+                                    onClick={() => setShowCreateVersion(false)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all text-xl leading-none"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Body — scroll ได้ */}
+                            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+
+                                {/* Drag & Drop */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-start">
+                                    <label className="text-sm text-gray-300 text-right pt-3 font-medium">Uploaded Movie:</label>
+                                    <div
+                                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                                        onDragLeave={() => setIsDragging(false)}
+                                        onDrop={handleVersionFileDrop}
+                                        className={`relative rounded-xl border-2 border-dashed transition-all duration-200
+                                ${isDragging
+                                                ? 'border-blue-400 bg-blue-500/10 scale-[1.01]'
+                                                : 'border-gray-600 hover:border-gray-500 bg-gray-800/40 hover:bg-gray-800/60'
+                                            }`}
+                                    >
+                                        {/* แทนที่ drag & drop zone เดิม */}
+<label className="flex flex-col items-center justify-center py-7 px-4 cursor-pointer w-full">
+    {versionFiles.length > 0 ? (
+        <div className="w-full space-y-2">
+            {versionFiles.map((file, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2 bg-gray-800/60 rounded-lg">
+                    {versionFilePreviews[i] ? (
+                        <img src={versionFilePreviews[i]} className="w-10 h-10 object-cover rounded" />
+                    ) : (
+                        <span className="text-2xl">🎬</span>
+                    )}
+                    <span className="text-sm text-gray-300 truncate flex-1">{file.name}</span>
+                    <button
+                        type="button"
+                        onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                        className="text-gray-500 hover:text-red-400 transition-colors"
+                    >✕</button>
+                </div>
+            ))}
+            {/* เพิ่มไฟล์อีก */}
+            <div className="flex items-center justify-center gap-2 text-xs text-blue-400 hover:text-blue-300 cursor-pointer py-1">
+                <span>+</span><span>Add more files</span>
+                <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+            </div>
+        </div>
+    ) : (
+        <div className="flex flex-col items-center gap-2 pointer-events-none">
+            <span className="text-3xl text-gray-500">📎</span>
+            <p className="text-sm text-gray-400 font-medium">Drag and drop files here</p>
+            <p className="text-xs text-gray-500">or click to browse — รองรับหลายไฟล์</p>
+        </div>
+    )}
+    <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+</label>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-start">
+                                    <label className="text-sm text-gray-300 text-right pt-2 font-medium">Description:</label>
+                                    <textarea
+                                        value={createVersionForm.description}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                                        rows={3}
+                                        className="px-3 py-2 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 resize-none transition-colors"
+                                    />
+                                </div>
+
+                                {/* Version Name */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Version Name:</label>
+                                    <input
+                                        type="text"
+                                        value={createVersionForm.version_name}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
+                                    />
+                                </div>
+                                {/* Uploaded By */}
+<div className="grid grid-cols-[120px_1fr] gap-4 items-center relative">
+    <label className="text-sm text-gray-300 text-right font-medium">Uploaded By:</label>
+    <div className="relative">
+        {selectedUploader ? (
+            <div className="flex items-center gap-2 h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-[10px] font-semibold">
+                        {selectedUploader.name[0].toUpperCase()}
+                    </span>
+                </div>
+                <span className="text-gray-200 text-sm flex-1 truncate">{selectedUploader.name}</span>
+                <button
+                    type="button"
+                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                    className="text-gray-500 hover:text-red-400 text-xs"
+                >✕</button>
+            </div>
+        ) : (
+            <input
+                type="text"
+                value={uploaderQuery}
+                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                onFocus={() => setUploaderOpen(true)}
+                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                placeholder={currentUser}
+                className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 placeholder:text-gray-500 w-full transition-colors"
+            />
+        )}
+
+        {/* Dropdown */}
+        {uploaderOpen && !selectedUploader && (
+            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-gray-600/50 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                {allPeople
+                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                    .map(person => (
+                        <div
+                            key={person.id}
+                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/20 cursor-pointer"
+                        >
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-[10px] font-semibold">
+                                    {person.name[0].toUpperCase()}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-200">{person.name}</p>
+                                <p className="text-xs text-gray-500">{person.email}</p>
+                            </div>
+                        </div>
+                    ))
+                }
+                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
+                )}
+            </div>
+        )}
+    </div>
+</div>
+
+                                {/* Link */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Link:</label>
+                                    <input
+                                        type="text"
+                                        value={assetData?.asset_name || ''}
+                                        placeholder={assetData.asset_name}
+                                        readOnly
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, link: e.target.value }))}
+                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/30 rounded-lg text-gray-500 text-sm"
+                                    />
+                                </div>
+
+                                {/* Task */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Task:</label>
+                                    <input
+                                        type="text"
+                                        value={createVersionForm.task}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
+                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Project (read-only) */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Project:</label>
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={projectData?.projectName || ''}
+                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/30 rounded-lg text-gray-500 text-sm"
+                                    />
+                                </div>
+
+                                {/* Status */}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Status:</label>
+                                    <select
+                                        value={createVersionForm.status}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
+                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
+                                    >
+                                        <option value="wtg">Waiting to Start</option>
+                                        <option value="ip">In Progress</option>
+                                        <option value="rev">Review</option>
+                                        <option value="apr">Approved</option>
+                                        <option value="rej">Rejected</option>
+                                        <option value="fin">Final</option>
+                                    </select>
+                                </div>
+
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700/50 bg-[#161820] flex-shrink-0">
+                                <button className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
+                                    Open Bulk Import
+                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setShowCreateVersion(false)}
+                                        disabled={isCreatingVersion}
+                                        className="px-5 h-9 rounded-lg text-sm text-gray-300 bg-gray-700/50 hover:bg-gray-700 transition-all disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleCreateVersion}
+                                        disabled={isCreatingVersion}
+                                        className="px-5 h-9 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {isCreatingVersion
+                                            ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Creating...</span></>
+                                            : 'Create Version'
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
             {/* Context Menu for Notes */}
             {noteContextMenu && (
                 <div

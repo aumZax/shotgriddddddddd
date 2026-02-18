@@ -125,7 +125,12 @@ const ENDPOINTS = {
   EDIT_NOTE: `${BASE_URL}/edit-note`,
 
   DELETE_TASK: `${BASE_URL}/delete-task`,
-    GET_ALL_PROJECT_SHOTS:`${BASE_URL}/get-all-project-shots`,
+  GET_ALL_PROJECT_SHOTS: `${BASE_URL}/get-all-project-shots`,
+
+  UPDATE_ASSET_VERSION: `${BASE_URL}/update-asset-version`,
+  DELETE_ASSET_VERSION: `${BASE_URL}/delete-asset-version`,
+  GET_ASSET_VERSION: `${BASE_URL}/get-asset-version`,
+  CREATE_ASSET_VERSION: `${BASE_URL}/create-asset-version`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

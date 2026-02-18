@@ -241,28 +241,28 @@ export default function VideoReviewSystem() {
                     {/* Drawing Toolbar */}
                     <div className="h-11 bg-[#0d0f14] border-b border-white/[0.05] px-4 flex items-center gap-3 flex-shrink-0">
                         {/* Tool switcher */}
-                        <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06] gap-2">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setSelectedTool('cursor')}
-                                className={`px-3 py-1 rounded-md text-slate-50 shadow-sm font-medium transition-all ${selectedTool === 'cursor'
-                                    ? 'bg-gradient-to-r from-blue-400 to-blue-400'
-                                    : 'bg-gradient-to-r from-gray-600 to-gray-500 '}`}
+                                className={`px-3 py-1 rounded-md text-slate-50 font-medium transition-all ${selectedTool === 'cursor'
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-500'
+                                    : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}
                             >
                                 Select
                             </button>
                             <button
                                 onClick={() => setSelectedTool('pen')}
                                 title="Draw (D)"
-                                className={`p-1.5 rounded-md transition-all ${selectedTool === 'pen'
-                                    ? 'bg-gradient-to-r from-blue-400 to-blue-400'
+                                className={`px-3 py-1 rounded-md transition-all ${selectedTool === 'pen'
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-500'
                                     : 'bg-gradient-to-r from-gray-600 to-gray-500 '}`}
                             >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-4 h-4" />
                             </button>
                         </div>
 
                         {selectedTool === 'pen' && (
-                            <div className="flex items-center gap-3 pl-2 border-l border-white/[0.06]">
+                            <div className="flex items-center gap-3 pl-2 border-l border-white/[0.26]">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[11px] text-gray-500">Size</span>
                                     <input type="range" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="w-20 accent-violet-500" min="1" max="20" />
@@ -285,19 +285,23 @@ export default function VideoReviewSystem() {
                                 onClick={undoDrawing}
                                 disabled={unpostedCount === 0}
                                 title="Undo (Ctrl+Z)"
-                                className={`p-1.5 rounded-lg transition-all ${unpostedCount === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-white/[0.06]'}`}
+                                className={`p-1.5 rounded-lg transition-all ${unpostedCount === 0 
+                                    ? 'bg-gradient-to-r from-gray-700 to-gray-600'
+                                    : 'bg-gradient-to-r from-blue-600 to-blue-500'}`}
                             >
                                 <Undo2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                                 onClick={clearDrawings}
                                 disabled={unpostedCount === 0}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${unpostedCount === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'}`}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${unpostedCount === 0 
+                                 ? 'bg-gradient-to-r from-gray-700 to-gray-600'
+                                    : 'bg-gradient-to-r from-blue-600 to-blue-500'}`}
                             >
                                 <Trash2 className="w-3 h-3" />
                                 Clear
                             </button>
-                            <div className="w-px h-4 bg-white/[0.06] mx-1" />
+                            <div className="w-px h-4 bg-white/[0.26] mx-1" />
                             <span className="text-[10px] text-gray-600">Space · D · Ctrl+Z</span>
                         </div>
                     </div>
@@ -329,8 +333,8 @@ export default function VideoReviewSystem() {
                     {/* Video Controls */}
                     <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
-                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
-                                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                            <button onClick={togglePlay} className="w-12 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                             </button>
                             <span className="text-xs font-mono tabular-nums text-gray-400">
                                 <span className="text-white">{formatTime(currentTime)}</span>
@@ -374,7 +378,7 @@ export default function VideoReviewSystem() {
                 <div className="w-[360px] bg-[#0a0c10] border-l border-white/[0.05] flex flex-col flex-shrink-0">
 
                     {/* Tab bar */}
-                    <div className="flex border-b border-white/[0.05] flex-shrink-0">
+                    <div className="flex flex-shrink-0">
                         {[
                             { key: 'feedback', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Feedback`, count: comments.length },
                             { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Asset Info', count: null },
@@ -382,7 +386,9 @@ export default function VideoReviewSystem() {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-all relative ${activeTab === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                className={`flex-1 flex items-center justify-center text-slate-50  gap-1.5 px-3 py-3 text-xs font-medium transition-all relative ${activeTab === tab.key 
+                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500' 
+                                : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}
                             >
                                 {tab.icon}
                                 {tab.label}
@@ -468,17 +474,19 @@ export default function VideoReviewSystem() {
                                                     <span className="text-xs font-semibold text-white truncate">{comment.author}</span>
                                                     {comment.completed && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">Done</span>}
                                                 </div>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="text-[11px] text-violet-400 hover:text-violet-300 font-mono font-medium transition-colors">
-                                                        {comment.timestamp}
+                                                <div className="flex items-center gap-1.5 mt-2 ">
+                                                    <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="h-6 flex items-center text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-700 hover:from-bgraylue-500 hover:to-gray-500">
+                                                        <span className='text-md'>
+                                                            {comment.timestamp}
+                                                        </span>
                                                     </button>
                                                     <span className="text-gray-700">·</span>
-                                                    <span className="text-[11px] text-gray-600">{comment.timeAgo}</span>
+                                                    <span className="text-md text-gray-600">{comment.timeAgo}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <p className="text-xs text-gray-300 leading-relaxed mb-2 ml-9">{comment.text}</p>
+                                        <p className="text-lg text-gray-300 leading-relaxed mb-2 ml-9">{comment.text}</p>
 
                                         {comment.drawings?.length > 0 && (
                                             <div className="ml-9 mb-2 flex items-center gap-1 text-[10px] text-gray-600">
@@ -505,7 +513,7 @@ export default function VideoReviewSystem() {
                                         <div className="ml-9 mt-2">
                                             <button
                                                 onClick={() => { setReplyTo(comment.id); setNewComment(''); }}
-                                                className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+                                                className="flex items-center gap-1 text-[10px] text-slate-50 rounded-2xl transition-colors bg-gradient-to-r from-gray-700 to-gray-700 hover:from-bgraylue-500 hover:to-gray-500"
                                             >
                                                 <Reply className="w-3 h-3" />
                                                 Reply
@@ -523,7 +531,7 @@ export default function VideoReviewSystem() {
                                             <Reply className="w-3 h-3" />
                                             Replying to <span className="font-semibold ml-1">{comments.find(c => c.id === replyTo)?.author}</span>
                                         </span>
-                                        <button onClick={() => setReplyTo(null)} className="text-gray-500 hover:text-white transition-colors">
+                                        <button onClick={() => setReplyTo(null)} className="text-slate-50 rounded-lg hover:text-white transition-colors bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-500">
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
