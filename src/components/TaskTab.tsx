@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from 'react';
-import { Calendar, Check, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
+import { Calendar, Check, ClipboardList, Clock, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 import { createPortal } from 'react-dom';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Edit3, Package, Image, User, File, Clock, FileText, Trash2 } from 'lucide-react';
+import { X, Calendar, Edit3, Package, User, File, Clock, FileText, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, Check, ChevronRight, ClipboardList, Clock, Image, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
+import { Calendar, Check, ChevronRight, ClipboardList, Clock, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
