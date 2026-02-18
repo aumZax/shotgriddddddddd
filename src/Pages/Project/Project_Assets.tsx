@@ -208,17 +208,12 @@ export default function Project_Assets() {
         "Part"
     ];
 
-    // 1. เพิ่ม useEffect สำหรับดึง shots เมื่อมี sequences
-    useEffect(() => {
-        if (sequences.length > 0) {
-            fetchAllProjectShots();
-        }
-    }, [sequences]); // ⭐ เพิ่ม dependency
 
     // 2. แก้ไข useEffect สำหรับโหลด shots ตอน mount
     useEffect(() => {
         fetchAssets();
         fetchSequences();
+        fetchAllProjectShots();
     }, []);
 
 
@@ -292,7 +287,7 @@ export default function Project_Assets() {
             console.log(`📤 Calling GET_ALL_PROJECT_SHOTS for projectId: ${projectData.projectId}`);
 
             // เรียก API เพื่อดึง shots ทั้งหมดจาก project_shots table
-            const { data } = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
+            const { data } = await axios.post(ENDPOINTS.GET_ALL_PROJECT_SHOTS, {
                 projectId: projectData.projectId
             });
 

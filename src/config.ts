@@ -125,6 +125,7 @@ const ENDPOINTS = {
   EDIT_NOTE: `${BASE_URL}/edit-note`,
 
   DELETE_TASK: `${BASE_URL}/delete-task`,
+    GET_ALL_PROJECT_SHOTS:`${BASE_URL}/get-all-project-shots`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 
