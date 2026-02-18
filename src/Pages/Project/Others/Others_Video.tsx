@@ -333,10 +333,10 @@ export default function VideoReviewSystem() {
                     {/* Video Controls */}
                     <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
-                            <button onClick={togglePlay} className="w-12 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
-                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                            <button onClick={togglePlay} className="text-2xl  rounded-full bg-gradient-to-r from-red-600 to-red-600 hover:from-red-500 hover:to-red-500 border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+                                {isPlaying ? <Pause size={15} /> : <Play size={15} />}
                             </button>
-                            <span className="text-xs font-mono tabular-nums text-gray-400">
+                            <span className="font-mono tabular-nums text-gray-400">
                                 <span className="text-white">{formatTime(currentTime)}</span>
                                 <span className="text-gray-600 mx-1">/</span>
                                 {formatTime(duration)}

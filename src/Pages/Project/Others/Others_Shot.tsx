@@ -1066,7 +1066,7 @@ export default function Others_Shot() {
 
                                     {/* Hover Controls */}
                                     {shotData.thumbnail && (
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to- from-black/80 via-black/50 to-transparent z-20">
                                             <div className="flex gap-3">
                                                 <button
    // เปลี่ยนจากเดิมที่ navigate('/Others_Video') เป็น:
