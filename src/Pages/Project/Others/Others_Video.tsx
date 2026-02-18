@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, ChevronLeft, Trash2 } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, Trash2 } from 'lucide-react';
 
 const getVideoData = () => {
     const stored = localStorage.getItem("selectedVideo");
