@@ -152,17 +152,17 @@ const RightPanel: React.FC<RightPanelProps> = ({
     // Close context menu only if click is outside of it
     React.useEffect(() => {
         if (!contextMenu) return;
-        
+
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             // Don't close if clicking inside context menu or delete confirm modal
-            if (target.closest('[data-context-menu="true"]') || 
+            if (target.closest('[data-context-menu="true"]') ||
                 target.closest('[data-delete-confirm="true"]')) {
                 return;
             }
             setContextMenu(null);
         };
-        
+
         document.addEventListener('mousedown', handleClickOutside, true);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside, true);
@@ -184,48 +184,48 @@ const RightPanel: React.FC<RightPanelProps> = ({
         });
     };
 
-// ✅ handleDeleteVersion - เรียก callback ตรงๆ เช่นกัน
-const handleDeleteVersion = async (versionId: number) => {
-    setIsDeletingVersion(true);
-    try {
-        await axios.delete(ENDPOINTS.DELETE_VERSION, {
-            data: { versionId },
-        });
-        setDeleteConfirm(null);
-        onDeleteVersionSuccess?.(); // ← parent fetch versions ใหม่
-    } catch (err) {
-        console.error('❌ Delete version failed:', err);
-    } finally {
-        setIsDeletingVersion(false);
-    }
-};
+    // ✅ handleDeleteVersion - เรียก callback ตรงๆ เช่นกัน
+    const handleDeleteVersion = async (versionId: number) => {
+        setIsDeletingVersion(true);
+        try {
+            await axios.delete(ENDPOINTS.DELETE_VERSION, {
+                data: { versionId },
+            });
+            setDeleteConfirm(null);
+            onDeleteVersionSuccess?.(); // ← parent fetch versions ใหม่
+        } catch (err) {
+            console.error('❌ Delete version failed:', err);
+        } finally {
+            setIsDeletingVersion(false);
+        }
+    };
 
-// ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
-const handleAddVersion = async () => {
-    if (!selectedTask || !addVersionForm.version_name.trim()) return;
-    setIsUploadingVersion(true);
-    try {
-        await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
-            task_id: selectedTask.id,
-            entity_type: 'task',
-            entity_id: selectedTask.id,
-            version_name: addVersionForm.version_name.trim(),
-            description: addVersionForm.description.trim() || undefined,
-            file_url: addVersionForm.file_url.trim() || undefined,
-            status: addVersionForm.status,
-            uploaded_by: addVersionForm.uploaded_by || undefined,
-            file_size: addVersionForm.file_size || undefined,
-        });
+    // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
+    const handleAddVersion = async () => {
+        if (!selectedTask || !addVersionForm.version_name.trim()) return;
+        setIsUploadingVersion(true);
+        try {
+            await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
+                task_id: selectedTask.id,
+                entity_type: 'task',
+                entity_id: selectedTask.id,
+                version_name: addVersionForm.version_name.trim(),
+                description: addVersionForm.description.trim() || undefined,
+                file_url: addVersionForm.file_url.trim() || undefined,
+                status: addVersionForm.status,
+                uploaded_by: addVersionForm.uploaded_by || undefined,
+                file_size: addVersionForm.file_size || undefined,
+            });
 
-        setShowAddVersionModal(false);
-        setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
-        onAddVersionSuccess?.(); // ← parent fetch versions ใหม่
-    } catch (err) {
-        console.error('❌ Add version error:', err);
-    } finally {
-        setIsUploadingVersion(false);
-    }
-};
+            setShowAddVersionModal(false);
+            setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
+            onAddVersionSuccess?.(); // ← parent fetch versions ใหม่
+        } catch (err) {
+            console.error('❌ Add version error:', err);
+        } finally {
+            setIsUploadingVersion(false);
+        }
+    };
 
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
@@ -339,100 +339,51 @@ const handleAddVersion = async () => {
 
                     {/* Header */}
                     <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/60 shadow-xl">
-                        <div className="flex items-center justify-between px-4 py-3">
-                            <div className="flex items-center gap-5">
+                        <div className="flex items-start justify-between px-5 py-4 gap-3">
+                            <div className="flex flex-col gap-2 min-w-0 flex-1">
 
-                                {/* Thumbnail */}
-                                <div className="relative group shrink-0">
-                                    {selectedTask.file_url ? (
-                                        <img
-                                            src={selectedTask.file_url}
-                                            alt=""
-                                            className="w-28 h-28 object-cover rounded-2xl shadow-2xl 
-                            ring-2 ring-slate-600/60 
-                            group-hover:ring-blue-500/80 group-hover:scale-105
-                            transition-all duration-300"
-                                        />
+                                {/* Task Name */}
+                                <h2 className="text-lg font-bold text-white leading-tight tracking-tight truncate">
+                                    {selectedTask?.task_name.split('/').pop()?.trim()}
+                                </h2>
+
+                                {/* Status + Pipeline */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border} shadow`}>
+                                        {selectedTask.status}
+                                    </span>
+                                    {selectedTask.pipeline_step ? (
+                                        <div
+                                            className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border-2"
+                                            style={{
+                                                backgroundColor: `${selectedTask.pipeline_step.color_hex}20`,
+                                                borderColor: `${selectedTask.pipeline_step.color_hex}60`,
+                                                color: selectedTask.pipeline_step.color_hex,
+                                            }}
+                                        >
+                                            <div
+                                                className="w-2 h-2 rounded-full"
+                                                style={{ backgroundColor: selectedTask.pipeline_step.color_hex }}
+                                            />
+                                            {selectedTask.pipeline_step.step_name}
+                                        </div>
                                     ) : (
-                                        <div className="w-28 h-28 rounded-2xl flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-800 to-slate-700 ring-2 ring-slate-700/60 shadow-xl">
-                                            <div className="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center shadow-inner">
-                                                <Image className="w-6 h-6 text-slate-500" />
-                                            </div>
-                                        </div>
+                                        <span className="px-2.5 py-1 rounded-lg text-xs text-slate-500 bg-slate-700/40 border border-slate-600/50 italic">ไม่ระบุ</span>
                                     )}
-                                    <div className="absolute inset-0 rounded-2xl 
-                        bg-gradient-to-t from-black/30 via-transparent to-transparent
-                        opacity-0 group-hover:opacity-100 
-                        transition-all duration-300" />
                                 </div>
 
-                                {/* Info */}
-                                <div className="flex flex-col gap-2.5">
-
-                                    {/* Task Name */}
-                                    <h2 className="text-xl md:text-2xl font-bold text-white leading-tight tracking-tight drop-shadow-lg">
-                                        {selectedTask?.task_name.split('/').pop()?.trim()}
-                                    </h2>
-
-                                    {/* Status + Description + Due */}
-                                    <div className="flex flex-col gap-2.5">
-
-                                        {/* Status */}
-                                        <div className='flex items-center gap-3'>
-                                            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Status:</span>
-                                            <span className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide ${taskStatusStyle.text} ${taskStatusStyle.bg} border ${taskStatusStyle.border} w-fit shadow-lg backdrop-blur-sm`}>
-                                                {selectedTask.status}
-                                            </span>
-                                        </div>
-
-                                        {/* Pipeline Step */}
-                                        <div className='flex items-center gap-3'>
-                                            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Pipeline:</span>
-                                            {selectedTask.pipeline_step ? (
-                                                <div
-                                                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide w-fit flex items-center gap-2.5 shadow-lg backdrop-blur-sm"
-                                                    style={{
-                                                        backgroundColor: `${selectedTask.pipeline_step.color_hex}20`,
-                                                        borderColor: `${selectedTask.pipeline_step.color_hex}60`,
-                                                        color: selectedTask.pipeline_step.color_hex,
-                                                        border: '2px solid'
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="w-2.5 h-2.5 rounded-full animate-pulse"
-                                                        style={{
-                                                            backgroundColor: selectedTask.pipeline_step.color_hex,
-                                                            boxShadow: `0 0 8px ${selectedTask.pipeline_step.color_hex}80, 0 0 12px ${selectedTask.pipeline_step.color_hex}40`
-                                                        }}
-                                                    />
-                                                    {selectedTask.pipeline_step.step_name}
-                                                </div>
-                                            ) : (
-                                                <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide text-slate-500 bg-slate-700/40 border-2 border-slate-600/50 w-fit italic shadow-lg">
-                                                    ไม่ระบุ
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Description */}
-                                        {selectedTask.description && (
-                                            <div className="bg-gradient-to-br from-slate-800/60 to-slate-700/40 px-4 py-2.5 rounded-xl max-w-xl shadow-lg border border-slate-600/30 backdrop-blur-sm">
-                                                <p className="text-xs text-slate-300 leading-relaxed line-clamp-2" title={selectedTask.description}>
-                                                    <span className="font-bold text-slate-200">Description:</span> {selectedTask.description}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Due Date */}
-                                        <div className="flex items-center gap-2.5 text-sm text-white bg-gradient-to-r from-slate-700/60 to-slate-600/60 px-4 py-2 rounded-xl w-fit shadow-lg border border-slate-600/30 backdrop-blur-sm">
-                                            <Calendar className="w-4 h-4 opacity-90 flex-shrink-0 drop-shadow" />
-                                            <span className="whitespace-nowrap font-semibold tracking-wide">
-                                                ครบกำหนด {formatDateThai(selectedTask.due_date)}
-                                            </span>
-                                        </div>
-
-                                    </div>
+                                {/* Due Date */}
+                                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>ครบกำหนด {formatDateThai(selectedTask.due_date)}</span>
                                 </div>
+
+                                {/* Description */}
+                                {selectedTask.description && (
+                                    <p className="text-xs text-slate-400 leading-relaxed line-clamp-2 max-w-sm" title={selectedTask.description}>
+                                        {selectedTask.description}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Close Button */}
@@ -773,7 +724,7 @@ const handleAddVersion = async () => {
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm rounded-lg transition-colors  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                     >
                         <Trash2 className="w-5 h-5 text-slate-50" />
-                         Delete Version
+                        Delete Version
                     </button>
                 </div>,
                 document.body

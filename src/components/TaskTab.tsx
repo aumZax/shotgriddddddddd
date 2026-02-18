@@ -511,9 +511,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">
                                 #
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
-                                รูป
-                            </th>
+                           
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
                                     <span>งาน</span>
@@ -596,28 +594,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                         </div>
                                     </td>
 
-                                    {/* Column #2: Thumbnail */}
-                                    <td className="px-4 py-3">
-                                        {task.file_url ? (
-                                            <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                <div
-                                                    className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
-                                                    style={{ backgroundImage: `url(${task.file_url})` }}
-                                                />
-                                                <img
-                                                    src={task.file_url}
-                                                    alt=""
-                                                    className="relative w-full h-full object-contain"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-20 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700">
-                                                <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
-                                                    <Image className="w-5 h-5 text-gray-600" />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </td>
+                                 
 
                                     {/* Column #3: Task Name */}
                                     <td className="px-4 py-4 w-48"> {/* ⭐ เพิ่ม w-48 หรือ w-40 */}

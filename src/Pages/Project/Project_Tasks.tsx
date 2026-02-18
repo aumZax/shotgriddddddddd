@@ -1024,13 +1024,11 @@ export default function Project_Tasks() {
                             <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10 backdrop-blur-sm">
                                 <tr className="border-b-2 border-blue-500/30">
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">
-                                        #
-                                    </th>
-                                    <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
-                                        <button onClick={() => setShowCreateMytask(true)} className="h-8 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap">
+                                       <button onClick={() => setShowCreateMytask(true)} className="h-8 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap">
                                             Add Task
                                         </button>
                                     </th>
+                                 
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-2">
                                             <span>งาน</span>
@@ -1088,7 +1086,7 @@ export default function Project_Tasks() {
                             <tbody className="divide-y divide-gray-800/50">
                                 {isLoadingSequences ? (
                                     <tr>
-                                        <td colSpan={12} className="px-4 py-16">
+                                        <td colSpan={10} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
                                                 <p className="text-gray-400 text-sm">Loading sequences...</p>
@@ -1097,7 +1095,7 @@ export default function Project_Tasks() {
                                     </tr>
                                 ) : taskGroups.length === 0 ? (
                                     <tr>
-                                        <td colSpan={12} className="px-4 py-16">
+                                        <td colSpan={10} className="px-4 py-16">
                                             <div className="flex flex-col items-center justify-center min-h-[400px]">
                                                 <div className="text-center space-y-6">
                                                     <div className="relative">
@@ -1126,7 +1124,7 @@ export default function Project_Tasks() {
                                                     className="bg-gray-800 hover:bg-gray-800/60 cursor-pointer transition-all border-b border-gray-700/50"
                                                     onClick={() => toggleGroup(group.entity_type, group.entity_id)}
                                                 >
-                                                    <td colSpan={15} className="px-4 py-2.5">
+                                                    <td colSpan={10} className="px-4 py-2.5">
                                                         <div className="flex items-center gap-3">
                                                             {/* Arrow Icon */}
                                                             <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
@@ -1181,27 +1179,7 @@ export default function Project_Tasks() {
                                                             </div>
                                                         </td>
 
-                                                        <td className="px-4 py-3">
-                                                            {task.file_url ? (
-                                                                <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                                    <div
-                                                                        className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
-                                                                        style={{ backgroundImage: `url(${task.file_url})` }}
-                                                                    />
-                                                                    <img
-                                                                        src={task.file_url}
-                                                                        alt=""
-                                                                        className="relative w-full h-full object-contain"
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-20 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700">
-                                                                    <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
-                                                                        <Image className="w-5 h-5 text-gray-600" />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </td>
+                                                 
 
 
                                                         {/* task name */}
