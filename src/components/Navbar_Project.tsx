@@ -119,7 +119,6 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
         { id: 'Tasks', label: 'Tasks', show: 'sm' },
         { id: 'Video', label: 'Video', show: 'md' },
         { id: 'other', label: 'Other', hasDropdown: true, show: 'lg' },
-        { id: 'project-pages', label: 'Project Pages', hasDropdown: true, show: 'lg' },
     ];
 
 
@@ -228,7 +227,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                                         <button
                                             key={item.id}
                                             onClick={() => handleMenuItemClick(item.route)}
-                                            className="w-full px-4 py-2.5 text-left text-sm text-gray-300 hover:bg-gray-700/80 hover:text-white transition-all duration-150 flex items-center gap-3 border-b border-gray-800 last:border-b-0"
+                                            className="bg-gradient-to-r from-blue-800 to-cyan-600 hover:from-blue-700 hover:to-cyan-500 w-full px-4 py-2.5 text-left text-sm text-gray-300 hover:bg-gray-700/80 hover:text-white transition-all duration-150 flex items-center gap-3 border-b border-gray-800 last:border-b-0"
                                         >
                                             <span className="text-base">{item.icon}</span>
                                             <span>{item.label}</span>
@@ -237,14 +236,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                                 </div>
                             )}
 
-                            {/* Dropdown Menu for Project Pages (placeholder) */}
-                            {tab.id === 'project-pages' && showProjectPagesDropdown && (
-                                <div className="absolute top-full left-0 mt-1 w-56 bg-gray-900 border border-gray-700/70 rounded-xl shadow-2xl overflow-hidden z-50 backdrop-blur-sm">
-                                    <div className="px-4 py-2.5 text-sm text-gray-500">
-                                        No project pages available
-                                    </div>
-                                </div>
-                            )}
+                         
                         </div>
                     ))}
                 </nav>
