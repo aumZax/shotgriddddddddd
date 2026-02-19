@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, Trash2 } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const getVideoData = () => {
     const stored = localStorage.getItem("selectedVideo");
@@ -15,7 +15,6 @@ const getVideoData = () => {
     };
 };
 
-// Status badge colors
 const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
     wtg: { bg: 'bg-gray-700/60', text: 'text-gray-300', dot: 'bg-gray-400' },
     ip: { bg: 'bg-blue-900/50', text: 'text-blue-300', dot: 'bg-blue-400' },
@@ -42,9 +41,9 @@ export default function VideoReviewSystem() {
     const [replyTo, setReplyTo] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState('feedback');
     const [isScrubbing, setIsScrubbing] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const videoUrl = videoData.videoUrl;
-
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
 
@@ -197,8 +196,6 @@ export default function VideoReviewSystem() {
         if (videoRef.current) { videoRef.current.currentTime = seconds; setCurrentTime(seconds); }
     };
 
-
-
     const filteredComments = comments.filter(c => {
         if (filterStatus === 'completed') return c.completed;
         if (filterStatus === 'pending') return !c.completed;
@@ -216,36 +213,30 @@ export default function VideoReviewSystem() {
             {/* ── Header ── */}
             <header className="h-14 bg-[#0a0c10]/95 backdrop-blur border-b border-white/[0.06] px-5 flex items-center justify-between flex-shrink-0 z-20">
                 <div className="flex items-center gap-3">
-
                     <div className="flex items-center gap-2.5">
-
                         <div>
                             <h1 className="text-sm font-semibold text-white leading-none">{videoData.shotCode}</h1>
                         </div>
                     </div>
-                    {/* Status pill */}
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusStyle.bg} ${statusStyle.text} ml-1`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
                         {videoData.status.toUpperCase()}
                     </div>
                 </div>
-
-
             </header>
 
             <div className="flex flex-1 overflow-hidden">
 
                 {/* ── Main Video Area ── */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
                     {/* Drawing Toolbar */}
                     <div className="h-11 bg-[#0d0f14] border-b border-white/[0.05] px-4 flex items-center gap-3 flex-shrink-0">
-                        {/* Tool switcher */}
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setSelectedTool('cursor')}
                                 className={`px-3 py-1 rounded-md text-slate-50 font-medium transition-all ${selectedTool === 'cursor'
-                                    ? 'bg-gradient-to-r from-blue-600 to-blue-500'
+                                    ? 'bg-gradient-to-r from-blue-400 to-cyan-400'
                                     : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}
                             >
                                 Select
@@ -253,9 +244,9 @@ export default function VideoReviewSystem() {
                             <button
                                 onClick={() => setSelectedTool('pen')}
                                 title="Draw (D)"
-                                className={`px-3 py-1 rounded-md transition-all ${selectedTool === 'pen'
-                                    ? 'bg-gradient-to-r from-blue-600 to-blue-500'
-                                    : 'bg-gradient-to-r from-gray-600 to-gray-500 '}`}
+                                className={`px-3 py-1 rounded-md transition-all text-slate-50 ${selectedTool === 'pen'
+                                    ? 'bg-gradient-to-r from-blue-400 to-cyan-400'
+                                    : 'bg-gradient-to-r from-gray-600 to-gray-500'}`}
                             >
                                 <Pencil className="w-4 h-4" />
                             </button>
@@ -265,7 +256,7 @@ export default function VideoReviewSystem() {
                             <div className="flex items-center gap-3 pl-2 border-l border-white/[0.26]">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[11px] text-gray-500">Size</span>
-                                    <input type="range" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="w-20 accent-violet-500" min="1" max="20" />
+                                    <input type="range" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="w-20 accent-cyan-400" min="1" max="20" />
                                     <span className="text-[11px] text-gray-400 w-6">{strokeWidth}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -285,18 +276,18 @@ export default function VideoReviewSystem() {
                                 onClick={undoDrawing}
                                 disabled={unpostedCount === 0}
                                 title="Undo (Ctrl+Z)"
-                                className={`p-1.5 rounded-lg transition-all ${unpostedCount === 0 
-                                    ? 'bg-gradient-to-r from-gray-700 to-gray-600'
-                                    : 'bg-gradient-to-r from-blue-600 to-blue-500'}`}
+                                className={`p-1.5 rounded-lg transition-all text-slate-50 ${unpostedCount === 0
+                                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 opacity-40 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-400 to-cyan-400'}`}
                             >
                                 <Undo2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                                 onClick={clearDrawings}
                                 disabled={unpostedCount === 0}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all ${unpostedCount === 0 
-                                 ? 'bg-gradient-to-r from-gray-700 to-gray-600'
-                                    : 'bg-gradient-to-r from-blue-600 to-blue-500'}`}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all text-slate-50 ${unpostedCount === 0
+                                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 opacity-40 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-400 to-cyan-400'}`}
                             >
                                 <Trash2 className="w-3 h-3" />
                                 Clear
@@ -315,14 +306,12 @@ export default function VideoReviewSystem() {
                                 className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
                                 onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp}
                             />
-                            {/* File label */}
                             <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-white/[0.08]">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                                 <span className="text-[11px] text-gray-300 font-mono">{videoData.shotCode}</span>
                             </div>
-                            {/* Annotation count badge */}
                             {unpostedCount > 0 && (
-                                <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-violet-600/90 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                                <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-gradient-to-r from-blue-400 to-cyan-400 px-2.5 py-1 rounded-lg">
                                     <Pencil className="w-3 h-3" />
                                     <span className="text-[11px] font-medium">{unpostedCount} unsaved</span>
                                 </div>
@@ -333,7 +322,7 @@ export default function VideoReviewSystem() {
                     {/* Video Controls */}
                     <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
-                            <button onClick={togglePlay} className="text-2xl  rounded-full bg-gradient-to-r from-red-600 to-red-600 hover:from-red-500 hover:to-red-500 border border-white/[0.08] flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 hover:from-blue-300 hover:to-cyan-300 flex items-center justify-center transition-all hover:scale-105 active:scale-95">
                                 {isPlaying ? <Pause size={15} /> : <Play size={15} />}
                             </button>
                             <span className="font-mono tabular-nums text-gray-400">
@@ -343,7 +332,6 @@ export default function VideoReviewSystem() {
                             </span>
                         </div>
 
-                        {/* Progress bar */}
                         <div className="relative group"
                             ref={progressBarRef}
                             onMouseDown={handleProgressMouseDown}
@@ -351,14 +339,12 @@ export default function VideoReviewSystem() {
                             onMouseUp={handleProgressMouseUp}
                         >
                             <div className="h-1.5 bg-white/[0.06] rounded-full cursor-pointer relative overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-violet-500 to-blue-500 rounded-full transition-none" style={{ width: `${(currentTime / duration) * 100 || 0}%` }} />
+                                <div className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-none" style={{ width: `${(currentTime / duration) * 100 || 0}%` }} />
                             </div>
-                            {/* Scrubber thumb */}
                             <div
                                 className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                                 style={{ left: `${(currentTime / duration) * 100 || 0}%` }}
                             />
-                            {/* Comment markers */}
                             {comments.map(c => (
                                 <div
                                     key={c.id}
@@ -374,190 +360,216 @@ export default function VideoReviewSystem() {
                     </div>
                 </div>
 
-                {/* ── Sidebar ── */}
-                <div className="w-[360px] bg-[#0a0c10] border-l border-white/[0.05] flex flex-col flex-shrink-0">
+                {/* ── Sidebar + Toggle ── */}
+                <div className="relative flex-shrink-0 flex">
+                    <div className="w-px bg-white/[0.06]" />
 
-                    {/* Tab bar */}
-                    <div className="flex flex-shrink-0">
-                        {[
-                            { key: 'feedback', icon: <MessageSquare className="w-3.5 h-3.5" />, label: `Feedback`, count: comments.length },
-                            { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Asset Info', count: null },
-                        ].map(tab => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
-                                className={`flex-1 flex items-center justify-center text-slate-50  gap-1.5 px-3 py-3 text-xs font-medium transition-all relative ${activeTab === tab.key 
-                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500' 
-                                : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}
-                            >
-                                {tab.icon}
-                                {tab.label}
-                                {tab.count !== null && (
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === tab.key ? 'bg-violet-600 text-white' : 'bg-white/[0.06] text-gray-400'}`}>{tab.count}</span>
-                                )}
-                                {activeTab === tab.key && <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-violet-500 to-blue-500 rounded-full" />}
-                            </button>
-                        ))}
+                    {/* Toggle button — floats on the left edge */}
+                    <div
+                        onClick={() => setSidebarOpen(o => !o)}
+                        title={sidebarOpen ? 'Hide panel' : 'Show panel'}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-30
+      w-7 h-20 rounded-full
+      bg-[#1f2227] border border-white/[0.50]
+      hover:border-cyan-400/50 hover:bg-[#0d1117]
+      flex items-center justify-center
+      shadow-lg shadow-black/40
+      transition-all duration-200
+      group"
+                    >
+                        {sidebarOpen
+                            ? <ChevronRight className=" text-slate-50 group-hover:text-cyan-400 transition-colors" />
+                            : <ChevronLeft className=" text-slate-50 group-hover:text-cyan-400 transition-colors" />}
                     </div>
 
-                    {/* ── Asset Info Tab ── */}
-                    {activeTab === 'info' ? (
-                        <div className="flex-1 overflow-y-auto p-5">
-                            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Shot Details</h2>
-                            <div className="space-y-px">
+                    {/* Sidebar panel */}
+                    <div
+                        className="h-full bg-[#0a0c10] border-l border-white/[0.05] flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
+                        style={{ width: sidebarOpen ? 360 : 0 }}
+                    >
+                        {/* Fixed-width inner so content doesn't warp during slide */}
+                        <div className="w-[360px] flex flex-col h-full">
+
+                            {/* Tab bar */}
+                            <div className="flex flex-shrink-0">
                                 {[
-                                    { label: 'Shot Code', value: videoData.shotCode, mono: true },
-                                    { label: 'Sequence', value: videoData.sequence },
-                                    { label: 'Due Date', value: videoData.dueDate || '—' },
-                                    { label: 'Description', value: videoData.description || '—' },
-                                ].map(row => (
-                                    <div key={row.label} className="flex items-start justify-between py-2.5 border-b border-white/[0.04]">
-                                        <span className="text-[11px] text-gray-500 w-24 flex-shrink-0">{row.label}</span>
-                                        <span className={`text-[12px] text-gray-200 text-right ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
-                                    </div>
+                                    { key: 'feedback', icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Feedback', count: comments.length },
+                                    { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Asset Info', count: null },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => setActiveTab(tab.key)}
+                                        className={`flex-1 flex items-center justify-center text-slate-50 gap-1.5 px-3 py-3 text-xs font-medium transition-all relative ${activeTab === tab.key
+                                            ? 'bg-gradient-to-r from-blue-400 to-cyan-400'
+                                            : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}
+                                    >
+                                        {tab.icon}
+                                        {tab.label}
+                                        {tab.count !== null && (
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-gray-400'}`}>
+                                                {tab.count}
+                                            </span>
+                                        )}
+                                    </button>
                                 ))}
-                                {/* Status */}
-                                <div className="flex items-center justify-between py-2.5 border-b border-white/[0.04]">
-                                    <span className="text-[11px] text-gray-500">Status</span>
-                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${statusStyle.bg} ${statusStyle.text}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
-                                        {videoData.status.toUpperCase()}
-                                    </div>
-                                </div>
                             </div>
 
-                            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-6 mb-4">Review Stats</h2>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
-                                    <div className="text-2xl font-bold text-white">{drawings.length}</div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">Annotations</div>
-                                </div>
-                                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
-                                    <div className="text-2xl font-bold text-white">{comments.length}</div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">Comments</div>
-                                </div>
-                            </div>
-                        </div>
-
-                    ) : (
-                        /* ── Feedback Tab ── */
-                        <>
-                            <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
-                                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{filteredComments.length} Comments</span>
-                                <select
-                                    value={filterStatus}
-                                    onChange={e => setFilterStatus(e.target.value)}
-                                    className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-violet-500/50"
-                                >
-                                    <option value="all">All</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-                                {filteredComments.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-40 text-center">
-                                        <MessageSquare className="w-8 h-8 text-gray-700 mb-2" />
-                                        <p className="text-xs text-gray-600">No feedback yet</p>
-                                        <p className="text-[11px] text-gray-700 mt-0.5">Pause and type to leave a note</p>
-                                    </div>
-                                )}
-                                {filteredComments.map(comment => (
-                                    <div key={comment.id} className={`rounded-xl border p-3 transition-all ${comment.completed ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.10]'}`}>
-                                        <div className="flex items-start gap-2.5 mb-2">
-                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                {comment.author[0]}
+                            {/* Asset Info Tab */}
+                            {activeTab === 'info' ? (
+                                <div className="flex-1 overflow-y-auto p-5">
+                                    <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Shot Details</h2>
+                                    <div className="space-y-px">
+                                        {[
+                                            { label: 'Shot Code', value: videoData.shotCode, mono: true },
+                                            { label: 'Sequence', value: videoData.sequence },
+                                            { label: 'Due Date', value: videoData.dueDate || '—' },
+                                            { label: 'Description', value: videoData.description || '—' },
+                                        ].map(row => (
+                                            <div key={row.label} className="flex items-start justify-between py-2.5 border-b border-white/[0.04]">
+                                                <span className="text-[11px] text-gray-500 w-24 flex-shrink-0">{row.label}</span>
+                                                <span className={`text-[12px] text-gray-200 text-right ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-semibold text-white truncate">{comment.author}</span>
-                                                    {comment.completed && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">Done</span>}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 mt-2 ">
-                                                    <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="h-6 flex items-center text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-700 hover:from-bgraylue-500 hover:to-gray-500">
-                                                        <span className='text-md'>
-                                                            {comment.timestamp}
-                                                        </span>
-                                                    </button>
-                                                    <span className="text-gray-700">·</span>
-                                                    <span className="text-md text-gray-600">{comment.timeAgo}</span>
-                                                </div>
+                                        ))}
+                                        <div className="flex items-center justify-between py-2.5 border-b border-white/[0.04]">
+                                            <span className="text-[11px] text-gray-500">Status</span>
+                                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                                                {videoData.status.toUpperCase()}
                                             </div>
                                         </div>
+                                    </div>
+                                    <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-6 mb-4">Review Stats</h2>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
+                                            <div className="text-2xl font-bold text-white">{drawings.length}</div>
+                                            <div className="text-[11px] text-gray-500 mt-0.5">Annotations</div>
+                                        </div>
+                                        <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3.5">
+                                            <div className="text-2xl font-bold text-white">{comments.length}</div>
+                                            <div className="text-[11px] text-gray-500 mt-0.5">Comments</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        <p className="text-lg text-gray-300 leading-relaxed mb-2 ml-9">{comment.text}</p>
+                            ) : (
+                                /* Feedback Tab */
+                                <>
+                                    <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
+                                        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{filteredComments.length} Comments</span>
+                                        <select
+                                            value={filterStatus}
+                                            onChange={e => setFilterStatus(e.target.value)}
+                                            className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-cyan-400/50"
+                                        >
+                                            <option value="all">All</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
+                                    </div>
 
-                                        {comment.drawings?.length > 0 && (
-                                            <div className="ml-9 mb-2 flex items-center gap-1 text-[10px] text-gray-600">
-                                                <Pencil className="w-2.5 h-2.5" />
-                                                {comment.drawings.length} annotation{comment.drawings.length > 1 ? 's' : ''}
+                                    <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+                                        {filteredComments.length === 0 && (
+                                            <div className="flex flex-col items-center justify-center h-40 text-center">
+                                                <MessageSquare className="w-8 h-8 text-gray-700 mb-2" />
+                                                <p className="text-xs text-gray-600">No feedback yet</p>
+                                                <p className="text-[11px] text-gray-700 mt-0.5">Pause and type to leave a note</p>
                                             </div>
                                         )}
-
-                                        {comment.replies?.length > 0 && (
-                                            <div className="ml-9 mt-2 space-y-2 pl-3 border-l border-white/[0.06]">
-                                                {comment.replies.map(reply => (
-                                                    <div key={reply.id}>
-                                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                                            <div className="w-4 h-4 rounded-full bg-gray-700 flex items-center justify-center text-[9px] font-bold">{reply.author[0]}</div>
-                                                            <span className="text-[11px] font-semibold text-gray-300">{reply.author}</span>
-                                                            <span className="text-[10px] text-gray-600">· {reply.timeAgo}</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-400 ml-5.5">{reply.text}</p>
+                                        {filteredComments.map(comment => (
+                                            <div key={comment.id} className={`rounded-xl border p-3 transition-all ${comment.completed ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.10]'}`}>
+                                                <div className="flex items-start gap-2.5 mb-2">
+                                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-xs font-bold flex-shrink-0 text-white">
+                                                        {comment.author[0]}
                                                     </div>
-                                                ))}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-semibold text-white truncate">{comment.author}</span>
+                                                            {comment.completed && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">Done</span>}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 mt-2">
+                                                            <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="h-6 flex items-center px-2 text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-600">
+                                                                <span className='text-md'>{comment.timestamp}</span>
+                                                            </button>
+                                                            <span className="text-gray-700">·</span>
+                                                            <span className="text-md text-gray-600">{comment.timeAgo}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-lg text-gray-300 leading-relaxed mb-2 ml-9">{comment.text}</p>
+
+                                                {comment.drawings?.length > 0 && (
+                                                    <div className="ml-9 mb-2 flex items-center gap-1 text-[10px] text-gray-600">
+                                                        <Pencil className="w-2.5 h-2.5" />
+                                                        {comment.drawings.length} annotation{comment.drawings.length > 1 ? 's' : ''}
+                                                    </div>
+                                                )}
+
+                                                {comment.replies?.length > 0 && (
+                                                    <div className="ml-9 mt-2 space-y-2 pl-3 border-l border-white/[0.06]">
+                                                        {comment.replies.map(reply => (
+                                                            <div key={reply.id}>
+                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                    <div className="w-4 h-4 rounded-full bg-gray-700 flex items-center justify-center text-[9px] font-bold">{reply.author[0]}</div>
+                                                                    <span className="text-[11px] font-semibold text-gray-300">{reply.author}</span>
+                                                                    <span className="text-[10px] text-gray-600">· {reply.timeAgo}</span>
+                                                                </div>
+                                                                <p className="text-[11px] text-gray-400 ml-5.5">{reply.text}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="ml-9 mt-2">
+                                                    <button
+                                                        onClick={() => { setReplyTo(comment.id); setNewComment(''); }}
+                                                        className="flex items-center gap-1 text-[10px] text-slate-50 rounded-2xl px-2 py-0.5 transition-colors bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500"
+                                                    >
+                                                        <Reply className="w-3 h-3" />
+                                                        Reply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Comment Input */}
+                                    <div className="border-t border-white/[0.05] p-3 flex-shrink-0 bg-[#0a0c10]">
+                                        {replyTo !== null && (
+                                            <div className="flex items-center justify-between mb-2 px-2.5 py-1.5 bg-blue-400/10 border border-cyan-400/20 rounded-lg">
+                                                <span className="text-[11px] text-cyan-400 flex items-center gap-1">
+                                                    <Reply className="w-3 h-3" />
+                                                    Replying to <span className="font-semibold ml-1">{comments.find(c => c.id === replyTo)?.author}</span>
+                                                </span>
+                                                <button onClick={() => setReplyTo(null)} className="text-slate-50 rounded-lg p-0.5 hover:opacity-80 transition-opacity bg-gradient-to-r from-gray-600 to-gray-500">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
                                         )}
-
-                                        <div className="ml-9 mt-2">
+                                        <div className="flex gap-2 items-end">
+                                            <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
+                                                <div className="text-[10px] text-gray-600 mb-1 font-mono">{formatTime(currentTime)}</div>
+                                                <input
+                                                    type="text"
+                                                    value={newComment}
+                                                    onChange={e => setNewComment(e.target.value)}
+                                                    onKeyPress={e => e.key === 'Enter' && addComment()}
+                                                    placeholder={replyTo ? "Write a reply…" : "Leave feedback…"}
+                                                    className="w-full bg-transparent text-xs text-white placeholder-gray-600 focus:outline-none"
+                                                />
+                                            </div>
                                             <button
-                                                onClick={() => { setReplyTo(comment.id); setNewComment(''); }}
-                                                className="flex items-center gap-1 text-[10px] text-slate-50 rounded-2xl transition-colors bg-gradient-to-r from-gray-700 to-gray-700 hover:from-bgraylue-500 hover:to-gray-500"
+                                                onClick={addComment}
+                                                className="px-3 py-2 bg-gradient-to-r from-blue-400 to-cyan-400 hover:from-blue-300 hover:to-cyan-300 rounded-xl text-xs font-semibold transition-all hover:shadow-lg hover:shadow-cyan-400/20 active:scale-95 flex-shrink-0 text-white"
                                             >
-                                                <Reply className="w-3 h-3" />
-                                                Reply
+                                                {replyTo ? 'Reply' : 'Post'}
                                             </button>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-
-                            {/* Comment Input */}
-                            <div className="border-t border-white/[0.05] p-3 flex-shrink-0 bg-[#0a0c10]">
-                                {replyTo !== null && (
-                                    <div className="flex items-center justify-between mb-2 px-2.5 py-1.5 bg-violet-600/10 border border-violet-500/20 rounded-lg">
-                                        <span className="text-[11px] text-violet-400 flex items-center gap-1">
-                                            <Reply className="w-3 h-3" />
-                                            Replying to <span className="font-semibold ml-1">{comments.find(c => c.id === replyTo)?.author}</span>
-                                        </span>
-                                        <button onClick={() => setReplyTo(null)} className="text-slate-50 rounded-lg hover:text-white transition-colors bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-500">
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                )}
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-violet-500/40 transition-colors">
-                                        <div className="text-[10px] text-gray-600 mb-1 font-mono">{formatTime(currentTime)}</div>
-                                        <input
-                                            type="text"
-                                            value={newComment}
-                                            onChange={e => setNewComment(e.target.value)}
-                                            onKeyPress={e => e.key === 'Enter' && addComment()}
-                                            placeholder={replyTo ? "Write a reply…" : "Leave feedback…"}
-                                            className="w-full bg-transparent text-xs text-white placeholder-gray-600 focus:outline-none"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={addComment}
-                                        className="px-3 py-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 rounded-xl text-xs font-semibold transition-all hover:shadow-lg hover:shadow-violet-500/20 active:scale-95 flex-shrink-0"
-                                    >
-                                        {replyTo ? 'Reply' : 'Post'}
-                                    </button>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
