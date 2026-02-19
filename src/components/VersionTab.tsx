@@ -420,10 +420,12 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                     </td>
 
                                     {/* DELETE */}
-                                    <td className="px-4 py-4">
+                                    <td className="px-4 py-4"
+                                    >
                                         {!mock && (
                                             <button
                                                 onClick={() => onDeleteVersion(version.id)}
+                                                hidden={version.version_number === 1}
                                                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
                                                 title="ลบ version นี้"
                                             >

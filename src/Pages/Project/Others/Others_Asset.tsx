@@ -594,6 +594,7 @@ export default function Others_Asset() {
 
         version_name: '', status: 'wtg', description: '', link: '', task: '',
     });
+    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
 
 
     const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -627,11 +628,34 @@ export default function Others_Asset() {
         }));
     };
 
-    // ลบไฟล์เดี่ยว
-    const removeVersionFile = (index: number) => {
-        setVersionFiles(prev => prev.filter((_, i) => i !== index));
-        setVersionFilePreviews(prev => prev.filter((_, i) => i !== index));
-    };
+
+const removeVersionFile = (index: number) => {
+    const newFiles = versionFiles.filter((_, i) => i !== index);
+    const newPreviews = versionFilePreviews.filter((_, i) => i !== index);
+
+    setVersionFiles(newFiles);
+    setVersionFilePreviews(newPreviews);
+
+    // ถ้าลบไฟล์ที่เป็นต้นทางของ version_name → reset name ด้วย
+    if (versionNameFromFile === index) {
+        setCreateVersionForm(p => ({ ...p, version_name: '' }));
+        setVersionNameFromFile(null);
+    } else if (versionNameFromFile !== null && index < versionNameFromFile) {
+        setVersionNameFromFile(prev => prev !== null ? prev - 1 : null);
+    }
+};
+
+
+const resetVersionForm = () => {
+    setShowCreateVersion(false);
+    setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+    setVersionFiles([]);
+    setVersionFilePreviews([]);
+    setVersionNameFromFile(null);
+    setSelectedUploader(null);
+    setUploaderQuery('');
+    setVersionModalPosition({ x: 0, y: 0 });
+};
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -768,6 +792,9 @@ export default function Others_Asset() {
                     if (!uploadRes.ok) throw new Error(`Upload failed: ${file.name}`);
                     const uploadData = await uploadRes.json();
                     const fileUrl = uploadData.file.fileUrl;
+                    const file_id = uploadData.file.id;
+
+                    localStorage.setItem("file_id",file_id);
 
                     // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
                     const vName = i === 0
@@ -776,12 +803,17 @@ export default function Others_Asset() {
 
                     await createSingleVersion(fileUrl, vName);
 
-                    // set thumbnail จากไฟล์แรก
-                    if (i === 0) {
+                    // set thumbnail จากไฟล์สุดท้าย
+                    if (i === versionFiles.length - 1) {
                         setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
+
                         const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                        localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: fileUrl }));
+                        localStorage.setItem(
+                            'selectedAsset',
+                            JSON.stringify({ ...stored, file_url: fileUrl })
+                        );
                     }
+
                 }
             }
 
@@ -816,8 +848,9 @@ export default function Others_Asset() {
                 link: createVersionForm.link || null,
                 task: createVersionForm.task || null,
                 file_url: fileUrl,
+                file_id: localStorage.getItem("file_id"),
                 uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
-                project_id: projectId,
+               
             })
         });
         if (!res.ok) throw new Error('Create version failed');
@@ -972,11 +1005,25 @@ export default function Others_Asset() {
                                 return true;
                             } catch { alert('ไม่สามารถอัปเดทได้'); return false; }
                         }}
+
                         onDeleteVersion={async (versionId: number) => {
                             try {
-                                await axios.delete(`${ENDPOINTS.DELETE_VERSION}/${versionId}`);
+                                const res = await axios.delete(`${ENDPOINTS.DELETE_ASSET_VERSION}/${versionId}`, {
+                                    data: { entityId: assetData?.id }
+                                });
+
                                 setAssetVersions(prev => prev.filter(v => v.id !== versionId));
-                            } catch { alert('ไม่สามารถลบได้'); }
+
+                                // อัปเดต thumbnail จาก response
+                                const newThumb = res.data.newThumbnail;
+                                if (newThumb) {
+                                    setAssetData(prev => prev ? { ...prev, thumbnail: newThumb } : null);
+                                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                                    localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: newThumb }));
+                                }
+                            } catch {
+                                alert('ไม่สามารถลบได้');
+                            }
                         }}
                         formatDate={formatDate}
                     />
@@ -1484,7 +1531,8 @@ export default function Others_Asset() {
                                 />
                             </div>
 
-                           
+                        
+
                             {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
@@ -1835,271 +1883,264 @@ export default function Others_Asset() {
             )}
             {/* Create Version Modal */}
 
+{/* ========== Create Version Modal ========== */}
+{showCreateVersion && (
+    <>
+        <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => !isCreatingVersion && resetVersionForm()} 
+        />
 
-            {showCreateVersion && (
-                <>
-                    <div
-                        className="fixed inset-0 z-40 bg-black/60"
-                        onClick={() => !isCreatingVersion && setShowCreateVersion(false)}
-                    />
+        <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
+            <div
+                style={{
+                    transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
+                    maxHeight: 'calc(100vh - 60px)',
+                }}
+                className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
+            >
+                {/* Header — ลากได้ */}
+                <div
+                    onMouseDown={(e) => {
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+                        const startPos = { ...versionModalPosition };
+                        const onMove = (me: MouseEvent) => {
+                            setVersionModalPosition({
+                                x: startPos.x + me.clientX - startX,
+                                y: startPos.y + me.clientY - startY,
+                            });
+                        };
+                        const onUp = () => {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('mouseup', onUp);
+                        };
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', onUp);
+                    }}
+                    className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                >
+                    <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
+                    <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => resetVersionForm()}
+                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
+                    >
+                        ✕
+                    </button>
+                </div>
 
-                    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                {/* Body */}
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+
+                    {/* File Upload */}
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
                         <div
-                            style={{
-                                transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
-                                maxHeight: 'calc(100vh - 80px)',
-                            }}
-                            className="relative w-full max-w-xl pointer-events-auto flex flex-col bg-[#1a1d26] rounded-2xl shadow-2xl border border-gray-700/60 overflow-hidden"
+                            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={handleVersionFileDrop}
+                            className={`relative rounded-lg border border-dashed transition-all duration-150 ${
+                                isDragging
+                                    ? 'border-blue-500/60 bg-blue-500/8'
+                                    : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
+                            }`}
                         >
-                            {/* Header — ลากได้ */}
-                            <div
-                                onMouseDown={(e) => {
-                                    const startX = e.clientX;
-                                    const startY = e.clientY;
-                                    const startPos = { ...versionModalPosition };
-                                    const onMove = (me: MouseEvent) => {
-                                        setVersionModalPosition({
-                                            x: startPos.x + me.clientX - startX,
-                                            y: startPos.y + me.clientY - startY,
-                                        });
-                                    };
-                                    const onUp = () => {
-                                        document.removeEventListener('mousemove', onMove);
-                                        document.removeEventListener('mouseup', onUp);
-                                    };
-                                    document.addEventListener('mousemove', onMove);
-                                    document.addEventListener('mouseup', onUp);
-                                }}
-                                className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                            >
-                                <h2 className="text-lg font-semibold text-gray-100 tracking-tight">Create Versions</h2>
-                                <button
-                                    onMouseDown={e => e.stopPropagation()}
-                                    onClick={() => setShowCreateVersion(false)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all text-xl leading-none"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            {/* Body — scroll ได้ */}
-                            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
-
-                                {/* Drag & Drop */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-start">
-                                    <label className="text-sm text-gray-300 text-right pt-3 font-medium">Uploaded Movie:</label>
-                                    <div
-                                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                                        onDragLeave={() => setIsDragging(false)}
-                                        onDrop={handleVersionFileDrop}
-                                        className={`relative rounded-xl border-2 border-dashed transition-all duration-200
-                                ${isDragging
-                                                ? 'border-blue-400 bg-blue-500/10 scale-[1.01]'
-                                                : 'border-gray-600 hover:border-gray-500 bg-gray-800/40 hover:bg-gray-800/60'
-                                            }`}
-                                    >
-                                        {/* แทนที่ drag & drop zone เดิม */}
-                                        <label className="flex flex-col items-center justify-center py-7 px-4 cursor-pointer w-full">
-                                            {versionFiles.length > 0 ? (
-                                                <div className="w-full space-y-2">
-                                                    {versionFiles.map((file, i) => (
-                                                        <div key={i} className="flex items-center gap-3 px-3 py-2 bg-gray-800/60 rounded-lg">
-                                                            {versionFilePreviews[i] ? (
-                                                                <img src={versionFilePreviews[i]} className="w-10 h-10 object-cover rounded" />
-                                                            ) : (
-                                                                <span className="text-2xl">🎬</span>
-                                                            )}
-                                                            <span className="text-sm text-gray-300 truncate flex-1">{file.name}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={e => { e.preventDefault(); removeVersionFile(i); }}
-                                                                className="text-gray-500 hover:text-red-400 transition-colors"
-                                                            >✕</button>
-                                                        </div>
-                                                    ))}
-                                                    {/* เพิ่มไฟล์อีก */}
-                                                    <div className="flex items-center justify-center gap-2 text-xs text-blue-400 hover:text-blue-300 cursor-pointer py-1">
-                                                        <span>+</span><span>Add more files</span>
-                                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-2 pointer-events-none">
-                                                    <span className="text-3xl text-gray-500">📎</span>
-                                                    <p className="text-sm text-gray-400 font-medium">Drag and drop files here</p>
-                                                    <p className="text-xs text-gray-500">or click to browse — รองรับหลายไฟล์</p>
-                                                </div>
-                                            )}
-                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-start">
-                                    <label className="text-sm text-gray-300 text-right pt-2 font-medium">Description:</label>
-                                    <textarea
-                                        value={createVersionForm.description}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
-                                        rows={3}
-                                        className="px-3 py-2 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 resize-none transition-colors"
-                                    />
-                                </div>
-
-                                {/* Version Name */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Version Name:</label>
-                                    <input
-                                        type="text"
-                                        value={createVersionForm.version_name}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
-                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
-                                    />
-                                </div>
-                                {/* Uploaded By */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center relative">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Uploaded By:</label>
-                                    <div className="relative">
-                                        {selectedUploader ? (
-                                            <div className="flex items-center gap-2 h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg">
-                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-[10px] font-semibold">
-                                                        {selectedUploader.name[0].toUpperCase()}
-                                                    </span>
-                                                </div>
-                                                <span className="text-gray-200 text-sm flex-1 truncate">{selectedUploader.name}</span>
+                            <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
+                                {versionFiles.length > 0 ? (
+                                    <div className="w-full space-y-1.5">
+                                        {versionFiles.map((file, i) => (
+                                            <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
+                                                {versionFilePreviews[i] ? (
+                                                    <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
+                                                ) : (
+                                                    <span className="text-base">🎬</span>
+                                                )}
+                                                <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                                                    className="text-gray-500 hover:text-red-400 text-xs"
+                                                    onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                                                    className="text-gray-600 hover:text-red-400 transition-colors text-xs"
                                                 >✕</button>
                                             </div>
-                                        ) : (
-                                            <input
-                                                type="text"
-                                                value={uploaderQuery}
-                                                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
-                                                onFocus={() => setUploaderOpen(true)}
-                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
-                                                placeholder={currentUser}
-                                                className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 placeholder:text-gray-500 w-full transition-colors"
-                                            />
-                                        )}
-
-                                        {/* Dropdown */}
-                                        {uploaderOpen && !selectedUploader && (
-                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-gray-600/50 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                                                {allPeople
-                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
-                                                    .map(person => (
-                                                        <div
-                                                            key={person.id}
-                                                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
-                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/20 cursor-pointer"
-                                                        >
-                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                                <span className="text-white text-[10px] font-semibold">
-                                                                    {person.name[0].toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm text-gray-200">{person.name}</p>
-                                                                <p className="text-xs text-gray-500">{person.email}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                }
-                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
-                                                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
-                                                )}
-                                            </div>
-                                        )}
+                                        ))}
+                                        <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
+                                            <span>+ Add more files</span>
+                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Link */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Link:</label>
-                                    <input
-                                        type="text"
-                                        value={assetData?.asset_name || ''}
-                                        placeholder={assetData.asset_name}
-                                        readOnly
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, link: e.target.value }))}
-                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/30 rounded-lg text-gray-500 text-sm"
-                                    />
-                                </div>
-
-                                {/* Task */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Task:</label>
-                                    <input
-                                        type="text"
-                                        value={createVersionForm.task}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
-                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
-                                    />
-                                </div>
-
-                                {/* Project (read-only) */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Project:</label>
-                                    <input
-                                        type="text"
-                                        readOnly
-                                        value={projectData?.projectName || ''}
-                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/30 rounded-lg text-gray-500 text-sm"
-                                    />
-                                </div>
-
-                                {/* Status */}
-                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
-                                    <label className="text-sm text-gray-300 text-right font-medium">Status:</label>
-                                    <select
-                                        value={createVersionForm.status}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
-                                        className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 transition-colors"
-                                    >
-                                        <option value="wtg">Waiting to Start</option>
-                                        <option value="ip">In Progress</option>
-                                        <option value="rev">Review</option>
-                                        <option value="apr">Approved</option>
-                                        <option value="rej">Rejected</option>
-                                        <option value="fin">Final</option>
-                                    </select>
-                                </div>
-
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700/50 bg-[#161820] flex-shrink-0">
-                                <button className="text-sm text-gray-400 hover:text-gray-200 transition-colors">
-                                    Open Bulk Import
-                                </button>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setShowCreateVersion(false)}
-                                        disabled={isCreatingVersion}
-                                        className="px-5 h-9 rounded-lg text-sm text-gray-300 bg-gray-700/50 hover:bg-gray-700 transition-all disabled:opacity-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleCreateVersion}
-                                        disabled={isCreatingVersion}
-                                        className="px-5 h-9 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
-                                    >
-                                        {isCreatingVersion
-                                            ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Creating...</span></>
-                                            : 'Create Version'
-                                        }
-                                    </button>
-                                </div>
-                            </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+                                        <span className="text-2xl text-gray-600">📎</span>
+                                        <p className="text-xs text-gray-400">Drop files or click to browse</p>
+                                    </div>
+                                )}
+                                <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                            </label>
                         </div>
                     </div>
-                </>
-            )}
+
+                    {/* Version Name + Status */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                            <input
+                                type="text"
+                                value={createVersionForm.version_name}
+                                onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
+                            <select
+                                value={createVersionForm.status}
+                                onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
+                                className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                            >
+                                <option value="wtg">Waiting</option>
+                                <option value="ip">In Progress</option>
+                                <option value="rev">Review</option>
+                                <option value="apr">Approved</option>
+                                <option value="rej">Rejected</option>
+                                <option value="fin">Final</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Uploaded By */}
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                        <div className="relative">
+                            {selectedUploader ? (
+                                <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-white text-[9px] font-semibold">
+                                            {selectedUploader.name[0].toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                        className="text-gray-600 hover:text-red-400 text-xs"
+                                    >✕</button>
+                                </div>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={uploaderQuery}
+                                    onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                    onFocus={() => setUploaderOpen(true)}
+                                    onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                    placeholder={currentUser}
+                                    className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                />
+                            )}
+                            {uploaderOpen && !selectedUploader && (
+                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                                    {allPeople
+                                        .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                        .map(person => (
+                                            <div
+                                                key={person.id}
+                                                onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                                                className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                            >
+                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-white text-[9px] font-semibold">
+                                                        {person.name[0].toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-200">{person.name}</p>
+                                                    <p className="text-[10px] text-gray-500">{person.email}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                    {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                        <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Task */}
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+                        <input
+                            type="text"
+                            value={createVersionForm.task}
+                            onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
+                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                        />
+                    </div>
+
+                    {/* Link + Project — read-only */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
+                            <input
+                                type="text"
+                                value={assetData?.asset_name || ''}
+                                readOnly
+                                className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
+                            <input
+                                type="text"
+                                readOnly
+                                value={projectData?.projectName || ''}
+                                className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
+                        <textarea
+                            value={createVersionForm.description}
+                            onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                            rows={2}
+                            className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
+                        />
+                    </div>
+
+                </div>
+
+                {/* Footer — Cancel ซ้าย, Create ขวา */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
+                    <button
+                        onClick={() => resetVersionForm()} 
+                        disabled={isCreatingVersion}
+                        className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleCreateVersion}
+                        disabled={isCreatingVersion}
+                        className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                    >
+                        {isCreatingVersion ? (
+                            <>
+                                <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Creating…</span>
+                            </>
+                        ) : 'Create Version'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </>
+)}
+{/* ========== End Create Version Modal ========== */}
+
             {/* Context Menu for Notes */}
             {noteContextMenu && (
                 <div
