@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, X, Reply, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat } from 'lucide-react';
 
 const getVideoData = () => {
     const stored = localStorage.getItem("selectedVideo");
@@ -42,6 +42,7 @@ export default function VideoReviewSystem() {
     const [activeTab, setActiveTab] = useState('feedback');
     const [isScrubbing, setIsScrubbing] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [volume, setVolume] = useState(1);
 
     const videoUrl = videoData.videoUrl;
     const [comments, setComments] = useState<Comment[]>([]);
@@ -50,6 +51,8 @@ export default function VideoReviewSystem() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const progressBarRef = useRef<HTMLDivElement | null>(null);
+    const [prevVolume, setPrevVolume] = useState(1);
+    const [isLooping, setIsLooping] = useState(false);
 
     type Point = { x: number; y: number };
     type Drawing = { id: number; path: Point[]; color: string; width: number; timestamp: number };
@@ -99,6 +102,20 @@ export default function VideoReviewSystem() {
         }
     };
 
+    const handleVolumeChange = (newVolume: number) => {
+        const clampedVolume = Math.max(0, Math.min(1, newVolume));
+        setVolume(clampedVolume);
+        if (videoRef.current) videoRef.current.volume = clampedVolume;
+    };
+
+    const toggleMute = () => {
+        if (volume > 0) {
+            setPrevVolume(volume);
+            handleVolumeChange(0);
+        } else {
+            handleVolumeChange(prevVolume);
+        }
+    };
     const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => { setIsScrubbing(true); updateProgressTime(e); };
     const handleProgressMouseMove = (e: React.MouseEvent<HTMLDivElement>) => { if (!isScrubbing) return; updateProgressTime(e); };
     const handleProgressMouseUp = () => setIsScrubbing(false);
@@ -300,7 +317,7 @@ export default function VideoReviewSystem() {
                     {/* Video */}
                     <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden min-h-0">
                         <div className="relative w-full h-full">
-                            <video ref={videoRef} src={videoUrl} className="w-full h-full object-contain" />
+                            <video ref={videoRef} src={videoUrl} className="w-full h-full object-contain" loop={isLooping} />
                             <canvas
                                 ref={canvasRef} width={1920} height={1080}
                                 className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
@@ -322,14 +339,64 @@ export default function VideoReviewSystem() {
                     {/* Video Controls */}
                     <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
-                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 hover:from-blue-300 hover:to-cyan-300 flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+                            <div onClick={togglePlay} className="rounded-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-400 hover:to-red-400 flex items-center justify-center transition-all hover:scale-105 active:scale-95 w-8 h-8">
                                 {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-                            </button>
+                            </div>
                             <span className="font-mono tabular-nums text-gray-400">
                                 <span className="text-white">{formatTime(currentTime)}</span>
                                 <span className="text-gray-600 mx-1">/</span>
                                 {formatTime(duration)}
                             </span>
+                            <div className="flex-1" />
+                            <div
+                                onClick={() => setIsLooping(o => !o)}
+                                title="Loop"
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${isLooping
+                                        ? 'border border-cyan-400 text-cyan-400'
+                                        : 'bg-white/[0.06] border border-white/[0.10] text-gray-500 hover:text-white'
+                                    }`}
+                            >
+                                <Repeat size={14} />
+                            </div>
+
+                            <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-1.5">
+                                {/* Icon ซ้าย — คลิก toggle mute */}
+                                <div
+                                    onClick={toggleMute}
+                                    title={volume === 0 ? "Unmute" : "Mute"}
+                                    className="text-gray-500 hover:text-cyan-400 transition-colors"
+                                >
+                                    {volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                </div>
+
+                                {/* Slider */}
+                                <div className="relative flex items-center w-20 h-4 group">
+                                    <div className="absolute inset-y-0 left-0 flex items-center w-full pointer-events-none">
+                                        <div className="w-full h-1 bg-white/[0.08] rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-all"
+                                                style={{ width: `${volume * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={volume * 100}
+                                        onChange={e => handleVolumeChange(Number(e.target.value) / 100)}
+                                        className="relative w-full opacity-0 cursor-pointer h-4 z-10"
+                                        title="Volume"
+                                    />
+                                </div>
+
+
+                                {/* % label */}
+                                <span className="text-[11px] font-mono text-gray-500 w-7 text-right tabular-nums">
+                                    {Math.round(volume * 100)}
+                                    <span className="text-gray-700">%</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div className="relative group"
