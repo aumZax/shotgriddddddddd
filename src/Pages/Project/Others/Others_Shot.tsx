@@ -1476,22 +1476,6 @@ onClick={(e) => {
                                 />
                             </div>
 
-                            {/* Status */}
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Status:
-                                </label>
-                                <select
-                                    value={createTaskForm.status}
-                                    onChange={(e) => handleFormChange('status', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="wtg">Waiting to Start</option>
-                                    <option value="ip">In Progress</option>
-                                    <option value="fin">Final</option>
-                                </select>
-                            </div>
-
                             {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">

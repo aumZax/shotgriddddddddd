@@ -1653,7 +1653,7 @@ export default function Project_Tasks() {
                                                                     ) : (
                                                                         <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
                                                                     )}
-                                                                    <span className="text-xs text-gray-300 font-medium truncate">
+                                                                    <span className="text-xs text-gray-300 font-medium">
                                                                         {statusConfig[task.status as StatusType].label}
                                                                     </span>
                                                                 </button>
@@ -2349,41 +2349,7 @@ export default function Project_Tasks() {
                                 </div>
                             )}
 
-                            {/* Status */}
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Status:
-                                </label>
-                                <select
-                                    value={createTaskForm.status}
-                                    onChange={(e) => handleFormChange('status', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="wtg">Waiting to Start</option>
-                                    <option value="ip">In Progress</option>
-                                    <option value="fin">Final</option>
-                                    <option value="apr">Approved</option>
-                                    <option value="cmpt">Complete</option>
-                                    <option value="cfrm">Confirmed</option>
-                                    <option value="nef">Need fixed</option>
-                                    <option value="dlvr">Delivered</option>
-                                    <option value="rts">Ready to Start</option>
-                                    <option value="rev">Pending Review</option>
-                                    <option value="omt">Omit</option>
-                                    <option value="ren">Rendering</option>
-                                    <option value="hld">On Hold</option>
-                                    <option value="vwd">Viewed</option>
-                                    <option value="crv">Client review</option>
-                                    <option value="na">N/A</option>
-                                    <option value="pndng">Pending</option>
-                                    <option value="cap">Client Approved</option>
-                                    <option value="recd">Received</option>
-                                    <option value="chk">Checking</option>
-                                    <option value="rdd">Render done</option>
-                                    <option value="srd">Submit render</option>
-                                    <option value="sos">Send outsource</option>
-                                </select>
-                            </div>
+                         
 
                             {/* ⭐ ลบส่วน Pipeline Step ออกทั้งหมด */}
 

@@ -155,8 +155,8 @@ export default function Others_Asset() {
     const [showCreateAsset_Task, setShowCreateAsset_Task] = useState(false);
     const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
     const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
-const [uploaderQuery, setUploaderQuery] = useState('');
-const [uploaderOpen, setUploaderOpen] = useState(false);
+    const [uploaderQuery, setUploaderQuery] = useState('');
+    const [uploaderOpen, setUploaderOpen] = useState(false);
 
 
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -199,7 +199,7 @@ const [uploaderOpen, setUploaderOpen] = useState(false);
 
     const [assetVersions, setAssetVersions] = useState<any[]>([]);
     const [isLoadingAssetVersions, setIsLoadingAssetVersions] = useState(false);
- 
+
 
     // Context menu for notes
     const [noteContextMenu, setNoteContextMenu] = useState<{
@@ -588,50 +588,50 @@ const [uploaderOpen, setUploaderOpen] = useState(false);
     const [isCreatingVersion, setIsCreatingVersion] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [versionFiles, setVersionFiles] = useState<File[]>([]);
-const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
+    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
     const [createVersionForm, setCreateVersionForm] = useState({
 
-        
+
         version_name: '', status: 'wtg', description: '', link: '', task: '',
     });
 
 
     const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setVersionFiles(prev => [...prev, ...files]);
-    setVersionFilePreviews(prev => [
-        ...prev,
-        ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
-    ]);
-    // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
-    setCreateVersionForm(p => ({
-        ...p,
-        version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
-    }));
-};
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
 
-// handler drag & drop
-const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    if (!files.length) return;
-    setVersionFiles(prev => [...prev, ...files]);
-    setVersionFilePreviews(prev => [
-        ...prev,
-        ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
-    ]);
-    setCreateVersionForm(p => ({
-        ...p,
-        version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
-    }));
-};
+    // handler drag & drop
+    const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); setIsDragging(false);
+        const files = Array.from(e.dataTransfer.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
 
-// ลบไฟล์เดี่ยว
-const removeVersionFile = (index: number) => {
-    setVersionFiles(prev => prev.filter((_, i) => i !== index));
-    setVersionFilePreviews(prev => prev.filter((_, i) => i !== index));
-};
+    // ลบไฟล์เดี่ยว
+    const removeVersionFile = (index: number) => {
+        setVersionFiles(prev => prev.filter((_, i) => i !== index));
+        setVersionFilePreviews(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -745,83 +745,83 @@ const removeVersionFile = (index: number) => {
 
 
     const handleCreateVersion = async () => {
-    if (isCreatingVersion) return;
-    if (!createVersionForm.version_name.trim()) {
-        alert('กรุณาระบุชื่อ Version'); return;
-    }
-    setIsCreatingVersion(true);
-    try {
-        if (versionFiles.length === 0) {
-            // ไม่มีไฟล์ — สร้าง 1 version เปล่า
-            await createSingleVersion(null);
-        } else {
-            // มีไฟล์ — สร้างทีละไฟล์
-            for (let i = 0; i < versionFiles.length; i++) {
-                const file = versionFiles[i];
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('assetId', assetData?.id.toString() || '');
-                formData.append('fileName', file.name);
-                formData.append('type', 'version');
+        if (isCreatingVersion) return;
+        if (!createVersionForm.version_name.trim()) {
+            alert('กรุณาระบุชื่อ Version'); return;
+        }
+        setIsCreatingVersion(true);
+        try {
+            if (versionFiles.length === 0) {
+                // ไม่มีไฟล์ — สร้าง 1 version เปล่า
+                await createSingleVersion(null);
+            } else {
+                // มีไฟล์ — สร้างทีละไฟล์
+                for (let i = 0; i < versionFiles.length; i++) {
+                    const file = versionFiles[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('assetId', assetData?.id.toString() || '');
+                    formData.append('fileName', file.name);
+                    formData.append('type', 'version');
 
-                const uploadRes = await fetch(ENDPOINTS.UPLOAD_ASSET, { method: 'POST', body: formData });
-                if (!uploadRes.ok) throw new Error(`Upload failed: ${file.name}`);
-                const uploadData = await uploadRes.json();
-                const fileUrl = uploadData.file.fileUrl;
+                    const uploadRes = await fetch(ENDPOINTS.UPLOAD_ASSET, { method: 'POST', body: formData });
+                    if (!uploadRes.ok) throw new Error(`Upload failed: ${file.name}`);
+                    const uploadData = await uploadRes.json();
+                    const fileUrl = uploadData.file.fileUrl;
 
-                // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
-                const vName = i === 0
-                    ? createVersionForm.version_name.trim()
-                    : file.name.replace(/\.[^/.]+$/, '');
+                    // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
+                    const vName = i === 0
+                        ? createVersionForm.version_name.trim()
+                        : file.name.replace(/\.[^/.]+$/, '');
 
-                await createSingleVersion(fileUrl, vName);
+                    await createSingleVersion(fileUrl, vName);
 
-                // set thumbnail จากไฟล์แรก
-                if (i === 0) {
-                    setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
-                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                    localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: fileUrl }));
+                    // set thumbnail จากไฟล์แรก
+                    if (i === 0) {
+                        setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
+                        const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                        localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: fileUrl }));
+                    }
                 }
             }
+
+            alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
+            setShowCreateVersion(false);
+            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+            setVersionFiles([]);
+            setVersionFilePreviews([]);
+            fetchAssetVersions();
+            setSelectedUploader(null);
+            setUploaderQuery('');
+
+        } catch (error: any) {
+            console.error('Error creating version:', error);
+            alert('Failed to create version. Please try again.');
+        } finally {
+            setIsCreatingVersion(false);
         }
+    };
 
-        alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
-        setShowCreateVersion(false);
-        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
-        setVersionFiles([]);
-        setVersionFilePreviews([]);
-        fetchAssetVersions();
-        setSelectedUploader(null);
-        setUploaderQuery('');
-
-    } catch (error: any) {
-        console.error('Error creating version:', error);
-        alert('Failed to create version. Please try again.');
-    } finally {
-        setIsCreatingVersion(false);
-    }
-};
-
-// helper
-const createSingleVersion = async (fileUrl: string | null, versionName?: string) => {
-    const res = await fetch(ENDPOINTS.CREATE_ASSET_VERSION, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            entityType: 'asset',
-            entityId: assetData?.id,
-            version_name: versionName || createVersionForm.version_name.trim(),
-            status: createVersionForm.status,
-            description: createVersionForm.description || null,
-            link: createVersionForm.link || null,
-            task: createVersionForm.task || null,
-            file_url: fileUrl,
-            uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
-            project_id: projectId,
-        })
-    });
-    if (!res.ok) throw new Error('Create version failed');
-};
+    // helper
+    const createSingleVersion = async (fileUrl: string | null, versionName?: string) => {
+        const res = await fetch(ENDPOINTS.CREATE_ASSET_VERSION, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                entityType: 'asset',
+                entityId: assetData?.id,
+                version_name: versionName || createVersionForm.version_name.trim(),
+                status: createVersionForm.status,
+                description: createVersionForm.description || null,
+                link: createVersionForm.link || null,
+                task: createVersionForm.task || null,
+                file_url: fileUrl,
+                uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
+                project_id: projectId,
+            })
+        });
+        if (!res.ok) throw new Error('Create version failed');
+    };
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Create Task Form States
@@ -849,8 +849,8 @@ const createSingleVersion = async (fileUrl: string | null, versionName?: string)
             const res = await axios.post(`${ENDPOINTS.GET_ASSET_VERSION}`, { entityType: 'asset', entityId: AssetID });
             const data = res.data;
             if (Array.isArray(data) && data.length > 0) { setAssetVersions(data); }
-           
-        } 
+
+        }
         finally { setIsLoadingAssetVersions(false); }
     };
 
@@ -964,7 +964,7 @@ const createSingleVersion = async (fileUrl: string | null, versionName?: string)
                     <VersionTab
                         versions={assetVersions}
                         isLoadingVersions={isLoadingAssetVersions}
-                       
+
                         onUpdateVersion={async (versionId, field, value) => {
                             try {
                                 await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
@@ -1484,22 +1484,7 @@ const createSingleVersion = async (fileUrl: string | null, versionName?: string)
                                 />
                             </div>
 
-                            {/* Status */}
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    Status:
-                                </label>
-                                <select
-                                    value={createTaskForm.status}
-                                    onChange={(e) => handleFormChange('status', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="wtg">Waiting to Start</option>
-                                    <option value="ip">In Progress</option>
-                                    <option value="fin">Final</option>
-                                </select>
-                            </div>
-
+                           
                             {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
@@ -1914,39 +1899,39 @@ const createSingleVersion = async (fileUrl: string | null, versionName?: string)
                                             }`}
                                     >
                                         {/* แทนที่ drag & drop zone เดิม */}
-<label className="flex flex-col items-center justify-center py-7 px-4 cursor-pointer w-full">
-    {versionFiles.length > 0 ? (
-        <div className="w-full space-y-2">
-            {versionFiles.map((file, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2 bg-gray-800/60 rounded-lg">
-                    {versionFilePreviews[i] ? (
-                        <img src={versionFilePreviews[i]} className="w-10 h-10 object-cover rounded" />
-                    ) : (
-                        <span className="text-2xl">🎬</span>
-                    )}
-                    <span className="text-sm text-gray-300 truncate flex-1">{file.name}</span>
-                    <button
-                        type="button"
-                        onClick={e => { e.preventDefault(); removeVersionFile(i); }}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
-                    >✕</button>
-                </div>
-            ))}
-            {/* เพิ่มไฟล์อีก */}
-            <div className="flex items-center justify-center gap-2 text-xs text-blue-400 hover:text-blue-300 cursor-pointer py-1">
-                <span>+</span><span>Add more files</span>
-                <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-            </div>
-        </div>
-    ) : (
-        <div className="flex flex-col items-center gap-2 pointer-events-none">
-            <span className="text-3xl text-gray-500">📎</span>
-            <p className="text-sm text-gray-400 font-medium">Drag and drop files here</p>
-            <p className="text-xs text-gray-500">or click to browse — รองรับหลายไฟล์</p>
-        </div>
-    )}
-    <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-</label>
+                                        <label className="flex flex-col items-center justify-center py-7 px-4 cursor-pointer w-full">
+                                            {versionFiles.length > 0 ? (
+                                                <div className="w-full space-y-2">
+                                                    {versionFiles.map((file, i) => (
+                                                        <div key={i} className="flex items-center gap-3 px-3 py-2 bg-gray-800/60 rounded-lg">
+                                                            {versionFilePreviews[i] ? (
+                                                                <img src={versionFilePreviews[i]} className="w-10 h-10 object-cover rounded" />
+                                                            ) : (
+                                                                <span className="text-2xl">🎬</span>
+                                                            )}
+                                                            <span className="text-sm text-gray-300 truncate flex-1">{file.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                                                                className="text-gray-500 hover:text-red-400 transition-colors"
+                                                            >✕</button>
+                                                        </div>
+                                                    ))}
+                                                    {/* เพิ่มไฟล์อีก */}
+                                                    <div className="flex items-center justify-center gap-2 text-xs text-blue-400 hover:text-blue-300 cursor-pointer py-1">
+                                                        <span>+</span><span>Add more files</span>
+                                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 pointer-events-none">
+                                                    <span className="text-3xl text-gray-500">📎</span>
+                                                    <p className="text-sm text-gray-400 font-medium">Drag and drop files here</p>
+                                                    <p className="text-xs text-gray-500">or click to browse — รองรับหลายไฟล์</p>
+                                                </div>
+                                            )}
+                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                        </label>
                                     </div>
                                 </div>
 
@@ -1972,65 +1957,65 @@ const createSingleVersion = async (fileUrl: string | null, versionName?: string)
                                     />
                                 </div>
                                 {/* Uploaded By */}
-<div className="grid grid-cols-[120px_1fr] gap-4 items-center relative">
-    <label className="text-sm text-gray-300 text-right font-medium">Uploaded By:</label>
-    <div className="relative">
-        {selectedUploader ? (
-            <div className="flex items-center gap-2 h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-[10px] font-semibold">
-                        {selectedUploader.name[0].toUpperCase()}
-                    </span>
-                </div>
-                <span className="text-gray-200 text-sm flex-1 truncate">{selectedUploader.name}</span>
-                <button
-                    type="button"
-                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                    className="text-gray-500 hover:text-red-400 text-xs"
-                >✕</button>
-            </div>
-        ) : (
-            <input
-                type="text"
-                value={uploaderQuery}
-                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
-                onFocus={() => setUploaderOpen(true)}
-                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
-                placeholder={currentUser}
-                className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 placeholder:text-gray-500 w-full transition-colors"
-            />
-        )}
+                                <div className="grid grid-cols-[120px_1fr] gap-4 items-center relative">
+                                    <label className="text-sm text-gray-300 text-right font-medium">Uploaded By:</label>
+                                    <div className="relative">
+                                        {selectedUploader ? (
+                                            <div className="flex items-center gap-2 h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg">
+                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-white text-[10px] font-semibold">
+                                                        {selectedUploader.name[0].toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <span className="text-gray-200 text-sm flex-1 truncate">{selectedUploader.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                                    className="text-gray-500 hover:text-red-400 text-xs"
+                                                >✕</button>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={uploaderQuery}
+                                                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                                onFocus={() => setUploaderOpen(true)}
+                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                                placeholder={currentUser}
+                                                className="h-9 px-3 bg-[#0d1117] border border-gray-600/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500/70 placeholder:text-gray-500 w-full transition-colors"
+                                            />
+                                        )}
 
-        {/* Dropdown */}
-        {uploaderOpen && !selectedUploader && (
-            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-gray-600/50 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                {allPeople
-                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
-                    .map(person => (
-                        <div
-                            key={person.id}
-                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/20 cursor-pointer"
-                        >
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-[10px] font-semibold">
-                                    {person.name[0].toUpperCase()}
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-200">{person.name}</p>
-                                <p className="text-xs text-gray-500">{person.email}</p>
-                            </div>
-                        </div>
-                    ))
-                }
-                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
-                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
-                )}
-            </div>
-        )}
-    </div>
-</div>
+                                        {/* Dropdown */}
+                                        {uploaderOpen && !selectedUploader && (
+                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-gray-600/50 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                                                {allPeople
+                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                                    .map(person => (
+                                                        <div
+                                                            key={person.id}
+                                                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/20 cursor-pointer"
+                                                        >
+                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-white text-[10px] font-semibold">
+                                                                    {person.name[0].toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm text-gray-200">{person.name}</p>
+                                                                <p className="text-xs text-gray-500">{person.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 {/* Link */}
                                 <div className="grid grid-cols-[120px_1fr] gap-4 items-center">

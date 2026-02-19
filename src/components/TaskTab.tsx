@@ -837,7 +837,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                                 ) : (
                                                     <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[task.status as StatusType].color} shadow-sm`}></div>
                                                 )}
-                                                <span className="text-xs text-gray-300 font-medium truncate">
+                                                <span className="text-xs text-gray-300 font-medium">
                                                     {statusConfig[task.status as StatusType].label}
                                                 </span>
                                             </button>
