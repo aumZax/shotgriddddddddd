@@ -680,7 +680,6 @@ export default function VideoReviewSystem() {
                                             <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
                                                 <div className="text-[10px] text-gray-600 mb-1 font-mono">
                                                     {(() => {
-                                                        const tolerance = 0.5;
                                                         const unposted = drawings.filter(d => !postedDrawingIds.includes(d.id));
                                                         const times = [...new Set(unposted.map(d => formatTime(d.timestamp)))];
                                                         return times.length > 0 ? times.join(', ') : formatTime(currentTime);
