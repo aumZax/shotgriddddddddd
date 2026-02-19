@@ -392,9 +392,9 @@ export default function VideoReviewSystem() {
 
 
                                 {/* % label */}
-                                <span className="text-[11px] font-mono text-gray-500 w-7 text-right tabular-nums">
+                                <span className="text-sm font-mono text-gray-500 w-7 text-right tabular-nums">
                                     {Math.round(volume * 100)}
-                                    <span className="text-gray-700">%</span>
+                                    <span className="px-0.5">%</span>
                                 </span>
                             </div>
                         </div>
@@ -429,20 +429,20 @@ export default function VideoReviewSystem() {
 
                 {/* ── Sidebar + Toggle ── */}
                 <div className="relative flex-shrink-0 flex">
-                    <div className="w-px bg-white/[0.06]" />
+                    <div className="w-px bg-white/[0.20]" />
 
                     {/* Toggle button — floats on the left edge */}
                     <div
                         onClick={() => setSidebarOpen(o => !o)}
                         title={sidebarOpen ? 'Hide panel' : 'Show panel'}
                         className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-30
-      w-7 h-20 rounded-full
-      bg-[#1f2227] border border-white/[0.50]
-      hover:border-cyan-400/50 hover:bg-[#0d1117]
-      flex items-center justify-center
-      shadow-lg shadow-black/40
-      transition-all duration-200
-      group"
+                            w-7 h-20 rounded-full
+                            bg-[#1f2227] border border-white/[0.20]
+                            hover:border-cyan-400/50 hover:bg-[#0d1117]
+                            flex items-center justify-center
+                            shadow-lg shadow-black/40
+                            transition-all duration-200
+                            group"
                     >
                         {sidebarOpen
                             ? <ChevronRight className=" text-slate-50 group-hover:text-cyan-400 transition-colors" />
