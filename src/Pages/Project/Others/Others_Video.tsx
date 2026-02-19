@@ -57,7 +57,12 @@ export default function VideoReviewSystem() {
     type Point = { x: number; y: number };
     type Drawing = { id: number; path: Point[]; color: string; width: number; timestamp: number };
     type Reply = { id: number; author: string; text: string; timeAgo: string };
-    type Comment = { id: number; author: string; timestamp: string; timestampSeconds: number; timeAgo: string; text: string; completed: boolean; replies: Reply[]; drawings: Drawing[] };
+    type Comment = {
+        id: number; author: string; timestamp: string;
+        timestampSeconds: number; timestamps?: number[]; // optional
+        timeAgo: string; text: string; completed: boolean;
+        replies: Reply[]; drawings: Drawing[]
+    };
 
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
@@ -200,10 +205,22 @@ export default function VideoReviewSystem() {
                 setComments(prev => prev.map(c => c.id === replyTo ? { ...c, replies: [...(c.replies || []), { id: Date.now(), author: 'Current User', text: newComment, timeAgo: 'Just now' }] } : c));
                 setReplyTo(null);
             } else {
-                const tolerance = 0.5;
-                const currentDrawings = drawings.filter(d => Math.abs(d.timestamp - currentTime) < tolerance);
+                const currentDrawings = drawings.filter(d => !postedDrawingIds.includes(d.id));
+                const uniqueTimestamps = [...new Set(currentDrawings.map(d => d.timestamp))].sort((a, b) => a - b);
                 setPostedDrawingIds(prev => [...prev, ...currentDrawings.map(d => d.id)]);
-                setComments(prev => [...prev, { id: Date.now(), author: 'Current User', timestamp: formatTime(currentTime), timestampSeconds: currentTime, timeAgo: 'Just now', text: newComment, completed: false, replies: [], drawings: currentDrawings }]);
+                setComments(prev => [...prev, {
+                    id: Date.now(),
+                    author: 'Current User',
+                    timestamp: uniqueTimestamps.map(t => formatTime(t)).join(', '),
+                    timestampSeconds: uniqueTimestamps[0] ?? currentTime,
+                    timestamps: uniqueTimestamps,
+                    timeAgo: 'Just now',
+                    text: newComment,
+                    completed: false,
+                    replies: [],
+                    drawings: currentDrawings
+                }]);
+                // ลบ setPostedDrawingIds และ setComments ซ้ำออกทั้งหมด
             }
             setNewComment('');
         }
@@ -323,21 +340,38 @@ export default function VideoReviewSystem() {
                                 className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
                                 onMouseDown={handleCanvasMouseDown} onMouseMove={handleCanvasMouseMove} onMouseUp={handleCanvasMouseUp} onMouseLeave={handleCanvasMouseUp}
                             />
-                            <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-white/[0.08]">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[11px] text-gray-300 font-mono">{videoData.shotCode}</span>
-                            </div>
-                            {unpostedCount > 0 && (
-                                <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-gradient-to-r from-blue-400 to-cyan-400 px-2.5 py-1 rounded-lg">
-                                    <Pencil className="w-3 h-3" />
-                                    <span className="text-[11px] font-medium">{unpostedCount} unsaved</span>
+                            <div className="absolute bottom-2 left-4 right-4 
+                                    flex items-center justify-between
+                                    px-2.5 py-1 rounded-lg">
+
+                                {/* ซ้าย */}
+                                <div className="flex items-center gap-1.5 border border-white/[0.10] bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                    <span className="text-[11px] text-gray-300 font-mono">
+                                        {videoData.shotCode}
+                                    </span>
                                 </div>
-                            )}
+
+                                {/* ขวา */}
+                                {unpostedCount > 0 && (
+                                    <div className="flex items-center gap-1.5 
+                                        bg-gradient-to-r from-blue-400 to-cyan-400 
+                                        px-2.5 py-1 rounded-lg">
+                                        <Pencil className="w-3 h-3" />
+                                        <span className="text-sm font-medium">
+                                            {unpostedCount} unsaved
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+
                         </div>
                     </div>
 
                     {/* Video Controls */}
-                    <div className="bg-[#0a0c10] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
+                    <div className="bg-[#161a21] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
+                    
                         <div className="flex items-center gap-4 mb-3">
                             <div onClick={togglePlay} className="rounded-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-400 hover:to-red-400 flex items-center justify-center transition-all hover:scale-105 active:scale-95 w-8 h-8">
                                 {isPlaying ? <Pause size={15} /> : <Play size={15} />}
@@ -352,8 +386,8 @@ export default function VideoReviewSystem() {
                                 onClick={() => setIsLooping(o => !o)}
                                 title="Loop"
                                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${isLooping
-                                        ? 'border border-cyan-400 text-cyan-400'
-                                        : 'bg-white/[0.06] border border-white/[0.10] text-gray-500 hover:text-white'
+                                    ? 'border border-cyan-400 text-cyan-400'
+                                    : 'bg-white/[0.06] border border-white/[0.10] text-gray-500 hover:text-white'
                                     }`}
                             >
                                 <Repeat size={14} />
@@ -412,17 +446,40 @@ export default function VideoReviewSystem() {
                                 className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                                 style={{ left: `${(currentTime / duration) * 100 || 0}%` }}
                             />
-                            {comments.map(c => (
+
+                            {/* Unposted drawings — mark โปร่งๆ */}
+                            {drawings.filter(d => !postedDrawingIds.includes(d.id)).map(d => (
                                 <div
-                                    key={c.id}
-                                    onClick={() => jumpToTimestamp(c.timestampSeconds)}
-                                    title={`${c.timestamp} — ${c.text}`}
+                                    key={d.id}
+                                    onClick={(e) => {
+                                        if (e.altKey) {
+                                            setDrawings(prev => prev.filter(drawing => drawing.id !== d.id));
+                                        } else {
+                                            jumpToTimestamp(d.timestamp);
+                                        }
+                                    }}
+                                    title={`${formatTime(d.timestamp)} — unsaved (Alt+click to delete)`}
                                     className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
-                                    style={{ left: `${(c.timestampSeconds / duration) * 100}%` }}
+                                    style={{ left: `${(d.timestamp / duration) * 100}%` }}
                                 >
-                                    <span className={`block w-2 h-2 rounded-full border border-black/40 transition-transform hover:scale-150 ${Math.abs(c.timestampSeconds - currentTime) < 0.3 ? 'bg-orange-400 scale-125' : 'bg-yellow-400'}`} />
+                                    <span className={`block w-2 h-2 rounded-full border-2 border-slate-50 transition-transform hover:scale-300 ${Math.abs(d.timestamp - currentTime) < 0.3 ? 'bg-slate-50 scale-250' : 'bg-gray-950 scale-200'}`} />
                                 </div>
                             ))}
+
+                            {/* Posted drawings — mark เต็ม */}
+                            {comments.flatMap(c =>
+                                c.drawings.map(d => (
+                                    <div
+                                        key={d.id}
+                                        onClick={() => jumpToTimestamp(d.timestamp)}
+                                        title={`${formatTime(d.timestamp)} — ${c.text}`}
+                                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
+                                        style={{ left: `${(d.timestamp / duration) * 100}%` }}
+                                    >
+                                        <span className={`block w-2 h-2 rounded-full transition-transform hover:scale-300 ${Math.abs(d.timestamp - currentTime) < 0.3 ? 'bg-orange-500 scale-250' : 'bg-yellow-300 scale-200'}`} />
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -553,10 +610,16 @@ export default function VideoReviewSystem() {
                                                             <span className="text-xs font-semibold text-white truncate">{comment.author}</span>
                                                             {comment.completed && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">Done</span>}
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 mt-2">
-                                                            <button onClick={() => jumpToTimestamp(comment.timestampSeconds)} className="h-6 flex items-center px-2 text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-600">
-                                                                <span className='text-md'>{comment.timestamp}</span>
-                                                            </button>
+                                                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                                            {(comment.timestamps ?? [comment.timestampSeconds]).map(ts => (
+                                                                <button
+                                                                    key={ts}
+                                                                    onClick={() => jumpToTimestamp(ts)}
+                                                                    className="h-6 flex items-center px-2 text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-600"
+                                                                >
+                                                                    <span className='text-md'>{formatTime(ts)}</span>
+                                                                </button>
+                                                            ))}
                                                             <span className="text-gray-700">·</span>
                                                             <span className="text-md text-gray-600">{comment.timeAgo}</span>
                                                         </div>
@@ -615,7 +678,14 @@ export default function VideoReviewSystem() {
                                         )}
                                         <div className="flex gap-2 items-end">
                                             <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
-                                                <div className="text-[10px] text-gray-600 mb-1 font-mono">{formatTime(currentTime)}</div>
+                                                <div className="text-[10px] text-gray-600 mb-1 font-mono">
+                                                    {(() => {
+                                                        const tolerance = 0.5;
+                                                        const unposted = drawings.filter(d => !postedDrawingIds.includes(d.id));
+                                                        const times = [...new Set(unposted.map(d => formatTime(d.timestamp)))];
+                                                        return times.length > 0 ? times.join(', ') : formatTime(currentTime);
+                                                    })()}
+                                                </div>
                                                 <input
                                                     type="text"
                                                     value={newComment}
