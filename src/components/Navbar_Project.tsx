@@ -117,7 +117,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
         { id: 'Shots', label: 'Shots', show: 'sm' },
         { id: 'Sequence', label: 'Sequence', show: 'sm' },
         { id: 'Tasks', label: 'Tasks', show: 'sm' },
-        { id: 'Video', label: 'Video', show: 'md' },
+        { id: 'Versions', label: 'Versions', show: 'md' },
         { id: 'other', label: 'Other', hasDropdown: true, show: 'lg' },
     ];
 
@@ -149,7 +149,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 'Sequence': '/Project_Sequence',
                 'Tasks': '/Project_Tasks',
                 // 'Media': '/Project_Media',
-                'Video': '/Others_Video',
+                'Versions': '/Others_Versions',
 
             };
 

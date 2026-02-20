@@ -25,6 +25,8 @@ import Others_Shot from "./Pages/Project/Others/Others_Shot";
 import Others_Asset from "./Pages/Project/Others/Others_Asset";
 import Others_Sequence from "./Pages/Project/Others/Others_Sequence";
 import Others_Video from "./Pages/Project/Others/Others_Video";
+import Others_Versions from "./Pages/Project/Others/Others_Versions";
+
 
 
 
@@ -594,6 +596,9 @@ export default function App() {
         <Route path="/Project_Assets/Others_Asset" element={<Others_Asset />} />
         <Route path="/Project_Shot/Others_Shot" element={<Others_Shot />} />
         <Route path="/Project_Sequence/Others_Sequence" element={<Others_Sequence />} />
+        <Route path="Others_Versions" element={<Others_Versions />} />
+
+        
 
         <Route path="/Others_People" element={<Others_People />} />
 
