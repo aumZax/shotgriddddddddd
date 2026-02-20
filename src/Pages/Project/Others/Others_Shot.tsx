@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
@@ -9,6 +10,7 @@ import NoteTab from '../../../components/NoteTab';
 import AssetTab from '../../../components/AssetTab';
 import RightPanel from "../../../components/RightPanel";
 import { useNavigate } from 'react-router-dom';
+import VersionTab from '../../../components/VersionTab';
 
 
 // Status configuration
@@ -72,6 +74,21 @@ interface Person {
     projects?: string;
     groups?: string;
     createdAt?: string;
+}
+
+interface Version {
+    id: number;
+    entity_type: string;
+    entity_id: number;
+    version_number: number;
+    version_name?: string;
+    status: string;
+    file_url?: string;
+    description?: string;
+    uploaded_by?: string;
+    uploaded_by_name?: string;
+    created_at: string;
+    task_name?: string;
 }
 
 const shotFieldMap: Record<keyof ShotData, string | null> = {
@@ -225,6 +242,12 @@ export default function Others_Shot() {
     const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
 
 
+    const [shotVersions, setShotVersions] = useState<any[]>([]);
+    const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
+    const [,] = useState<Version | null>(null);
+
+
+
     // ++++++++++++++++++++++++++++++++++++++++ right
     const [rightPanelTab, setRightPanelTab] = useState('notes'); // ← เพิ่มบรรทัดนี้
 
@@ -232,6 +255,8 @@ export default function Others_Shot() {
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [, setSelectedFile] = useState<File | null>(null);
+
+    const [versionModalPosition, setVersionModalPosition] = useState({ x: 0, y: 0 });
 
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -267,8 +292,191 @@ export default function Others_Shot() {
     const removePerson = (personId: number) => {
         setSelectedPeople(selectedPeople.filter((person: Person) => person.id !== personId));
     };
+    const [showCreateVersion, setShowCreateVersion] = useState(false);
+    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [versionFiles, setVersionFiles] = useState<File[]>([]);
+    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
+    const [createVersionForm, setCreateVersionForm] = useState({
+
+
+        version_name: '', status: 'wtg', description: '', link: '', task: '',
+    });
+    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
+    const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
+    const [uploaderQuery, setUploaderQuery] = useState('');
+    const [uploaderOpen, setUploaderOpen] = useState(false);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
+
+    const removeVersionFile = (index: number) => {
+        const newFiles = versionFiles.filter((_, i) => i !== index);
+        const newPreviews = versionFilePreviews.filter((_, i) => i !== index);
+
+        setVersionFiles(newFiles);
+        setVersionFilePreviews(newPreviews);
+
+        // ถ้าลบไฟล์ที่เป็นต้นทางของ version_name → reset name ด้วย
+        if (versionNameFromFile === index) {
+            setCreateVersionForm(p => ({ ...p, version_name: '' }));
+            setVersionNameFromFile(null);
+        } else if (versionNameFromFile !== null && index < versionNameFromFile) {
+            setVersionNameFromFile(prev => prev !== null ? prev - 1 : null);
+        }
+    };
+
+    const fetchShotVersions = async () => {
+        if (!shotId) return;
+        setIsLoadingShotVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
+            const data = res.data;
+            if (Array.isArray(data) && data.length > 0) { setShotVersions(data); }
+
+        }
+        finally { setIsLoadingShotVersions(false); }
+    };
+
+
+
+
+    const handleCreateVersion = async () => {
+        if (isCreatingVersion) return;
+        if (!createVersionForm.version_name.trim()) {
+            alert('กรุณาระบุชื่อ Version'); return;
+        }
+        setIsCreatingVersion(true);
+        try {
+            if (versionFiles.length === 0) {
+                // ไม่มีไฟล์ — สร้าง 1 version เปล่า
+                await createSingleVersion(null);
+            } else {
+                // มีไฟล์ — สร้างทีละไฟล์
+                for (let i = 0; i < versionFiles.length; i++) {
+                    const file = versionFiles[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('shotId', shotData?.id.toString() || '');
+                    formData.append('fileName', file.name);
+                    formData.append('type', 'version');
+
+                    const uploadRes = await fetch(ENDPOINTS.UPLOAD_SHOT, { method: 'POST', body: formData });
+                    if (!uploadRes.ok) throw new Error(`Upload failed: ${file.name}`);
+                    const uploadData = await uploadRes.json();
+
+                    console.log('📦 uploadData:', JSON.stringify(uploadData)); // ← เช็คก่อน
+
+                    // ✅ เปลี่ยนจาก data.file.fileUrl → data.files[0].fileUrl
+                    const fileUrl = uploadData?.files?.[0]?.fileUrl;
+                    const file_id = uploadData?.files?.[0]?.id;
+
+                    if (!fileUrl) {
+                        throw new Error(`ไม่ได้รับ fileUrl สำหรับ: ${file.name}`);
+                    }
+
+                    localStorage.setItem("file_id", file_id);
+
+                    // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
+                    const vName = i === 0
+                        ? createVersionForm.version_name.trim()
+                        : file.name.replace(/\.[^/.]+$/, '');
+
+                    await createSingleVersion(fileUrl, vName, file_id);
+
+                    // set thumbnail จากไฟล์สุดท้าย
+                    if (i === versionFiles.length - 1) {
+                        setShotData(prev => ({ ...prev, thumbnail: fileUrl }));  // ✅ ใช้ได้เพราะอยู่ใน scope เดียวกัน
+
+                        const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                        localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: fileUrl }));
+                    }
+
+                }
+            }
+
+            alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
+            setShowCreateVersion(false);
+            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+            setVersionFiles([]);
+            setVersionFilePreviews([]);
+            fetchShotVersions();
+            setSelectedUploader(null);
+            setUploaderQuery('');
+
+        } catch (error: any) {
+            console.error('Error creating version:', error);
+            alert('Failed to create version. Please try again.');
+        } finally {
+            setIsCreatingVersion(false);
+        }
+    };
+
+    // helper
+    // แก้ createSingleVersion ให้รับ file_id เป็น parameter
+    const createSingleVersion = async (fileUrl: string | null, versionName?: string, fileId?: number | null) => {
+        const res = await fetch(ENDPOINTS.CREATE_SHOT_VERSION, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                entityType: 'shot',
+                entityId: shotData?.id,
+                version_name: versionName || createVersionForm.version_name.trim(),
+                status: createVersionForm.status,
+                description: createVersionForm.description || null,
+                link: createVersionForm.link || null,
+                task: createVersionForm.task || null,
+                file_url: fileUrl,
+                file_id: fileId ?? null,  // ✅ ใช้จาก parameter แทน localStorage
+                uploaded_by: selectedUploader?.id ?? null,
+            })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(`Create version failed: ${JSON.stringify(err)}`);
+        }
+    };
+
+
+    const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); setIsDragging(false);
+        const files = Array.from(e.dataTransfer.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
+
+    const resetVersionForm = () => {
+        setShowCreateVersion(false);
+        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+        setVersionFiles([]);
+        setVersionFilePreviews([]);
+        setVersionNameFromFile(null);
+        setSelectedUploader(null);
+        setUploaderQuery('');
+        setVersionModalPosition({ x: 0, y: 0 });
+    };
 
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -657,6 +865,12 @@ export default function Others_Shot() {
     }, []);
 
     useEffect(() => {
+        if (activeTab === 'Versions') {
+            fetchShotVersions();
+        }
+    }, [activeTab, shotData?.id]);
+
+    useEffect(() => {
         if (deleteNoteConfirm) {
             setNoteContextMenu(null);
         }
@@ -696,17 +910,16 @@ export default function Others_Shot() {
     }, [shotId, projectId]); // เพิ่ม dependency
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Date  ++++++++++++++++++++++++++++++++++++++++++
-    const formatDateThai = (dateString: string) => {
-        if (!dateString) return '-';
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "-";
 
-        const date = new Date(dateString);
-        const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        };
-
-        return date.toLocaleDateString('th-TH', options);
+        return new Date(dateStr).toLocaleString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
     };
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
@@ -872,10 +1085,39 @@ export default function Others_Shot() {
 
             case 'Versions':
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <VersionCard version="v001" />
-                        <VersionCard version="v002" />
-                    </div>
+                    <VersionTab
+                        versions={shotVersions}
+                        isLoadingVersions={isLoadingShotVersions}
+
+                        onUpdateVersion={async (versionId, field, value) => {
+                            try {
+                                await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
+                                setShotVersions(prev => prev.map(v => v.id === versionId ? { ...v, [field]: value } : v));
+                                return true;
+                            } catch { alert('ไม่สามารถอัปเดทได้'); return false; }
+                        }}
+
+                        onDeleteVersion={async (versionId: number) => {
+                            try {
+                                const res = await axios.delete(`${ENDPOINTS.DELETE_SHOT_VERSION}/${versionId}`, {
+                                    data: { entityId: shotData?.id }
+                                });
+
+                                setShotVersions(prev => prev.filter(v => v.id !== versionId));
+
+                                // อัปเดต thumbnail จาก response
+                                const newThumb = res.data.newThumbnail;
+                                if (newThumb) {
+                                    setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
+                                    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                    localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                }
+                            } catch {
+                                alert('ไม่สามารถลบได้');
+                            }
+                        }}
+                        formatDate={formatDate}
+                    />
                 );
 
             case 'Assets':
@@ -883,7 +1125,7 @@ export default function Others_Shot() {
                     <AssetTab
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
-                        formatDateThai={formatDateThai}
+                        formatDateThai={formatDate}
                         onAssetUpdate={fetchShotAssets} // ⬅️ เพิ่มบรรทัดนี้
                     />
                 );
@@ -1069,31 +1311,31 @@ export default function Others_Shot() {
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
                                             <div className="flex gap-3">
                                                 <button
-   // เปลี่ยนจากเดิมที่ navigate('/Others_Video') เป็น:
-onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-        // Save ข้อมูลลง localStorage ก่อน navigate
-        localStorage.setItem("selectedVideo", JSON.stringify({
-            videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
-            shotCode: shotData.shotCode,
-            sequence: shotData.sequence,
-            status: shotData.status,
-            description: shotData.description,
-            dueDate: shotData.dueDate,
-            shotId: shotData.id,
-        }));
-        navigate('/Others_Video');
-    } else {
-        setShowPreview(true);
-    }
-}}
-    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-400 hover:to-blue-400 active:scale-95 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-blue-500/50 transition-all duration-200"
->
-    <Eye className="w-4 h-4" />
-    View
-</button>
+                                                    // เปลี่ยนจากเดิมที่ navigate('/Others_Video') เป็น:
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
+                                                            // Save ข้อมูลลง localStorage ก่อน navigate
+                                                            localStorage.setItem("selectedVideo", JSON.stringify({
+                                                                videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
+                                                                shotCode: shotData.shotCode,
+                                                                sequence: shotData.sequence,
+                                                                status: shotData.status,
+                                                                description: shotData.description,
+                                                                dueDate: shotData.dueDate,
+                                                                shotId: shotData.id,
+                                                            }));
+                                                            navigate('/Others_Video');
+                                                        } else {
+                                                            setShowPreview(true);
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-400 hover:to-blue-400 active:scale-95 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-blue-500/50 transition-all duration-200"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    View
+                                                </button>
                                                 <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-lg flex items-center gap-2 cursor-pointer text-sm font-medium shadow-lg hover:shadow-emerald-500/50 transition-all duration-200">
                                                     <Upload className="w-4 h-4" />
                                                     Change
@@ -1105,8 +1347,14 @@ onClick={(e) => {
                                                             if (!e.target.files?.[0]) return;
 
                                                             const file = e.target.files[0];
-                                                            const formData = new FormData();
+                                                            console.log('📁 File selected:', file.name, file.size, file.type);
 
+                                                            if (file.size > 100 * 1024 * 1024) {
+                                                                alert(`ไฟล์ใหญ่เกิน 100MB (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+                                                                return;
+                                                            }
+
+                                                            const formData = new FormData();
                                                             formData.append("shotId", shotData.id.toString());
                                                             formData.append("file", file);
                                                             formData.append("fileName", file.name);
@@ -1120,20 +1368,33 @@ onClick={(e) => {
                                                                 });
 
                                                                 const data = await res.json();
+                                                                console.log('📥 Upload response:', res.status, data); // ← ดูตรงนี้
 
                                                                 if (res.ok) {
-                                                                    const newFileUrl = data.file?.fileUrl || data.fileUrl;
-                                                                    setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
+                                                                    // ✅ server ส่งกลับ { files: [...] } ไม่ใช่ { file: {...} }
+                                                                    const newFileUrl = data?.files?.[0]?.fileUrl;
+
+                                                                    console.log('✅ newFileUrl:', newFileUrl);
+
+                                                                    if (!newFileUrl) {
+                                                                        alert('ไม่ได้รับ URL กลับมา');
+                                                                        return;
+                                                                    }
+
+                                                                    setShotData(prev => ({ ...prev, thumbnail: '' }));
+                                                                    setTimeout(() => {
+                                                                        setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
+                                                                    }, 50);
 
                                                                     const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                                    const updated = { ...stored, thumbnail: newFileUrl };
-                                                                    localStorage.setItem("selectedShot", JSON.stringify(updated));
+                                                                    localStorage.setItem("selectedShot", JSON.stringify({ ...stored, thumbnail: newFileUrl }));
                                                                 } else {
+                                                                    console.error('❌ Upload failed:', data);
                                                                     alert("Upload failed: " + (data.error || "Unknown error"));
                                                                 }
                                                             } catch (err) {
                                                                 console.error("❌ Upload error:", err);
-                                                                alert("Upload error");
+                                                                alert("Upload error: " + err);
                                                             }
                                                         }}
                                                     />
@@ -1152,11 +1413,18 @@ onClick={(e) => {
                                                 if (!e.target.files?.[0]) return;
 
                                                 const file = e.target.files[0];
+                                                console.log('📁 File selected:', file.name, file.size, file.type);
+
+                                                if (file.size > 100 * 1024 * 1024) {
+                                                    alert(`ไฟล์ใหญ่เกิน 100MB (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+                                                    return;
+                                                }
+
                                                 const formData = new FormData();
                                                 formData.append("shotId", shotData.id.toString());
                                                 formData.append("file", file);
-                                                formData.append("oldImageUrl", shotData.thumbnail || "");
                                                 formData.append("fileName", file.name);
+                                                formData.append("oldImageUrl", shotData.thumbnail || "");
                                                 formData.append("type", file.type.split('/')[0]);
 
                                                 try {
@@ -1166,17 +1434,33 @@ onClick={(e) => {
                                                     });
 
                                                     const data = await res.json();
+                                                    console.log('📥 Upload response:', res.status, data); // ← ดูตรงนี้
 
                                                     if (res.ok) {
-                                                        const newFileUrl = data.file?.fileUrl || data.fileUrl;
-                                                        setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
+                                                        // ✅ server ส่งกลับ { files: [...] } ไม่ใช่ { file: {...} }
+                                                        const newFileUrl = data?.files?.[0]?.fileUrl;
+
+                                                        console.log('✅ newFileUrl:', newFileUrl);
+
+                                                        if (!newFileUrl) {
+                                                            alert('ไม่ได้รับ URL กลับมา');
+                                                            return;
+                                                        }
+
+                                                        setShotData(prev => ({ ...prev, thumbnail: '' }));
+                                                        setTimeout(() => {
+                                                            setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
+                                                        }, 50);
 
                                                         const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                        const updated = { ...stored, thumbnail: newFileUrl };
-                                                        localStorage.setItem("selectedShot", JSON.stringify(updated));
+                                                        localStorage.setItem("selectedShot", JSON.stringify({ ...stored, thumbnail: newFileUrl }));
+                                                    } else {
+                                                        console.error('❌ Upload failed:', data);
+                                                        alert("Upload failed: " + (data.error || "Unknown error"));
                                                     }
                                                 } catch (err) {
                                                     console.error("❌ Upload error:", err);
+                                                    alert("Upload error: " + err);
                                                 }
                                             }}
                                         />
@@ -1400,12 +1684,10 @@ onClick={(e) => {
 
                                 {activeTab === 'Versions' && (
                                     <button
-                                        onClick={() => setShowCreateShot_Versions(true)}
-                                        className="px-3 py-1.5  text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
-
+                                        onClick={() => setShowCreateVersion(true)}
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
-                                        <span>+</span>
-                                        Add Version
+                                        <span>+</span> Add Version
                                     </button>
                                 )}
 
@@ -2001,6 +2283,261 @@ onClick={(e) => {
                 </>
             )}
 
+            {showCreateVersion && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/50"
+                        onClick={() => !isCreatingVersion && resetVersionForm()}
+                    />
+
+                    <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
+                        <div
+                            style={{
+                                transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
+                                maxHeight: 'calc(100vh - 60px)',
+                            }}
+                            className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
+                        >
+                            {/* Header — ลากได้ */}
+                            <div
+                                onMouseDown={(e) => {
+                                    const startX = e.clientX;
+                                    const startY = e.clientY;
+                                    const startPos = { ...versionModalPosition };
+                                    const onMove = (me: MouseEvent) => {
+                                        setVersionModalPosition({
+                                            x: startPos.x + me.clientX - startX,
+                                            y: startPos.y + me.clientY - startY,
+                                        });
+                                    };
+                                    const onUp = () => {
+                                        document.removeEventListener('mousemove', onMove);
+                                        document.removeEventListener('mouseup', onUp);
+                                    };
+                                    document.addEventListener('mousemove', onMove);
+                                    document.addEventListener('mouseup', onUp);
+                                }}
+                                className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                            >
+                                <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
+                                <button
+                                    onMouseDown={e => e.stopPropagation()}
+                                    onClick={() => resetVersionForm()}
+                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+
+                                {/* File Upload */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
+                                    <div
+                                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                                        onDragLeave={() => setIsDragging(false)}
+                                        onDrop={handleVersionFileDrop}
+                                        className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
+                                            ? 'border-blue-500/60 bg-blue-500/8'
+                                            : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
+                                            {versionFiles.length > 0 ? (
+                                                <div className="w-full space-y-1.5">
+                                                    {versionFiles.map((file, i) => (
+                                                        <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
+                                                            {versionFilePreviews[i] ? (
+                                                                <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
+                                                            ) : (
+                                                                <span className="text-base">🎬</span>
+                                                            )}
+                                                            <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                                                                className="text-gray-600 hover:text-red-400 transition-colors text-xs"
+                                                            >✕</button>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
+                                                        <span>+ Add more files</span>
+                                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+                                                    <span className="text-2xl text-gray-600">📎</span>
+                                                    <p className="text-xs text-gray-400">Drop files or click to browse</p>
+                                                </div>
+                                            )}
+                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Version Name + Status */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                                        <input
+                                            type="text"
+                                            value={createVersionForm.version_name}
+                                            onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
+                                        <select
+                                            value={createVersionForm.status}
+                                            onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
+                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        >
+                                            <option value="wtg">Waiting</option>
+                                            <option value="ip">In Progress</option>
+                                            <option value="rev">Review</option>
+                                            <option value="apr">Approved</option>
+                                            <option value="rej">Rejected</option>
+                                            <option value="fin">Final</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Uploaded By */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                                    <div className="relative">
+                                        {selectedUploader ? (
+                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-white text-[9px] font-semibold">
+                                                        {selectedUploader.name[0].toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                                    className="text-gray-600 hover:text-red-400 text-xs"
+                                                >✕</button>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={uploaderQuery}
+                                                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                                onFocus={() => setUploaderOpen(true)}
+                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                                placeholder={currentUser}
+                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                            />
+                                        )}
+                                        {uploaderOpen && !selectedUploader && (
+                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                                                {allPeople
+                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                                    .map(person => (
+                                                        <div
+                                                            key={person.id}
+                                                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-white text-[9px] font-semibold">
+                                                                    {person.name[0].toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs text-gray-200">{person.name}</p>
+                                                                <p className="text-[10px] text-gray-500">{person.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Task */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+                                    <input
+                                        type="text"
+                                        value={createVersionForm.task}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
+                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Link + Project — read-only */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
+                                        <input
+                                            type="text"
+                                            value={shotData?.shotCode || ''}
+                                            readOnly
+                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={projectData?.projectName || ''}
+                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
+                                    <textarea
+                                        value={createVersionForm.description}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                                        rows={2}
+                                        className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
+                                    />
+                                </div>
+
+                            </div>
+
+                            {/* Footer — Cancel ซ้าย, Create ขวา */}
+                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
+                                <button
+                                    onClick={() => resetVersionForm()}
+                                    disabled={isCreatingVersion}
+                                    className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateVersion}
+                                    disabled={isCreatingVersion}
+                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                                >
+                                    {isCreatingVersion ? (
+                                        <>
+                                            <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Creating…</span>
+                                        </>
+                                    ) : 'Create Version'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {noteContextMenu && (
                 <div
                     className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
@@ -2182,7 +2719,7 @@ onClick={(e) => {
                                 </span>
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
                                     <span>📅</span>
-                                    <span>วันที่สร้าง {formatDateThai(selectedNote?.created_at)}</span>
+                                    <span>วันที่สร้าง {formatDate(selectedNote?.created_at)}</span>
                                 </div>
                                 <User className="w-4 h-4 text-gray-400" />
                                 <span>ผู้รับผิดชอบ : {selectedNote?.assigned_people?.map((person, index) => (
@@ -2251,10 +2788,3 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 // }) => (
 
 // );
-
-const VersionCard = ({ version }: { version: string }) => (
-    <div className="bg-gray-700/40 p-4 rounded-lg text-center text-gray-300">
-        <p className="font-semibold">{version}</p>
-        <div className="h-24 bg-gray-600 mt-2 rounded" />
-    </div>
-);

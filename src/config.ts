@@ -131,6 +131,14 @@ const ENDPOINTS = {
   DELETE_ASSET_VERSION: `${BASE_URL}/delete-asset-version`,
   GET_ASSET_VERSION: `${BASE_URL}/get-asset-version`,
   CREATE_ASSET_VERSION: `${BASE_URL}/create-asset-version`,
+
+
+  UPDATE_SHOT_VERSION: `${BASE_URL}/update-shot-version`,
+  DELETE_SHOT_VERSION: `${BASE_URL}/delete-shot-version`,
+  GET_SHOT_VERSION: `${BASE_URL}/get-shot-version`,
+  CREATE_SHOT_VERSION: `${BASE_URL}/create-shot-version`,
+
+  PROJECT_VERSIONS_GROUPED: `${BASE_URL}/project-versions-grouped`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

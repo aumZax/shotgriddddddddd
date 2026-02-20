@@ -185,21 +185,21 @@ const RightPanel: React.FC<RightPanelProps> = ({
     };
 
     // ✅ handleDeleteVersion - เรียก callback ตรงๆ เช่นกัน
-    const handleDeleteVersion = async (versionId: number) => {
-        setIsDeletingVersion(true);
-        try {
-            await axios.delete(ENDPOINTS.DELETE_VERSION, {
-                data: { versionId },
-            });
-            setDeleteConfirm(null);
-            onDeleteVersionSuccess?.(); // ← parent fetch versions ใหม่
-        } catch (err) {
-            console.error('❌ Delete version failed:', err);
-        } finally {
-            setIsDeletingVersion(false);
-        }
-    };
-
+const handleDeleteVersion = async (versionId: number) => {
+    setIsDeletingVersion(true);
+    try {
+        await axios.delete(ENDPOINTS.DELETE_VERSION, {
+            data: { versionId },
+        });
+        setDeleteConfirm(null);
+        await onDeleteVersionSuccess?.(); // ← parent refetch ใหม่
+    } catch (err) {
+        console.error('❌ Delete version failed:', err);
+        alert("ไม่สามารถลบ Version ได้ กรุณาลองใหม่อีกครั้ง"); // ✅ เพิ่มตรงนี้
+    } finally {
+        setIsDeletingVersion(false);
+    }
+};
     // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
 const handleAddVersion = async () => {
     if (!selectedTask || !addVersionForm.version_name.trim()) return;
@@ -830,18 +830,7 @@ const handleAddVersion = async () => {
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Status</label>
-                                    <select
-                                        value={addVersionForm.status}
-                                        onChange={(e) => setAddVersionForm(f => ({ ...f, status: e.target.value as StatusType }))}
-                                        className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all cursor-pointer"
-                                    >
-                                        {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string }][]).map(([key, cfg]) => (
-                                            <option key={key} value={key}>{cfg.label} – {cfg.fullLabel}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                             
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Uploaded By</label>
                                     <select
