@@ -201,31 +201,33 @@ const RightPanel: React.FC<RightPanelProps> = ({
     };
 
     // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
-    const handleAddVersion = async () => {
-        if (!selectedTask || !addVersionForm.version_name.trim()) return;
-        setIsUploadingVersion(true);
-        try {
-            await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
-                task_id: selectedTask.id,
-                entity_type: 'task',
-                entity_id: selectedTask.id,
-                version_name: addVersionForm.version_name.trim(),
-                description: addVersionForm.description.trim() || undefined,
-                file_url: addVersionForm.file_url.trim() || undefined,
-                status: addVersionForm.status,
-                uploaded_by: addVersionForm.uploaded_by || undefined,
-                file_size: addVersionForm.file_size || undefined,
-            });
+const handleAddVersion = async () => {
+    if (!selectedTask || !addVersionForm.version_name.trim()) return;
+    setIsUploadingVersion(true);
+    try {
+        await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
+            task_id: selectedTask.id,        // ✅ ส่งแค่นี้พอ
+            version_name: addVersionForm.version_name.trim(),
+            description:  addVersionForm.description.trim() || undefined,
+            file_url:     addVersionForm.file_url.trim()    || undefined,
+            status:       addVersionForm.status,
+            uploaded_by:  addVersionForm.uploaded_by        || undefined,
+            file_size:    addVersionForm.file_size          || undefined,
+            // ❌ ลบ entity_type, entity_id ออก (backend จัดการเอง)
+        });
 
-            setShowAddVersionModal(false);
-            setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
-            onAddVersionSuccess?.(); // ← parent fetch versions ใหม่
-        } catch (err) {
-            console.error('❌ Add version error:', err);
-        } finally {
-            setIsUploadingVersion(false);
-        }
-    };
+        setShowAddVersionModal(false);
+        setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
+        onAddVersionSuccess?.();
+    } catch (err) {
+        console.error('❌ Add version error:', err);
+    } finally {
+        setIsUploadingVersion(false);
+    }
+};
+
+
+
 
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';

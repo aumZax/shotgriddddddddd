@@ -153,23 +153,21 @@ export default function Project_Tasks() {
 
 
     // เพิ่มฟังก์ชันนี้หลัง fetchPipelineStepsByType
-    const fetchTaskVersions = async (taskId: number) => {
-        setIsLoadingVersions(true);
-        try {
-            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
-                entityType: 'task',
-                entityId: taskId
-            });
-
-            console.log('Versions:', res.data);
-            setTaskVersions(res.data);
-        } catch (err) {
-            console.error("Failed to fetch versions:", err);
-            setTaskVersions([]);
-        } finally {
-            setIsLoadingVersions(false);
-        }
-    };
+const fetchTaskVersions = async (taskId: number) => {
+    setIsLoadingVersions(true);
+    try {
+        const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+            entityId: taskId   // ✅ task.id เสมอ
+            // ❌ ลบ entityType ออก ไม่จำเป็นแล้ว
+        });
+        setTaskVersions(res.data);
+    } catch (err) {
+        console.error("Failed to fetch versions:", err);
+        setTaskVersions([]);
+    } finally {
+        setIsLoadingVersions(false);
+    }
+};
 
 
 
