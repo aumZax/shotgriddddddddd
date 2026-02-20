@@ -3,9 +3,9 @@ import Navbar_Project from "../../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../../config";
 import {
-    Calendar, Check, ChevronDown, ChevronRight, Clock,
-    ExternalLink, Eye, FileText, Filter, HardDrive,
-    Image, Search, SortAsc, SortDesc, Trash2, Upload,
+    Check, ChevronDown, ChevronRight, Clock,
+    Eye, FileText, HardDrive,
+    Image, Search, Trash2, Upload,
     User, X, Film, Package, Layers, Pencil
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -647,7 +647,7 @@ export default function Others_Version() {
                                                             )}
                                                         </td>
 
-                                                        
+
                                                         {/* LINK */}
                                                         <td className="px-2 py-4">
                                                             {group.entity_type !== "unassigned" ? (
@@ -765,111 +765,111 @@ export default function Others_Version() {
 
                                                         {/* Uploaded By — dropdown เลือก user */}
                                                         {/* Uploaded By — dropdown เลือก user */}
-<td className="px-4 py-4">
-    <div className="relative">
-        <button
-            onClick={(e) => {
-                if (showUserMenu === version.id) {
-                    setShowUserMenu(null);
-                    setUserSearchTerm("");
-                    return;
-                }
-                const rect = e.currentTarget.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - rect.bottom;
-                const spaceRight = window.innerWidth - rect.left;
-                setUserMenuPos({
-                    vertical: spaceBelow < 280 ? "top" : "bottom",
-                    horizontal: spaceRight < 270 ? "right" : "left",
-                });
-                setShowUserMenu(version.id);
-                setUserSearchTerm("");
-            }}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
-            title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
-        >
-            {version.uploaded_by_name ? (
-                <>
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
-                        {version.uploaded_by_name[0].toUpperCase()}
-                    </div>
-                    <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
-                        {version.uploaded_by_name}
-                    </span>
-                </>
-            ) : (
-                <>
-                    <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                        <User className="w-3.5 h-3.5 text-slate-50" />
-                    </div>
-                    <span className="text-slate-50 italic text-sm">เลือกผู้อัปโหลด</span>
-                </>
-            )}
-            <ChevronDown className="w-3 h-3 text-gray-500 opacity-0 group-hover/uploader:opacity-100 transition-opacity ml-auto flex-shrink-0" />
-        </button>
+                                                        <td className="px-4 py-4">
+                                                            <div className="relative">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        if (showUserMenu === version.id) {
+                                                                            setShowUserMenu(null);
+                                                                            setUserSearchTerm("");
+                                                                            return;
+                                                                        }
+                                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                                        const spaceBelow = window.innerHeight - rect.bottom;
+                                                                        const spaceRight = window.innerWidth - rect.left;
+                                                                        setUserMenuPos({
+                                                                            vertical: spaceBelow < 280 ? "top" : "bottom",
+                                                                            horizontal: spaceRight < 270 ? "right" : "left",
+                                                                        });
+                                                                        setShowUserMenu(version.id);
+                                                                        setUserSearchTerm("");
+                                                                    }}
+                                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
+                                                                    title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
+                                                                >
+                                                                    {version.uploaded_by_name ? (
+                                                                        <>
+                                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
+                                                                                {version.uploaded_by_name[0].toUpperCase()}
+                                                                            </div>
+                                                                            <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
+                                                                                {version.uploaded_by_name}
+                                                                            </span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                                                <User className="w-3.5 h-3.5 text-slate-50" />
+                                                                            </div>
+                                                                            <span className="text-slate-50 italic text-sm">เลือกผู้อัปโหลด</span>
+                                                                        </>
+                                                                    )}
+                                                                    <ChevronDown className="w-3 h-3 text-gray-500 opacity-0 group-hover/uploader:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                                                                </button>
 
-        {showUserMenu === version.id && (
-            <>
-                <div className="fixed inset-0 z-10" onClick={() => { setShowUserMenu(null); setUserSearchTerm(""); }} />
-                <div
-                    className={`absolute z-50 w-64 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5
+                                                                {showUserMenu === version.id && (
+                                                                    <>
+                                                                        <div className="fixed inset-0 z-10" onClick={() => { setShowUserMenu(null); setUserSearchTerm(""); }} />
+                                                                        <div
+                                                                            className={`absolute z-50 w-64 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5
                         ${userMenuPos.vertical === "top" ? "bottom-full mb-1" : "top-full mt-1"}
                         ${userMenuPos.horizontal === "right" ? "right-0" : "left-0"}
                     `}
-                >
-                    {/* Header */}
-                    <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
-                        <div className="flex items-center gap-2 mb-2">
-                            <User className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="text-xs font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="ค้นหาชื่อ..."
-                            value={userSearchTerm}
-                            onChange={e => setUserSearchTerm(e.target.value)}
-                            onClick={e => e.stopPropagation()}
-                            autoFocus
-                            className="w-full px-2.5 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
-                        />
-                    </div>
+                                                                        >
+                                                                            {/* Header */}
+                                                                            <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
+                                                                                <div className="flex items-center gap-2 mb-2">
+                                                                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                                                                    <span className="text-xs font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
+                                                                                </div>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="ค้นหาชื่อ..."
+                                                                                    value={userSearchTerm}
+                                                                                    onChange={e => setUserSearchTerm(e.target.value)}
+                                                                                    onClick={e => e.stopPropagation()}
+                                                                                    autoFocus
+                                                                                    className="w-full px-2.5 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                                                                                />
+                                                                            </div>
 
-                    {/* User List */}
-                    <div className="max-h-56 overflow-y-auto p-1.5">
-                        {projectUsers
-                            .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
-                            .map(user => (
-                                <button
-                                    key={user.id}
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        updateVersion(version.id, "uploaded_by", user.id);
-                                        setShowUserMenu(null);
-                                        setUserSearchTerm("");
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                >
-                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow ${version.uploaded_by === user.id
-                                        ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50"
-                                        : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"
-                                        }`}>
-                                        {user.username[0].toUpperCase()}
-                                    </div>
-                                    <span className="flex-1 text-sm text-slate-200">{user.username}</span>
-                                    {version.uploaded_by === user.id && (
-                                        <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                                    )}
-                                </button>
-                            ))
-                        }
-                        {projectUsers.filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 && (
-                            <div className="p-4 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
-                        )}
-                    </div>
-                </div>
-            </>
-        )}
-    </div>
-</td>
+                                                                            {/* User List */}
+                                                                            <div className="max-h-56 overflow-y-auto p-1.5">
+                                                                                {projectUsers
+                                                                                    .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
+                                                                                    .map(user => (
+                                                                                        <button
+                                                                                            key={user.id}
+                                                                                            onClick={e => {
+                                                                                                e.stopPropagation();
+                                                                                                updateVersion(version.id, "uploaded_by", user.id);
+                                                                                                setShowUserMenu(null);
+                                                                                                setUserSearchTerm("");
+                                                                                            }}
+                                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                                        >
+                                                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow ${version.uploaded_by === user.id
+                                                                                                ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50"
+                                                                                                : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"
+                                                                                                }`}>
+                                                                                                {user.username[0].toUpperCase()}
+                                                                                            </div>
+                                                                                            <span className="flex-1 text-sm text-slate-200">{user.username}</span>
+                                                                                            {version.uploaded_by === user.id && (
+                                                                                                <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                                                                                            )}
+                                                                                        </button>
+                                                                                    ))
+                                                                                }
+                                                                                {projectUsers.filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 && (
+                                                                                    <div className="p-4 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
 
                                                         {/* Description — inline editable */}
                                                         <td className="px-4 py-4">
