@@ -13,7 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import VersionTab from '../../../components/VersionTab';
 
 
-// Status configuration
+//============================================================================================================================================//
+
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
@@ -102,9 +103,6 @@ const shotFieldMap: Record<keyof ShotData, string | null> = {
     dueDate: "due_date"
 };
 
-
-
-// ⭐ เพิ่ม type ที่ขาดหาย
 type TaskReviewer = {
     id: number;
     username: string;
@@ -118,7 +116,6 @@ type PipelineStep = {
     entity_type?: 'shot' | 'asset';
 };
 
-// ⭐ อัปเดต Task type ให้ตรงกับ TaskTab
 type Task = {
     id: number;
     project_id: number;
@@ -132,8 +129,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers: TaskReviewer[];      // ⭐ เพิ่ม
-    pipeline_step: PipelineStep | null;  // ⭐ เพิ่ม
+    reviewers: TaskReviewer[];     
+    pipeline_step: PipelineStep | null;  
 };
 
 type TaskAssignee = {
@@ -141,7 +138,6 @@ type TaskAssignee = {
     username: string;
 };
 
-// ⭐ เพิ่ม Asset type
 interface Asset {
     id: number;
     asset_id: number;
@@ -154,9 +150,8 @@ interface Asset {
     thumbnail?: string;
 }
 
+//============================================================================================================================================//
 
-
-// Get data from localStorage
 const getInitialShotData = () => {
     const stored = localStorage.getItem("selectedShot");
     if (stored) {
@@ -186,16 +181,15 @@ const getInitialShotData = () => {
 };
 
 export default function Others_Shot() {
+
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Shot Info');
     const [shotData, setShotData] = useState<ShotData>(getInitialShotData());
     const [editingField, setEditingField] = useState<string | null>(null);
-
     const [showPreview, setShowPreview] = useState(false);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [type, setType] = useState<string | null>(null);
-
     const [showCreateShot_Task, setShowCreateShot_Task] = useState(false);
     const [showCreateShot_Note, setShowCreateShot_Note] = useState(false);
     const [showCreateShot_Versions, setShowCreateShot_Versions] = useState(false);
@@ -215,64 +209,67 @@ export default function Others_Shot() {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
-    const [subject, setSubject] = useState(
-        shotData?.shotCode ? `Note on ${shotData.shotCode}` : ""
-    );
-    // +++++++++++++++++++++++++++++++++++++++ shot assets +++++++++++++++++++++++++++++++
     const [shotAssets, setShotAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
-
-    // ++++++++++++++++++++++++++++++++++++++ storage +++++++++++++++++++++++++++++++
-
     const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
     const shotId = stored.id;
-
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    // const projectName = projectData?.projectName;
-
-
-    // +++++++++++++++++++++++++++++++++++++++++++++ isMediaLoading ++++++++++++++++++++++++++++++
-
     const [isMediaLoading, setIsMediaLoading] = useState(true);
-
-    // ++++++++++++++++++++++++++++++++++++++ task versions +++++++++++++++++++++++++++++++
     const [taskVersions, setTaskVersions] = useState<any[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
-
-
     const [shotVersions, setShotVersions] = useState<any[]>([]);
     const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
     const [,] = useState<Version | null>(null);
-
-
-
-    // ++++++++++++++++++++++++++++++++++++++++ right
-    const [rightPanelTab, setRightPanelTab] = useState('notes'); // ← เพิ่มบรรทัดนี้
-
+    const [rightPanelTab, setRightPanelTab] = useState('notes'); 
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [, setSelectedFile] = useState<File | null>(null);
-
     const [versionModalPosition, setVersionModalPosition] = useState({ x: 0, y: 0 });
-
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        setIsResizing(true);
-        e.preventDefault();
-    };
-    const addPerson = (person: Person) => {
-        setSelectedPeople([...selectedPeople, person]);
-        setQuery('');
-        setOpen(false);
-    };
+    const [showCreateVersion, setShowCreateVersion] = useState(false);
+    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [versionFiles, setVersionFiles] = useState<File[]>([]);
+    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
+    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
+    const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
+    const [uploaderQuery, setUploaderQuery] = useState('');
+    const [uploaderOpen, setUploaderOpen] = useState(false);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
 
+    //============================================================================================================================================//
 
-    const removetaskFile = (index: number) => {
-        setFiles(files.filter((_, i) => i !== index));
-    };
+    const [subject, setSubject] = useState(
+        shotData?.shotCode ? `Note on ${shotData.shotCode}` : ""
+    );
+
+    const [createVersionForm, setCreateVersionForm] = useState({
+        version_name: '', status: 'wtg', description: '', link: '', task: '',
+    });
+
+    const [checked, setChecked] = useState<CheckedState>({
+        All: false,
+        ART: false,
+        MDL: false,
+        RIG: false,
+        TXT: false,
+    });
+
+    const [createTaskForm, setCreateTaskForm] = useState({
+        task_name: '',
+        status: 'wtg',
+        start_date: '',
+        due_date: '',
+        description: '',
+        file_url: '',
+    });
+
+    //============================================================================================================================================//
 
     const [noteContextMenu, setNoteContextMenu] = useState<{
         visible: boolean;
@@ -280,6 +277,136 @@ export default function Others_Shot() {
         y: number;
         note: Note;
     } | null>(null);
+
+    const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
+        noteId: number;
+        subject: string;
+    } | null>(null);
+
+    const [versionContextMenu, setVersionContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        versionId: number;
+        versionName: string;
+    } | null>(null);
+
+    const [deleteVersionConfirm, setDeleteVersionConfirm] = useState<{
+        versionId: number;
+        versionName: string;
+    } | null>(null);
+
+    //============================================================================================================================================//
+
+    useEffect(() => {
+        if (activeTab === 'Assets') {
+            fetchShotAssets();
+        }
+    }, [activeTab, shotData?.id]);
+
+    useEffect(() => {
+        const fetchPeople = async () => {
+            try {
+                const response = await fetch(ENDPOINTS.GETALLPEOPLE);
+                const data = await response.json();
+                setAllPeople(data);
+            } catch (error) {
+                console.error('Error fetching people:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPeople();
+    }, []);
+
+    useEffect(() => {
+        if (deleteVersionConfirm) {
+            setVersionContextMenu(null);
+        }
+    }, [deleteVersionConfirm]);
+
+    useEffect(() => {
+        const closeMenu = () => setVersionContextMenu(null);
+        if (versionContextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [versionContextMenu]);
+
+    useEffect(() => {
+        if (activeTab === 'Versions') {
+            fetchShotVersions();
+        }
+    }, [activeTab, shotData?.id]);
+
+    useEffect(() => {
+        if (deleteNoteConfirm) {
+            setNoteContextMenu(null);
+        }
+    }, [deleteNoteConfirm]);
+
+    useEffect(() => {
+        const closeMenu = () => setNoteContextMenu(null);
+
+        if (noteContextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [noteContextMenu]);
+
+    useEffect(() => {
+        
+        console.log("🔍 shotId:", shotId);
+        console.log("🔍 projectId:", projectId);
+        console.log("🔍 stored data:", stored);
+
+        if (!shotId || !projectId) {
+            console.warn("⚠️ Missing shotId or projectId");
+            return;
+        }
+
+        axios.post<Task[]>(ENDPOINTS.SHOT_TASK, {
+            project_id: projectId,
+            entity_type: "shot",
+            entity_id: shotId
+        })
+            .then(res => {
+                console.log("✅ Tasks received:", res.data);
+                setTasks(res.data);
+            })
+            .catch(err => {
+                console.error("❌ โหลด task ไม่สำเร็จ", err);
+            });
+    }, [shotId, projectId]);
+
+    useEffect(() => {
+        if (selectedTask) {
+            setIsPanelOpen(false);
+            const t = setTimeout(() => {
+                setIsPanelOpen(true);
+                fetchTaskVersions(selectedTask.id); // เพิ่มบรรทัดนี้
+            }, 10);
+            return () => clearTimeout(t);
+        }
+    }, [selectedTask]);
+
+    //============================================================================================================================================//
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        setIsResizing(true);
+        e.preventDefault();
+    };
+
+    const addPerson = (person: Person) => {
+        setSelectedPeople([...selectedPeople, person]);
+        setQuery('');
+        setOpen(false);
+    };
+
+    const removetaskFile = (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
+    };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (isResizing) {
@@ -292,22 +419,18 @@ export default function Others_Shot() {
     const removePerson = (personId: number) => {
         setSelectedPeople(selectedPeople.filter((person: Person) => person.id !== personId));
     };
-    const [showCreateVersion, setShowCreateVersion] = useState(false);
-    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const [versionFiles, setVersionFiles] = useState<File[]>([]);
-    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
-    const [createVersionForm, setCreateVersionForm] = useState({
 
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "-";
 
-        version_name: '', status: 'wtg', description: '', link: '', task: '',
-    });
-    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
-    const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
-    const [uploaderQuery, setUploaderQuery] = useState('');
-    const [uploaderOpen, setUploaderOpen] = useState(false);
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        return new Date(dateStr).toLocaleString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    };
 
     const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -351,9 +474,6 @@ export default function Others_Shot() {
         }
         finally { setIsLoadingShotVersions(false); }
     };
-
-
-
 
     const handleCreateVersion = async () => {
         if (isCreatingVersion) return;
@@ -426,8 +546,6 @@ export default function Others_Shot() {
         }
     };
 
-    // helper
-    // แก้ createSingleVersion ให้รับ file_id เป็น parameter
     const createSingleVersion = async (fileUrl: string | null, versionName?: string, fileId?: number | null) => {
         const res = await fetch(ENDPOINTS.CREATE_SHOT_VERSION, {
             method: 'POST',
@@ -450,7 +568,6 @@ export default function Others_Shot() {
             throw new Error(`Create version failed: ${JSON.stringify(err)}`);
         }
     };
-
 
     const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault(); setIsDragging(false);
@@ -572,7 +689,6 @@ export default function Others_Shot() {
         }
     };
 
-    // +++++++++++++++++++++++++++++++ fetch shot assets ++++++++++++++++++++++++++++++
     const fetchShotAssets = async () => {
         if (!shotData?.id) return;
 
@@ -602,13 +718,6 @@ export default function Others_Shot() {
             setLoadingAssets(false);
         }
     };
-    // เพิ่ม useEffect นี้หลัง useEffect อื่นๆ
-    useEffect(() => {
-        if (activeTab === 'Assets') {
-            fetchShotAssets();
-        }
-    }, [activeTab, shotData?.id]);
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ status ++++++++++++++++++++++++++++++++++++++++++
 
     const handleStatusChange = async (newStatus: StatusType) => {
         try {
@@ -713,8 +822,6 @@ export default function Others_Shot() {
 
             const updated = { ...shotData, description: payload.description };
             setShotData(updated);
-
-            // sync localStorage
             // const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
             localStorage.setItem(
                 "selectedShot",
@@ -826,114 +933,9 @@ export default function Others_Shot() {
         }
     };
 
-    // Close dropdown when clicking outside
     const handleClickOutside = () => {
         if (showStatusMenu) setShowStatusMenu(false);
     };
-
-    // +++++++++++++++++++++++++++++ shot task 
-    const [tasks, setTasks] = useState<Task[]>([]);
-
-    const [checked, setChecked] = useState<CheckedState>({
-        All: false,
-        ART: false,
-        MDL: false,
-        RIG: false,
-        TXT: false,
-    });
-    const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
-        noteId: number;
-        subject: string;
-    } | null>(null);
-
-
-
-    useEffect(() => {
-        const fetchPeople = async () => {
-            try {
-                const response = await fetch(ENDPOINTS.GETALLPEOPLE);
-                const data = await response.json();
-                setAllPeople(data);
-            } catch (error) {
-                console.error('Error fetching people:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPeople();
-    }, []);
-
-    useEffect(() => {
-        if (activeTab === 'Versions') {
-            fetchShotVersions();
-        }
-    }, [activeTab, shotData?.id]);
-
-    useEffect(() => {
-        if (deleteNoteConfirm) {
-            setNoteContextMenu(null);
-        }
-    }, [deleteNoteConfirm]);
-
-    useEffect(() => {
-        const closeMenu = () => setNoteContextMenu(null);
-
-        if (noteContextMenu) {
-            document.addEventListener("click", closeMenu);
-            return () => document.removeEventListener("click", closeMenu);
-        }
-    }, [noteContextMenu]);
-
-    useEffect(() => {
-        console.log("🔍 shotId:", shotId);
-        console.log("🔍 projectId:", projectId);
-        console.log("🔍 stored data:", stored);
-
-        if (!shotId || !projectId) {
-            console.warn("⚠️ Missing shotId or projectId");
-            return;
-        }
-
-        axios.post<Task[]>(ENDPOINTS.SHOT_TASK, {
-            project_id: projectId,
-            entity_type: "shot",
-            entity_id: shotId
-        })
-            .then(res => {
-                console.log("✅ Tasks received:", res.data);
-                setTasks(res.data);
-            })
-            .catch(err => {
-                console.error("❌ โหลด task ไม่สำเร็จ", err);
-            });
-    }, [shotId, projectId]); // เพิ่ม dependency
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Date  ++++++++++++++++++++++++++++++++++++++++++
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return "-";
-
-        return new Date(dateStr).toLocaleString("th-TH", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-    };
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
-    useEffect(() => {
-        if (selectedTask) {
-            setIsPanelOpen(false);
-            const t = setTimeout(() => {
-                setIsPanelOpen(true);
-                fetchTaskVersions(selectedTask.id); // เพิ่มบรรทัดนี้
-            }, 10);
-            return () => clearTimeout(t);
-        }
-    }, [selectedTask]);
 
     const updateVersion = async (versionId: number, field: string, value: any) => {
         try {
@@ -955,18 +957,6 @@ export default function Others_Shot() {
         }
     };
 
-    // ++++++++++++++++++++++++++++++++++ task create ++++++++++++++++++++++++++
-    const [isCreatingTask, setIsCreatingTask] = useState(false);
-    const [createTaskForm, setCreateTaskForm] = useState({
-        task_name: '',
-        status: 'wtg',
-        start_date: '',
-        due_date: '',
-        description: '',
-        file_url: '',
-    });
-
-    // Handle form change
     const handleFormChange = (field: string, value: any) => {
         setCreateTaskForm(prev => ({
             ...prev,
@@ -974,7 +964,6 @@ export default function Others_Shot() {
         }));
     };
 
-    // Handle create task
     const handleCreateTask = async () => {
         if (isCreatingTask) return;
 
@@ -1031,12 +1020,6 @@ export default function Others_Shot() {
         }
     };
 
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ++++++++++++++++++++++++++++++
-
-
-
-
     const renderTabContent = () => {
         switch (activeTab) {
             case 'Shot Info':
@@ -1088,7 +1071,6 @@ export default function Others_Shot() {
                     <VersionTab
                         versions={shotVersions}
                         isLoadingVersions={isLoadingShotVersions}
-
                         onUpdateVersion={async (versionId, field, value) => {
                             try {
                                 await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
@@ -1102,10 +1084,7 @@ export default function Others_Shot() {
                                 const res = await axios.delete(`${ENDPOINTS.DELETE_SHOT_VERSION}/${versionId}`, {
                                     data: { entityId: shotData?.id }
                                 });
-
                                 setShotVersions(prev => prev.filter(v => v.id !== versionId));
-
-                                // อัปเดต thumbnail จาก response
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
                                     setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
@@ -1201,6 +1180,8 @@ export default function Others_Shot() {
             setIsLoadingVersions(false);
         }
     };
+
+    //============================================================================================================================================//
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800" onClick={handleClickOutside}
@@ -1860,7 +1841,6 @@ export default function Others_Shot() {
                 </div>
             )}
 
-
             {showCreateShot_Versions && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     {/* Backdrop */}
@@ -1904,7 +1884,6 @@ export default function Others_Shot() {
                     </div>
                 </div>
             )}
-
 
             {showCreateShot_Assets && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -2563,6 +2542,32 @@ export default function Others_Shot() {
                 </div>
             )}
 
+            {versionContextMenu && (
+                <div
+                    className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{
+                        left: versionContextMenu.x,
+                        top: versionContextMenu.y,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            if (versionContextMenu) {
+                                setDeleteVersionConfirm({
+                                    versionId: versionContextMenu.versionId,
+                                    versionName: versionContextMenu.versionName,
+                                });
+                            }
+                        }}
+                        
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                    >
+                        🗑️ Delete Version
+                    </button>
+                </div>
+            )}
+
             {deleteNoteConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
@@ -2627,6 +2632,81 @@ export default function Others_Shot() {
                     </div>
                 </div>
             )}
+
+            {deleteVersionConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setDeleteVersionConfirm(null)}
+                    />
+
+                    <div
+                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">Delete Version</h3>
+                                    <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">Are you sure you want to delete this version?</p>
+                                <p className="font-semibold text-zinc-100 truncate">
+                                    "{deleteVersionConfirm.versionName}"
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteVersionConfirm(null);
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                            const res = await axios.delete(
+                                                `${ENDPOINTS.DELETE_SHOT_VERSION}/${deleteVersionConfirm.versionId}`,
+                                                { data: { entityId: shotData?.id } }
+                                            );
+                                            setShotVersions(prev =>
+                                                prev.filter(v => v.id !== deleteVersionConfirm.versionId)
+                                            );
+                                            const newThumb = res.data.newThumbnail;
+                                            if (newThumb) {
+                                                setShotData(prev =>
+                                                    (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData
+                                                );
+                                                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                            }
+                                            setDeleteVersionConfirm(null);
+                                        } catch {
+                                            alert('ไม่สามารถลบได้');
+                                        }
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                >
+                                    Delete Version
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Right Panel - Floating Card */}
             <RightPanel
                 selectedTask={selectedTask}
@@ -2762,10 +2842,6 @@ export default function Others_Shot() {
                     </div>
                 </div>
             )}
-
-
-
-
         </div>
     );
 }
@@ -2777,14 +2853,3 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
     </div>
 );
 
-// const TaskItem = ({
-//     title,
-//     assignee,
-//     status
-// }: {
-//     title: string;
-//     assignee: string;
-//     status: string;
-// }) => (
-
-// );

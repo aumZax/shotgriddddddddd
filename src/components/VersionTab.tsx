@@ -3,9 +3,6 @@ import React, { useState } from 'react';
 import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
 import ENDPOINTS from '../config';
 
-// ========================================
-// STATUS CONFIG
-// ========================================
 const versionStatusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
@@ -18,9 +15,6 @@ const versionStatusConfig = {
 
 type VersionStatus = keyof typeof versionStatusConfig;
 
-// ========================================
-// TYPES (export ให้ Others_Asset ใช้)
-// ========================================
 export interface Version {
     id: number;
     entity_type: string;
@@ -45,9 +39,6 @@ export interface VersionTabProps {
     formatDate?: (dateStr: string) => string;
 }
 
-// ========================================
-// COMPONENT
-// ========================================
 const VersionTab: React.FC<VersionTabProps> = ({
     versions,
     isLoadingVersions,
@@ -56,6 +47,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
     onDeleteVersion,
     formatDate,
 }) => {
+    
     const [previewVersion, setPreviewVersion] = useState<Version | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
@@ -63,9 +55,19 @@ const VersionTab: React.FC<VersionTabProps> = ({
     const [editingValue, setEditingValue] = useState('');
     const [updating, setUpdating] = useState(false);
 
-    // ========================================
-    // HELPERS
-    // ========================================
+    // ── Context Menu State ──
+    const [contextMenu, setContextMenu] = useState<{
+        x: number;
+        y: number;
+        version: Version;
+    } | null>(null);
+
+    // ── Delete Confirm State ──
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        versionId: number;
+        versionName: string;
+    } | null>(null);
+
     const formatDateDefault = (dateStr: string) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleString('th-TH', {
@@ -77,9 +79,6 @@ const VersionTab: React.FC<VersionTabProps> = ({
     const isVideo = (url?: string) => !!url?.match(/\.(mp4|webm|ogg|mov|avi)$/i);
     const isMockRow = (id: number) => id < 0;
 
-    // ========================================
-    // HANDLERS
-    // ========================================
     const handleStatusChange = async (versionId: number, newStatus: VersionStatus) => {
         if (updating || isMockRow(versionId)) return;
         setUpdating(true);
@@ -109,9 +108,18 @@ const VersionTab: React.FC<VersionTabProps> = ({
         setEditingValue(currentValue || '');
     };
 
-    // ========================================
-    // LOADING
-    // ========================================
+    // ── Right-click handler ──
+    const handleContextMenu = (e: React.MouseEvent, version: Version) => {
+        if (isMockRow(version.id)) return;
+        if (version.version_number === 1) return;  // ← เพิ่มบรรทัดนี้
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, version });
+    };
+
+    // ── Close context menu on outside click ──
+    const closeContextMenu = () => setContextMenu(null);
+
     if (isLoadingVersions) {
         return (
             <div className="flex items-center justify-center py-16">
@@ -120,13 +128,9 @@ const VersionTab: React.FC<VersionTabProps> = ({
         );
     }
 
-    // ========================================
-    // RENDER
-    // ========================================
     return (
-        <div className="space-y-3 overflow-visible">
+        <div className="space-y-3 overflow-visible" onClick={closeContextMenu}>
 
-            {/* Mock banner */}
             {isMock && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs">
                     <Layers className="w-4 h-4 flex-shrink-0" />
@@ -170,11 +174,83 @@ const VersionTab: React.FC<VersionTabProps> = ({
                 </div>
             )}
 
+            {/* ── Context Menu ── */}
+            {contextMenu && (
+                <div
+                    className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setDeleteConfirm({
+                                versionId: contextMenu.version.id,
+                                versionName: contextMenu.version.version_name || `Version ${contextMenu.version.version_number}`,
+                            });
+                            setContextMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-lg"
+                    >
+                        🗑️ Delete Version
+                    </button>
+                </div>
+            )}
+
+            {/* ── Delete Confirm Dialog ── */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setDeleteConfirm(null)}
+                    />
+                    <div
+                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">Delete Version</h3>
+                                    <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">Are you sure you want to delete this version?</p>
+                                <p className="font-semibold text-zinc-100 truncate">
+                                    "{deleteConfirm.versionName}"
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onDeleteVersion(deleteConfirm.versionId);
+                                        setDeleteConfirm(null);
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                >
+                                    Delete Version
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Table */}
             <div className="overflow-x-visible rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 shadow-2xl">
                 <table className="w-full border-collapse relative">
 
-                    {/* ── HEADER ── */}
                     <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10 backdrop-blur-sm">
                         <tr className="border-b-2 border-blue-500/30">
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-12">#</th>
@@ -200,11 +276,9 @@ const VersionTab: React.FC<VersionTabProps> = ({
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Uploaded By</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-40">Date</th>
-                            <th className="px-4 py-4 w-10" />
                         </tr>
                     </thead>
 
-                    {/* ── BODY ── */}
                     <tbody className="divide-y divide-gray-800/50">
                         {versions.map((version, index) => {
                             const statusKey = (version.status || 'wtg') as VersionStatus;
@@ -214,10 +288,12 @@ const VersionTab: React.FC<VersionTabProps> = ({
                             return (
                                 <tr
                                     key={`ver-${version.id}-${index}`}
-                                    className={`group transition-all duration-200 ${mock
+                                    onContextMenu={e => handleContextMenu(e, version)}
+                                    className={`group transition-all duration-200 cursor-context-menu ${
+                                        mock
                                             ? 'opacity-55'
                                             : 'hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent'
-                                        }`}
+                                    }`}
                                 >
                                     {/* # */}
                                     <td className="px-4 py-4">
@@ -362,15 +438,10 @@ const VersionTab: React.FC<VersionTabProps> = ({
 
                                     {/* UPLOADED BY */}
                                     <td className="px-4 py-4">
-                                        <div
-                                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-800/60 rounded px-2 py-1 transition-colors"
-                                        >
+                                        <div className="flex items-center gap-2 hover:bg-gray-800/60 rounded px-2 py-1 transition-colors">
                                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                                                 <span className="text-white text-xs font-semibold">
-                                                    {version.uploaded_by_name
-                                                        ? version.uploaded_by_name[0].toUpperCase()
-                                                        : '?'
-                                                    }
+                                                    {version.uploaded_by_name ? version.uploaded_by_name[0].toUpperCase() : '?'}
                                                 </span>
                                             </div>
                                             <span className="text-sm text-gray-300 truncate max-w-[100px]">
@@ -417,21 +488,6 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                     {/* DATE */}
                                     <td className="px-4 py-4">
                                         <span className="text-xs text-gray-500">{dateFormatter(version.created_at)}</span>
-                                    </td>
-
-                                    {/* DELETE */}
-                                    <td className="px-4 py-4"
-                                    >
-                                        {!mock && (
-                                            <button
-                                                onClick={() => onDeleteVersion(version.id)}
-                                                hidden={version.version_number === 1}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
-                                                title="ลบ version นี้"
-                                            >
-                                                <X className="w-3.5 h-3.5 text-red-400" />
-                                            </button>
-                                        )}
                                     </td>
                                 </tr>
                             );

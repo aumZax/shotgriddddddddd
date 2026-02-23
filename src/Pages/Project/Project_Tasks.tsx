@@ -91,7 +91,7 @@ type Version = {
     file_url: string;
     thumbnail_url?: string;
     status: string;
-    uploaded_by: number;
+    uploaded_by: number | null;
     created_at: string;
     file_size?: number;
     description?: string;           // ⭐ เปลี่ยนจาก notes เป็น description
@@ -906,7 +906,7 @@ const fetchTaskVersions = async (taskId: number) => {
                             return {
                                 ...v,
                                 uploaded_by: value,
-                                uploaded_by_name: user?.username || 'Unknown'
+                                uploaded_by_name: user?.username
                             };
                         }
                         return { ...v, [field]: value };

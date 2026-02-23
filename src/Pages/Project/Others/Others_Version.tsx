@@ -49,7 +49,7 @@ type Version = {
     version_name: string | null;
     file_url: string;
     status: string;
-    uploaded_by: number;
+    uploaded_by: number | null;  // เพิ่ม | null
     created_at: string;
     file_size: number | null;
     description: string | null;
@@ -222,10 +222,13 @@ export default function Others_Version() {
                 ...g,
                 versions: g.versions.map(v => {
                     if (v.id !== versionId) return v;
-                    if (field === "uploaded_by") {
-                        const user = projectUsers.find(u => u.id === value);
-                        return { ...v, uploaded_by: value, uploaded_by_name: user?.username || "Unknown" };
-                    }
+                   if (field === "uploaded_by") {
+    if (value === null) {
+        return { ...v, uploaded_by: null, uploaded_by_name: undefined };
+    }
+    const user = projectUsers.find(u => u.id === value);
+    return { ...v, uploaded_by: value, uploaded_by_name: user?.username || "Unknown" };
+}
                     return { ...v, [field]: value };
                 })
             })));
@@ -545,23 +548,33 @@ export default function Others_Version() {
                                                         </td>
 
                                                         {/* Version Name — inline editable */}
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 w-80">
                                                             {isEditingThisName ? (
-                                                                <input
+                                                                <textarea
                                                                     autoFocus
-                                                                    type="text"
                                                                     value={editValue}
                                                                     onChange={e => setEditValue(e.target.value)}
                                                                     onBlur={() => commitEdit(version.id, "version_name", editValue)}
                                                                     onKeyDown={e => {
-                                                                        if (e.key === "Enter") e.currentTarget.blur();
                                                                         if (e.key === "Escape") cancelEditing();
+                                                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                                                            e.preventDefault();
+                                                                            e.currentTarget.blur(); // Ctrl+Enter เพื่อ save
+                                                                        }
                                                                     }}
-                                                                    className="px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none"
+                                                                    rows={3}
+                                                                    className="w-full px-2 py-1 
+               bg-gray-800 
+               border border-blue-500 
+               rounded 
+               text-blue-400 text-sm font-medium 
+               outline-none resize-none"
                                                                 />
                                                             ) : (
                                                                 <div className="flex items-center gap-2 group/name">
-                                                                    <p className="text-sm font-medium text-gray-200 leading-tight">
+                                                                    <p className="text-sm font-medium text-gray-200 leading-tight 
+              truncate max-w-[160px] block"
+                                                                        title={version.version_name || `Version ${version.version_number}`}>
                                                                         {version.version_name || `Version ${version.version_number}`}
                                                                     </p>
                                                                     <button
@@ -693,56 +706,85 @@ export default function Others_Version() {
 
                                                         {/* Uploaded By — dropdown เลือก user */}
                                                         {/* Uploaded By — dropdown เลือก user */}
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-2 py-4">
                                                             <div className="relative">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        if (showUserMenu === version.id) {
-                                                                            setShowUserMenu(null);
+<div className="flex items-center gap-5 group/uploader-container">
+
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            if (showUserMenu === version.id) {
+                                                                                setShowUserMenu(null);
+                                                                                setUserSearchTerm("");
+                                                                                return;
+                                                                            }
+                                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                                            const spaceBelow = window.innerHeight - rect.bottom;
+                                                                            const spaceRight = window.innerWidth - rect.left;
+                                                                            setUserMenuPos({
+                                                                                vertical: spaceBelow < 280 ? "top" : "bottom",
+                                                                                horizontal: spaceRight < 270 ? "right" : "left",
+                                                                            });
+                                                                            setShowUserMenu(version.id);
                                                                             setUserSearchTerm("");
-                                                                            return;
-                                                                        }
-                                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                                        const spaceBelow = window.innerHeight - rect.bottom;
-                                                                        const spaceRight = window.innerWidth - rect.left;
-                                                                        setUserMenuPos({
-                                                                            vertical: spaceBelow < 280 ? "top" : "bottom",
-                                                                            horizontal: spaceRight < 270 ? "right" : "left",
-                                                                        });
-                                                                        setShowUserMenu(version.id);
-                                                                        setUserSearchTerm("");
-                                                                    }}
-                                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
-                                                                    title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
-                                                                >
-                                                                    {version.uploaded_by_name ? (
-                                                                        <>
-                                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
-                                                                                {version.uploaded_by_name[0].toUpperCase()}
-                                                                            </div>
-                                                                            <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
-                                                                                {version.uploaded_by_name}
-                                                                            </span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                                                                <User className="w-3.5 h-3.5 text-slate-50" />
-                                                                            </div>
-                                                                            <span className="text-slate-50 italic text-sm">เลือกผู้อัปโหลด</span>
-                                                                        </>
+                                                                        }}
+                                                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
+                                                                        title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
+                                                                    >
+                                                                        {version.uploaded_by_name ? (
+                                                                            <>
+                                                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
+                                                                                    {version.uploaded_by_name[0].toUpperCase()}
+                                                                                </div>
+                                                                                <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
+                                                                                    {version.uploaded_by_name}
+                                                                                </span>
+
+
+
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                                                    <User className="w-3.5 h-3.5 text-slate-50" />
+                                                                                </div>
+                                                                                <span className="text-slate-400 italic text-sm">เลือกผู้อัปโหลด</span>
+
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                    {/* ✅ ปุ่ม X ลบคนอัพโหลด — แสดงเฉพาะเมื่อ hover */}
+                                                                    {version.uploaded_by_name && (
+                                                                        <div
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                updateVersion(version.id, "uploaded_by", null);
+                                                                            }}
+                                                                            className="hidden group-hover/uploader-container:flex items-center justify-center
+                                                                                        w-6 h-6 
+                                                                                        rounded-full
+                                                                                        bg-red-500
+                                                                                        hover:bg-red-600
+                                                                                        hover:ring-1 hover:ring-red-400
+                                                                                        transition-all duration-150 cursor-pointer"
+                                                                            title="ลบผู้อัปโหลด"
+                                                                        >
+                                                                            <X className="w-4 h-4 text-white" />
+                                                                        </div>
                                                                     )}
-                                                                    <ChevronDown className="w-3 h-3 text-gray-500 opacity-0 group-hover/uploader:opacity-100 transition-opacity ml-auto flex-shrink-0" />
-                                                                </button>
+
+                                                                </div>
+
+
 
                                                                 {showUserMenu === version.id && (
                                                                     <>
                                                                         <div className="fixed inset-0 z-10" onClick={() => { setShowUserMenu(null); setUserSearchTerm(""); }} />
                                                                         <div
+                                                                            data-user-menu="true"
                                                                             className={`absolute z-50 w-64 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5
-                        ${userMenuPos.vertical === "top" ? "bottom-full mb-1" : "top-full mt-1"}
-                        ${userMenuPos.horizontal === "right" ? "right-0" : "left-0"}
-                    `}
+                                                                                ${userMenuPos.vertical === "top" ? "bottom-full mb-1" : "top-full mt-1"}
+                                                                                ${userMenuPos.horizontal === "right" ? "right-0" : "left-0"}
+                                                                            `}
                                                                         >
                                                                             {/* Header */}
                                                                             <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
@@ -763,6 +805,9 @@ export default function Others_Version() {
 
                                                                             {/* User List */}
                                                                             <div className="max-h-56 overflow-y-auto p-1.5">
+
+                                                                               
+                                                                                {/* รายชื่อ Users */}
                                                                                 {projectUsers
                                                                                     .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
                                                                                     .map(user => (
@@ -789,6 +834,7 @@ export default function Others_Version() {
                                                                                         </button>
                                                                                     ))
                                                                                 }
+
                                                                                 {projectUsers.filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 && (
                                                                                     <div className="p-4 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
                                                                                 )}

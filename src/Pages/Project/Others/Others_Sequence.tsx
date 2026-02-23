@@ -10,8 +10,8 @@ import axios from 'axios';
 import ShotTab from '../../../components/ShotTab';
 import RightPanel from "../../../components/RightPanel";
 
+//============================================================================================================================================//
 
-// Status configuration
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
@@ -65,7 +65,6 @@ type PipelineStep = {
     entity_type?: 'shot' | 'asset';
 };
 
-// ⭐ อัปเดต Task type
 type Task = {
     id: number;
     project_id: number;
@@ -97,37 +96,22 @@ interface Shot {
     shot_thumbnail?: string;
 }
 
+//============================================================================================================================================//
+
 export default function Others_Sequence() {
     const [activeTab, setActiveTab] = useState('Sequence Info');
-    const [SequenceData, setSequenceData] = useState({
-        id: 0,
-        shotCode: "",
-        sequence: "",
-        status: "wtg" as StatusType,
-        tags: [],
-        thumbnail: "",
-        description: "",
-        dueDate: "-"
-    });
-
     const [showPreview, setShowPreview] = useState(false);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showCreateSequence_Task, setShowCreateSequence_Task] = useState(false);
     const [showCreateSequence_Note, setShowCreateSequence_Note] = useState(false);
-
-    // ++++++++++++++++++++++++++++++++++++++ storage +++++++++++++++++++++++++++++++
     const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
     const sequenceId = stored.sequenceId;
-
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-
-    // ++++++++++++++++++++++++++++++++++++++++ right panel
     const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
-
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [type, setType] = useState<string | null>(null);
     const [loadingNotes, setLoadingNotes] = useState(false);
@@ -135,8 +119,6 @@ export default function Others_Sequence() {
     const [files, setFiles] = useState<File[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [uploading, setUploading] = useState(false);
-
-
     const [allPeople, setAllPeople] = useState<Person[]>([]);
     const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
     const [, setSelectedFile] = useState<File | null>(null);
@@ -149,15 +131,87 @@ export default function Others_Sequence() {
     const [open, setOpen] = useState(false);
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
-
-    // ++++++++++++++++++++++++++++++++ task versions
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [taskVersions, setTaskVersions] = useState<any[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ shots
     const [shots, setShots] = useState<Shot[]>([]);
     const [loadingShots, setLoadingShots] = useState(false);
+    const [subject, setSubject] = useState("");
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const [thumbnailLoading, setThumbnailLoading] = useState(true);
+    const navigate = useNavigate();
+    const [editingField, setEditingField] = useState<null | 'sequence' | 'description'>(null);
+
+//============================================================================================================================================//
+
+    const [SequenceData, setSequenceData] = useState({
+        id: 0,
+        shotCode: "",
+        sequence: "",
+        status: "wtg" as StatusType,
+        tags: [],
+        thumbnail: "",
+        description: "",
+        dueDate: "-"
+    });
+
+    const [checked, setChecked] = useState<CheckedState>({
+        All: false,
+        ART: false,
+        MDL: false,
+        RIG: false,
+        TXT: false,
+    });
+
+    const [createTaskForm, setCreateTaskForm] = useState({
+        task_name: '',
+        status: 'wtg',
+        start_date: '',
+        due_date: '',
+        description: '',
+        file_url: '',
+    });
+
+//============================================================================================================================================//
+
+    const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
+        noteId: number;
+        subject: string;
+    } | null>(null);
+
+    const [noteContextMenu, setNoteContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        note: Note;
+    } | null>(null);
+
+//============================================================================================================================================//
+
+    useEffect(() => {
+        const fetchPeople = async () => {
+            try {
+                const response = await fetch(ENDPOINTS.GETALLPEOPLE);
+                const data = await response.json();
+                setAllPeople(data);
+            } catch (error) {
+                console.error('Error fetching people:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPeople();
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === 'Notes' && SequenceData?.id) {
+            fetchNotes();
+        }
+    }, [activeTab, SequenceData?.id]);
+
     useEffect(() => {
         if (!sequenceId) return;
 
@@ -197,8 +251,102 @@ export default function Others_Sequence() {
         fetchSequenceDetail();
     }, [sequenceId]);
 
+    useEffect(() => {
+        if (SequenceData?.sequence) {
+            setSubject(`Note on ${SequenceData.sequence}`);
+        }
+    }, [SequenceData?.sequence]);
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ resize panel
+    useEffect(() => {
+        if (!sequenceId || !projectId) {
+            console.warn("⚠️ Missing sequenceId or projectId");
+            return;
+        }
+
+        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
+            project_id: projectId,
+            entity_type: "sequence",
+            entity_id: sequenceId
+        })
+            .then(res => {
+                console.log("✅ Tasks received:", res.data);
+                setTasks(res.data);
+            })
+            .catch(err => {
+                console.error("❌ โหลด task ไม่สำเร็จ", err);
+            });
+    }, [sequenceId, projectId]);
+
+    useEffect(() => {
+        if (selectedTask) {
+            setIsPanelOpen(false);
+            const t = setTimeout(() => {
+                setIsPanelOpen(true);
+                fetchTaskVersions(selectedTask.id); 
+            }, 10);
+            return () => clearTimeout(t);
+        }
+    }, [selectedTask]);
+
+    useEffect(() => {
+        if (!sequenceId) return;
+
+        const fetchSequenceDetail = async () => {
+            try {
+                setLoadingShots(true);
+
+                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
+                    sequenceId: sequenceId
+                });
+
+                console.log('✅ Sequence detail:', response.data);
+
+                // ใช้ helper function เดียวกัน
+                const uniqueShots = filterUniqueShots(response.data);
+                setShots(uniqueShots);
+
+            } catch (error) {
+                console.error('❌ Failed to fetch sequence detail:', error);
+                setShots([]);
+            } finally {
+                setLoadingShots(false);
+            }
+        };
+
+        fetchSequenceDetail();
+    }, [sequenceId]);
+
+    useEffect(() => {
+        const stored = localStorage.getItem("sequenceData");
+
+        if (!stored) {
+            console.warn("sequenceData not found");
+            navigate("/Project_Sequence");
+            return;
+        }
+
+        const seq = JSON.parse(stored);
+
+        setSequenceData({
+            id: seq.sequenceId,
+            shotCode: "",
+            sequence: seq.sequenceName,
+            status: seq.status,
+            tags: [],
+            thumbnail: seq.thumbnail,
+            description: seq.description || "",
+            dueDate: seq.createdAt
+        });
+        // ถ้ามี thumbnail ให้ set loading เป็น false เมื่อโหลดเสร็จ
+        if (seq.thumbnail) {
+            setThumbnailLoading(true);
+        } else {
+            setThumbnailLoading(false);
+        }
+    }, []);
+
+//============================================================================================================================================//
+
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
         e.preventDefault();
@@ -242,7 +390,6 @@ export default function Others_Sequence() {
         e.target.value = '';
     };
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const handleNoteContextMenu = (
         e: React.MouseEvent,
         note: Note
@@ -274,85 +421,10 @@ export default function Others_Sequence() {
         }
     };
 
-    // Close dropdown when clicking outside
     const handleClickOutside = () => {
         if (showStatusMenu) setShowStatusMenu(false);
     };
 
-    // +++++++++++++++++++++++++++++ sequence task
-    const [tasks, setTasks] = useState<Task[]>([]);
-
-    const [noteContextMenu, setNoteContextMenu] = useState<{
-        visible: boolean;
-        x: number;
-        y: number;
-        note: Note;
-    } | null>(null);
-
-    useEffect(() => {
-        const fetchPeople = async () => {
-            try {
-                const response = await fetch(ENDPOINTS.GETALLPEOPLE);
-                const data = await response.json();
-                setAllPeople(data);
-            } catch (error) {
-                console.error('Error fetching people:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPeople();
-    }, []);
-
-    useEffect(() => {
-        if (activeTab === 'Notes' && SequenceData?.id) {
-            fetchNotes();
-        }
-    }, [activeTab, SequenceData?.id]);
-
-    const [checked, setChecked] = useState<CheckedState>({
-        All: false,
-        ART: false,
-        MDL: false,
-        RIG: false,
-        TXT: false,
-    });
-
-    const [subject, setSubject] = useState("");
-
-    useEffect(() => {
-        if (SequenceData?.sequence) {
-            setSubject(`Note on ${SequenceData.sequence}`);
-        }
-    }, [SequenceData?.sequence]);
-
-    const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
-        noteId: number;
-        subject: string;
-    } | null>(null);
-
-    useEffect(() => {
-        if (!sequenceId || !projectId) {
-            console.warn("⚠️ Missing sequenceId or projectId");
-            return;
-        }
-
-        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
-            project_id: projectId,
-            entity_type: "sequence",
-            entity_id: sequenceId
-        })
-            .then(res => {
-                console.log("✅ Tasks received:", res.data);
-                setTasks(res.data);
-            })
-            .catch(err => {
-                console.error("❌ โหลด task ไม่สำเร็จ", err);
-            });
-    }, [sequenceId, projectId]);
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Date
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
 
@@ -366,20 +438,6 @@ export default function Others_Sequence() {
         return date.toLocaleDateString('th-TH', options);
     };
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ right
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
-    useEffect(() => {
-        if (selectedTask) {
-            setIsPanelOpen(false);
-            const t = setTimeout(() => {
-                setIsPanelOpen(true);
-                fetchTaskVersions(selectedTask.id); // เพิ่มบรรทัดนี้
-            }, 10);
-            return () => clearTimeout(t);
-        }
-    }, [selectedTask]);
-
-    // ✅ เพิ่มตรงนี้
     const updateVersion = async (versionId: number, field: string, value: any) => {
         try {
             await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
@@ -400,19 +458,6 @@ export default function Others_Sequence() {
         }
     };
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // เพิ่ม states สำหรับ Create Task
-    const [isCreatingTask, setIsCreatingTask] = useState(false);
-    const [createTaskForm, setCreateTaskForm] = useState({
-        task_name: '',
-        status: 'wtg',
-        start_date: '',
-        due_date: '',
-        description: '',
-        file_url: '',
-    });
-
-    // Handle form change
     const handleFormChange = (field: string, value: any) => {
         setCreateTaskForm(prev => ({
             ...prev,
@@ -597,7 +642,6 @@ export default function Others_Sequence() {
         }
     };
 
-    // Handle create task
     const handleCreateTask = async () => {
         if (isCreatingTask) return;
 
@@ -654,7 +698,6 @@ export default function Others_Sequence() {
         }
     };
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ shots refresh
     const handleShotUpdate = async () => {
         try {
             const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
@@ -668,9 +711,6 @@ export default function Others_Sequence() {
         }
     };
 
-    // ========================================
-    // 3. HELPER FUNCTION - FILTER UNIQUE SHOTS
-    // ========================================
     const filterUniqueShots = (data: any[]): Shot[] => {
         return data.reduce((acc: Shot[], item: any) => {
             // ตรวจสอบว่า shot_id มีอยู่และยังไม่ซ้ำใน array
@@ -688,38 +728,57 @@ export default function Others_Sequence() {
         }, []);
     };
 
-    // ========================================
-    // 4. INITIAL FETCH SHOTS (ใน useEffect)
-    // ========================================
-    useEffect(() => {
-        if (!sequenceId) return;
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "-";
 
-        const fetchSequenceDetail = async () => {
-            try {
-                setLoadingShots(true);
+        return new Date(dateStr).toLocaleString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    };
 
-                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
-                    sequenceId: sequenceId
-                });
+    const updateSequence = (payload: any) => {
+        return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: SequenceData.id,
+                ...payload
+            })
+        })
+            .then(() => {
+                const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
 
-                console.log('✅ Sequence detail:', response.data);
+                const updated = {
+                    ...stored,
+                    sequenceName: payload.sequence_name ?? stored.sequenceName,
+                    description: payload.description ?? stored.description,
+                    status: payload.status ?? stored.status
+                };
 
-                // ใช้ helper function เดียวกัน
-                const uniqueShots = filterUniqueShots(response.data);
-                setShots(uniqueShots);
+                localStorage.setItem("sequenceData", JSON.stringify(updated));
+            })
+            .catch(console.error);
+    };
 
-            } catch (error) {
-                console.error('❌ Failed to fetch sequence detail:', error);
-                setShots([]);
-            } finally {
-                setLoadingShots(false);
-            }
-        };
-
-        fetchSequenceDetail();
-    }, [sequenceId]);
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const fetchTaskVersions = async (taskId: number) => {
+        setIsLoadingVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+                entityType: 'task',
+                entityId: taskId
+            });
+            setTaskVersions(res.data);
+        } catch (err) {
+            console.error("Failed to fetch versions:", err);
+            setTaskVersions([]);
+        } finally {
+            setIsLoadingVersions(false);
+        }
+    };
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -798,95 +857,8 @@ export default function Others_Sequence() {
                 return null;
         }
     };
-
-    // เพิ่ม state สำหรับ loading thumbnail
-    const [thumbnailLoading, setThumbnailLoading] = useState(true);
-
-    // ดึงข้อมูล sequence จาก localStorage
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        const stored = localStorage.getItem("sequenceData");
-
-        if (!stored) {
-            console.warn("sequenceData not found");
-            navigate("/Project_Sequence");
-            return;
-        }
-
-        const seq = JSON.parse(stored);
-
-        setSequenceData({
-            id: seq.sequenceId,
-            shotCode: "",
-            sequence: seq.sequenceName,
-            status: seq.status,
-            tags: [],
-            thumbnail: seq.thumbnail,
-            description: seq.description || "",
-            dueDate: seq.createdAt
-        });
-        // ถ้ามี thumbnail ให้ set loading เป็น false เมื่อโหลดเสร็จ
-        if (seq.thumbnail) {
-            setThumbnailLoading(true);
-        } else {
-            setThumbnailLoading(false);
-        }
-    }, []);
-
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return "-";
-
-        return new Date(dateStr).toLocaleString("th-TH", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-    };
-
-    const [editingField, setEditingField] = useState<null | 'sequence' | 'description'>(null);
-
-    const updateSequence = (payload: any) => {
-        return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: SequenceData.id,
-                ...payload
-            })
-        })
-            .then(() => {
-                const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
-
-                const updated = {
-                    ...stored,
-                    sequenceName: payload.sequence_name ?? stored.sequenceName,
-                    description: payload.description ?? stored.description,
-                    status: payload.status ?? stored.status
-                };
-
-                localStorage.setItem("sequenceData", JSON.stringify(updated));
-            })
-            .catch(console.error);
-    };
-
-    const fetchTaskVersions = async (taskId: number) => {
-        setIsLoadingVersions(true);
-        try {
-            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
-                entityType: 'task',
-                entityId: taskId
-            });
-            setTaskVersions(res.data);
-        } catch (err) {
-            console.error("Failed to fetch versions:", err);
-            setTaskVersions([]);
-        } finally {
-            setIsLoadingVersions(false);
-        }
-    };
+    
+//============================================================================================================================================//
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1309,7 +1281,6 @@ export default function Others_Sequence() {
                                     className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
                                 />
                             </div>
-
 
                             {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
@@ -1787,7 +1758,6 @@ export default function Others_Sequence() {
                 onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}    // ✅ เพิ่ม
                 onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)} // ✅ เพิ่ม
             />
-
 
             {selectedNote && (
                 <div

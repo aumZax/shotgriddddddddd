@@ -9,6 +9,9 @@ import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
 import VersionTab from "../../../components/VersionTab";
 
+
+//============================================================================================================================================//
+
 const statusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
     ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
@@ -40,7 +43,6 @@ interface Note {
     tasks?: string[];
     assigned_people?: string[];
 }
-
 
 interface Version {
     id: number;
@@ -115,6 +117,7 @@ type TaskAssignee = {
     username: string;
 };
 
+//============================================================================================================================================//
 
 const assetFieldMap: Record<keyof AssetData, string | null> = {
     id: null,
@@ -149,6 +152,7 @@ const getSelectedAsset = (): AssetData | null => {
 };
 
 export default function Others_Asset() {
+
     const [activeTab, setActiveTab] = useState('Asset Info');
     const [assetData, setAssetData] = useState<AssetData | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -157,14 +161,57 @@ export default function Others_Asset() {
     const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
     const [uploaderQuery, setUploaderQuery] = useState('');
     const [uploaderOpen, setUploaderOpen] = useState(false);
-
-
     const [editingField, setEditingField] = useState<string | null>(null);
-
     const [showPreview, setShowPreview] = useState(false);
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
     const [type, setType] = useState<NoteType | null>(null);
+    const [body, setBody] = useState('');
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [loadingNotes, setLoadingNotes] = useState(false);
+    const [taskVersions, setTaskVersions] = useState<any[]>([]);
+    const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+    const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
+    const [assetVersions, setAssetVersions] = useState<any[]>([]);
+    const [isLoadingAssetVersions, setIsLoadingAssetVersions] = useState(false);
+    const currentUser = localStorage.getItem('currentUser') || 'Manager';
+    const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
+    const [query, setQuery] = useState('');
+    const [open, setOpen] = useState(false);
+    const [allPeople, setAllPeople] = useState<Person[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [files, setFiles] = useState<File[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [, setSelectedFile] = useState<File | null>(null);
+    const [openAssignedDropdown, setOpenAssignedDropdown] = useState<string | number | null>(null);
+    const [selectedTasks, setSelectedTasks] = useState<string[]>([])
+    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
+    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+    const AssetID = stored.id;
+    const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
+    const projectId = projectData?.projectId;
+    const [rightPanelTab, setRightPanelTab] = useState('notes');
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isResizing, setIsResizing] = useState(false);
+    const [rightPanelWidth, setRightPanelWidth] = useState(600);
+    const [,] = useState<Version | null>(null);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [versionModalPosition, setVersionModalPosition] = useState({ x: 0, y: 0 });
+    const [showCreateVersion, setShowCreateVersion] = useState(false);
+    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [versionFiles, setVersionFiles] = useState<File[]>([]);
+    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+    //============================================================================================================================================//
+
+    const [createVersionForm, setCreateVersionForm] = useState({
+        version_name: '', status: 'wtg', description: '', link: '', task: '',
+    });
+
     const [checked, setChecked] = useState<CheckedState>({
         All: false,
         ART: false,
@@ -172,41 +219,40 @@ export default function Others_Asset() {
         RIG: false,
         TXT: false,
     });
-    const currentUser = localStorage.getItem('currentUser') || 'Manager';
 
-    const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
-    const [query, setQuery] = useState('');
-    const [open, setOpen] = useState(false);
-    const [allPeople, setAllPeople] = useState<Person[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [createTaskForm, setCreateTaskForm] = useState({
+        task_name: '',
+        status: 'wtg',
+        start_date: '',
+        due_date: '',
+        description: '',
+        file_url: '',
+    });
 
-    const [files, setFiles] = useState<File[]>([]);
-    const [uploading, setUploading] = useState(false);
-    const [, setSelectedFile] = useState<File | null>(null);
-
-    const [openAssignedDropdown, setOpenAssignedDropdown] = useState<string | number | null>(null);
-    const [selectedTasks, setSelectedTasks] = useState<string[]>([])
-    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [subject, setSubject] = useState(
         assetData?.asset_name ? `Note on ${assetData.asset_name}` : ""
     );
-    const [body, setBody] = useState('');
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [loadingNotes, setLoadingNotes] = useState(false);
-    const [taskVersions, setTaskVersions] = useState<any[]>([]);
-    const [isLoadingVersions, setIsLoadingVersions] = useState(false);
-    const [rightPanelActiveTab, setRightPanelActiveTab] = useState('notes');
 
-    const [assetVersions, setAssetVersions] = useState<any[]>([]);
-    const [isLoadingAssetVersions, setIsLoadingAssetVersions] = useState(false);
+    //============================================================================================================================================//
 
-
-    // Context menu for notes
     const [noteContextMenu, setNoteContextMenu] = useState<{
         visible: boolean;
         x: number;
         y: number;
         note: Note;
+    } | null>(null);
+
+    const [versionContextMenu, setVersionContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        versionId: number;
+        versionName: string;
+    } | null>(null);
+
+    const [deleteVersionConfirm, setDeleteVersionConfirm] = useState<{
+        versionId: number;
+        versionName: string;
     } | null>(null);
 
     // Delete confirmation modal
@@ -221,24 +267,25 @@ export default function Others_Asset() {
         }
     }, [activeTab, assetData?.id]);
 
-    const handleFiletaskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files) return;
-
-        const selected = Array.from(e.target.files);
-        setFiles((prev) => [...prev, ...selected]);
-
-        e.target.value = '';
-    };
-
-    const removetaskFile = (index: number) => {
-        setFiles(files.filter((_, i) => i !== index));
-    };
-
     useEffect(() => {
         if (activeTab === 'Notes') {
             fetchNotes();
         }
     }, [activeTab, assetData?.id]);
+
+    useEffect(() => {
+        if (deleteVersionConfirm) {
+            setVersionContextMenu(null);
+        }
+    }, [deleteVersionConfirm]);
+
+    useEffect(() => {
+        const closeMenu = () => setVersionContextMenu(null);
+        if (versionContextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [versionContextMenu]);
 
     useEffect(() => {
         const fetchPeople = async () => {
@@ -256,7 +303,6 @@ export default function Others_Asset() {
         fetchPeople();
     }, []);
 
-    // Close context menu when clicking outside
     useEffect(() => {
         const closeMenu = () => setNoteContextMenu(null);
 
@@ -280,6 +326,71 @@ export default function Others_Asset() {
             setNoteContextMenu(null);
         }
     }, [deleteNoteConfirm]);
+
+    useEffect(() => {
+
+        console.log("🔍 AssetID:", AssetID);
+        console.log("🔍 projectId:", projectId);
+        console.log("🔍 stored data:", stored);
+
+        if (!AssetID || !projectId) {
+            console.warn("⚠️ Missing AssetID or projectId");
+            return;
+        }
+
+        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
+            project_id: projectId,
+            entity_type: "asset",
+            entity_id: AssetID
+        })
+            .then(res => {
+                console.log("✅ Tasks received:", res.data);
+                setTasks(res.data);
+            })
+            .catch(err => {
+                console.error("❌ โหลด task ไม่สำเร็จ", err);
+            });
+    }, [AssetID, projectId]);
+
+    useEffect(() => {
+        if (selectedTask) {
+            setIsPanelOpen(false);
+            const t = setTimeout(() => {
+                setIsPanelOpen(true);
+                fetchTaskVersions(selectedTask.id);
+            }, 10);
+            return () => clearTimeout(t);
+        }
+    }, [selectedTask]);
+
+    //============================================================================================================================================//
+
+    const handleFiletaskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
+        const selected = Array.from(e.target.files);
+        setFiles((prev) => [...prev, ...selected]);
+
+        e.target.value = '';
+    };
+
+    const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
+
+    const removetaskFile = (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
+    };
 
     const fetchNotes = async () => {
         if (!assetData?.id) return;
@@ -311,8 +422,6 @@ export default function Others_Asset() {
             setLoadingNotes(false);
         }
     };
-
-
 
     const handleDeleteNote = async (noteId: number) => {
         try {
@@ -569,93 +678,32 @@ export default function Others_Asset() {
         }
     };
 
+    const removeVersionFile = (index: number) => {
+        const newFiles = versionFiles.filter((_, i) => i !== index);
+        const newPreviews = versionFilePreviews.filter((_, i) => i !== index);
 
+        setVersionFiles(newFiles);
+        setVersionFilePreviews(newPreviews);
 
-
-    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-    const AssetID = stored.id;
-    console.log(AssetID)
-    const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
-    const projectId = projectData?.projectId;
-    const [rightPanelTab, setRightPanelTab] = useState('notes');
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [isResizing, setIsResizing] = useState(false);
-    const [rightPanelWidth, setRightPanelWidth] = useState(600);
-
-    const [,] = useState<Version | null>(null);
-
-    const [showCreateVersion, setShowCreateVersion] = useState(false);
-    const [isCreatingVersion, setIsCreatingVersion] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const [versionFiles, setVersionFiles] = useState<File[]>([]);
-    const [versionFilePreviews, setVersionFilePreviews] = useState<string[]>([]);
-    const [createVersionForm, setCreateVersionForm] = useState({
-
-
-        version_name: '', status: 'wtg', description: '', link: '', task: '',
-    });
-    const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
-
-
-    const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        setVersionFiles(prev => [...prev, ...files]);
-        setVersionFilePreviews(prev => [
-            ...prev,
-            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
-        ]);
-        // ตั้งชื่อตามไฟล์แรกที่เลือก (ถ้ายังไม่มี)
-        setCreateVersionForm(p => ({
-            ...p,
-            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
-        }));
+        // ถ้าลบไฟล์ที่เป็นต้นทางของ version_name → reset name ด้วย
+        if (versionNameFromFile === index) {
+            setCreateVersionForm(p => ({ ...p, version_name: '' }));
+            setVersionNameFromFile(null);
+        } else if (versionNameFromFile !== null && index < versionNameFromFile) {
+            setVersionNameFromFile(prev => prev !== null ? prev - 1 : null);
+        }
     };
 
-    // handler drag & drop
-    const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); setIsDragging(false);
-        const files = Array.from(e.dataTransfer.files || []);
-        if (!files.length) return;
-        setVersionFiles(prev => [...prev, ...files]);
-        setVersionFilePreviews(prev => [
-            ...prev,
-            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
-        ]);
-        setCreateVersionForm(p => ({
-            ...p,
-            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
-        }));
-    };
-
-
-const removeVersionFile = (index: number) => {
-    const newFiles = versionFiles.filter((_, i) => i !== index);
-    const newPreviews = versionFilePreviews.filter((_, i) => i !== index);
-
-    setVersionFiles(newFiles);
-    setVersionFilePreviews(newPreviews);
-
-    // ถ้าลบไฟล์ที่เป็นต้นทางของ version_name → reset name ด้วย
-    if (versionNameFromFile === index) {
-        setCreateVersionForm(p => ({ ...p, version_name: '' }));
+    const resetVersionForm = () => {
+        setShowCreateVersion(false);
+        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+        setVersionFiles([]);
+        setVersionFilePreviews([]);
         setVersionNameFromFile(null);
-    } else if (versionNameFromFile !== null && index < versionNameFromFile) {
-        setVersionNameFromFile(prev => prev !== null ? prev - 1 : null);
-    }
-};
-
-
-const resetVersionForm = () => {
-    setShowCreateVersion(false);
-    setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
-    setVersionFiles([]);
-    setVersionFilePreviews([]);
-    setVersionNameFromFile(null);
-    setSelectedUploader(null);
-    setUploaderQuery('');
-    setVersionModalPosition({ x: 0, y: 0 });
-};
+        setSelectedUploader(null);
+        setUploaderQuery('');
+        setVersionModalPosition({ x: 0, y: 0 });
+    };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -671,36 +719,21 @@ const resetVersionForm = () => {
         }
     };
 
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [versionModalPosition, setVersionModalPosition] = useState({ x: 0, y: 0 });
+    const handleVersionFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); setIsDragging(false);
 
-
-    useEffect(() => {
-        console.log("🔍 AssetID:", AssetID);
-        console.log("🔍 projectId:", projectId);
-        console.log("🔍 stored data:", stored);
-
-        if (!AssetID || !projectId) {
-            console.warn("⚠️ Missing AssetID or projectId");
-            return;
-        }
-
-        axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
-            project_id: projectId,
-            entity_type: "asset",
-            entity_id: AssetID
-        })
-            .then(res => {
-                console.log("✅ Tasks received:", res.data);
-                setTasks(res.data);
-            })
-            .catch(err => {
-                console.error("❌ โหลด task ไม่สำเร็จ", err);
-            });
-    }, [AssetID, projectId]);
-
-
-
+        const files = Array.from(e.dataTransfer.files || []);
+        if (!files.length) return;
+        setVersionFiles(prev => [...prev, ...files]);
+        setVersionFilePreviews(prev => [
+            ...prev,
+            ...files.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+        ]);
+        setCreateVersionForm(p => ({
+            ...p,
+            version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
+        }));
+    };
 
     const formatDateThai = (dateString: string) => {
         if (!dateString) return '-';
@@ -726,19 +759,6 @@ const resetVersionForm = () => {
             minute: "2-digit"
         });
     };
-
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
-
-    useEffect(() => {
-        if (selectedTask) {
-            setIsPanelOpen(false);
-            const t = setTimeout(() => {
-                setIsPanelOpen(true);
-                fetchTaskVersions(selectedTask.id);
-            }, 10);
-            return () => clearTimeout(t);
-        }
-    }, [selectedTask]);
 
     const updateVersion = async (versionId: number, field: string, value: any) => {
         try {
@@ -767,7 +787,6 @@ const resetVersionForm = () => {
         }
     };
 
-
     const handleCreateVersion = async () => {
         if (isCreatingVersion) return;
         if (!createVersionForm.version_name.trim()) {
@@ -794,7 +813,7 @@ const resetVersionForm = () => {
                     const fileUrl = uploadData.file.fileUrl;
                     const file_id = uploadData.file.id;
 
-                    localStorage.setItem("file_id",file_id);
+                    localStorage.setItem("file_id", file_id);
 
                     // ชื่อ version — ไฟล์แรกใช้ชื่อที่กรอก ที่เหลือใช้ชื่อไฟล์
                     const vName = i === 0
@@ -834,7 +853,6 @@ const resetVersionForm = () => {
         }
     };
 
-    // helper
     const createSingleVersion = async (fileUrl: string | null, versionName?: string) => {
         const res = await fetch(ENDPOINTS.CREATE_ASSET_VERSION, {
             method: 'POST',
@@ -850,24 +868,12 @@ const resetVersionForm = () => {
                 file_url: fileUrl,
                 file_id: localStorage.getItem("file_id"),
                 uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
-               
+
             })
         });
         if (!res.ok) throw new Error('Create version failed');
     };
 
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Create Task Form States
-    const [isCreatingTask, setIsCreatingTask] = useState(false);
-    const [createTaskForm, setCreateTaskForm] = useState({
-        task_name: '',
-        status: 'wtg',
-        start_date: '',
-        due_date: '',
-        description: '',
-        file_url: '',
-    });
-    // Handle form input changes
     const handleFormChange = (field: string, value: any) => {
         setCreateTaskForm(prev => ({
             ...prev,
@@ -887,9 +893,6 @@ const resetVersionForm = () => {
         finally { setIsLoadingAssetVersions(false); }
     };
 
-
-
-    // Handle create task submission
     const handleCreateTask = async () => {
         if (isCreatingTask) return;
 
@@ -945,10 +948,26 @@ const resetVersionForm = () => {
             setIsCreatingTask(false);
         }
     };
-    // 
+
+    const fetchTaskVersions = async (taskId: number) => {
+        setIsLoadingVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+                entityType: 'task',
+                entityId: taskId
+            });
+            setTaskVersions(res.data);
+        } catch (err) {
+            console.error("Failed to fetch versions:", err);
+            setTaskVersions([]);
+        } finally {
+            setIsLoadingVersions(false);
+        }
+    };
 
     const renderTabContent = () => {
         switch (activeTab) {
+
             case 'Asset Info':
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -998,6 +1017,7 @@ const resetVersionForm = () => {
                         versions={assetVersions}
                         isLoadingVersions={isLoadingAssetVersions}
 
+
                         onUpdateVersion={async (versionId, field, value) => {
                             try {
                                 await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
@@ -1009,17 +1029,14 @@ const resetVersionForm = () => {
                         onDeleteVersion={async (versionId: number) => {
                             try {
                                 const res = await axios.delete(`${ENDPOINTS.DELETE_ASSET_VERSION}/${versionId}`, {
-                                    data: { entityId: assetData?.id }
+                                    data: { entityId: AssetID }
                                 });
-
                                 setAssetVersions(prev => prev.filter(v => v.id !== versionId));
-
-                                // อัปเดต thumbnail จาก response
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
-                                    setAssetData(prev => prev ? { ...prev, thumbnail: newThumb } : null);
-                                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                                    localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: newThumb }));
+                                    setAssetData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData);
+                                    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                    localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
                                 }
                             } catch {
                                 alert('ไม่สามารถลบได้');
@@ -1028,6 +1045,7 @@ const resetVersionForm = () => {
                         formatDate={formatDate}
                     />
                 );
+            
             case 'Sub Assets':
                 return (
                     <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
@@ -1047,6 +1065,8 @@ const resetVersionForm = () => {
         }
     };
 
+    //============================================================================================================================================//
+    
     if (!assetData) {
         return (
             <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
@@ -1059,21 +1079,6 @@ const resetVersionForm = () => {
             </div>
         );
     }
-    const fetchTaskVersions = async (taskId: number) => {
-        setIsLoadingVersions(true);
-        try {
-            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
-                entityType: 'task',
-                entityId: taskId
-            });
-            setTaskVersions(res.data);
-        } catch (err) {
-            console.error("Failed to fetch versions:", err);
-            setTaskVersions([]);
-        } finally {
-            setIsLoadingVersions(false);
-        }
-    };
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1531,8 +1536,6 @@ const resetVersionForm = () => {
                                 />
                             </div>
 
-                        
-
                             {/* Start Date */}
                             <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">
@@ -1881,265 +1884,262 @@ const resetVersionForm = () => {
                     </div>
                 </>
             )}
+
             {/* Create Version Modal */}
+            {showCreateVersion && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/50"
+                        onClick={() => !isCreatingVersion && resetVersionForm()}
+                    />
 
-{/* ========== Create Version Modal ========== */}
-{showCreateVersion && (
-    <>
-        <div
-            className="fixed inset-0 z-40 bg-black/50"
-            onClick={() => !isCreatingVersion && resetVersionForm()} 
-        />
-
-        <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
-            <div
-                style={{
-                    transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
-                    maxHeight: 'calc(100vh - 60px)',
-                }}
-                className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
-            >
-                {/* Header — ลากได้ */}
-                <div
-                    onMouseDown={(e) => {
-                        const startX = e.clientX;
-                        const startY = e.clientY;
-                        const startPos = { ...versionModalPosition };
-                        const onMove = (me: MouseEvent) => {
-                            setVersionModalPosition({
-                                x: startPos.x + me.clientX - startX,
-                                y: startPos.y + me.clientY - startY,
-                            });
-                        };
-                        const onUp = () => {
-                            document.removeEventListener('mousemove', onMove);
-                            document.removeEventListener('mouseup', onUp);
-                        };
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    }}
-                    className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                >
-                    <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
-                    <button
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={() => resetVersionForm()}
-                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
-
-                    {/* File Upload */}
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
+                    <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
                         <div
-                            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                            onDragLeave={() => setIsDragging(false)}
-                            onDrop={handleVersionFileDrop}
-                            className={`relative rounded-lg border border-dashed transition-all duration-150 ${
-                                isDragging
-                                    ? 'border-blue-500/60 bg-blue-500/8'
-                                    : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
-                            }`}
+                            style={{
+                                transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
+                                maxHeight: 'calc(100vh - 60px)',
+                            }}
+                            className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
                         >
-                            <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
-                                {versionFiles.length > 0 ? (
-                                    <div className="w-full space-y-1.5">
-                                        {versionFiles.map((file, i) => (
-                                            <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
-                                                {versionFilePreviews[i] ? (
-                                                    <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
-                                                ) : (
-                                                    <span className="text-base">🎬</span>
-                                                )}
-                                                <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={e => { e.preventDefault(); removeVersionFile(i); }}
-                                                    className="text-gray-600 hover:text-red-400 transition-colors text-xs"
-                                                >✕</button>
-                                            </div>
-                                        ))}
-                                        <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
-                                            <span>+ Add more files</span>
-                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-1.5 pointer-events-none">
-                                        <span className="text-2xl text-gray-600">📎</span>
-                                        <p className="text-xs text-gray-400">Drop files or click to browse</p>
-                                    </div>
-                                )}
-                                <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Version Name + Status */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
-                            <input
-                                type="text"
-                                value={createVersionForm.version_name}
-                                onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
-                                className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
-                            <select
-                                value={createVersionForm.status}
-                                onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
-                                className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                            {/* Header — ลากได้ */}
+                            <div
+                                onMouseDown={(e) => {
+                                    const startX = e.clientX;
+                                    const startY = e.clientY;
+                                    const startPos = { ...versionModalPosition };
+                                    const onMove = (me: MouseEvent) => {
+                                        setVersionModalPosition({
+                                            x: startPos.x + me.clientX - startX,
+                                            y: startPos.y + me.clientY - startY,
+                                        });
+                                    };
+                                    const onUp = () => {
+                                        document.removeEventListener('mousemove', onMove);
+                                        document.removeEventListener('mouseup', onUp);
+                                    };
+                                    document.addEventListener('mousemove', onMove);
+                                    document.addEventListener('mouseup', onUp);
+                                }}
+                                className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                             >
-                                <option value="wtg">Waiting</option>
-                                <option value="ip">In Progress</option>
-                                <option value="rev">Review</option>
-                                <option value="apr">Approved</option>
-                                <option value="rej">Rejected</option>
-                                <option value="fin">Final</option>
-                            </select>
-                        </div>
-                    </div>
+                                <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
+                                <button
+                                    onMouseDown={e => e.stopPropagation()}
+                                    onClick={() => resetVersionForm()}
+                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
+                                >
+                                    ✕
+                                </button>
+                            </div>
 
-                    {/* Uploaded By */}
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
-                        <div className="relative">
-                            {selectedUploader ? (
-                                <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
-                                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-[9px] font-semibold">
-                                            {selectedUploader.name[0].toUpperCase()}
-                                        </span>
+                            {/* Body */}
+                            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+
+                                {/* File Upload */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
+                                    <div
+                                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                                        onDragLeave={() => setIsDragging(false)}
+                                        onDrop={handleVersionFileDrop}
+                                        className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
+                                            ? 'border-blue-500/60 bg-blue-500/8'
+                                            : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
+                                            }`}
+                                    >
+                                        <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
+                                            {versionFiles.length > 0 ? (
+                                                <div className="w-full space-y-1.5">
+                                                    {versionFiles.map((file, i) => (
+                                                        <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
+                                                            {versionFilePreviews[i] ? (
+                                                                <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
+                                                            ) : (
+                                                                <span className="text-base">🎬</span>
+                                                            )}
+                                                            <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                                                                className="text-gray-600 hover:text-red-400 transition-colors text-xs"
+                                                            >✕</button>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
+                                                        <span>+ Add more files</span>
+                                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+                                                    <span className="text-2xl text-gray-600">📎</span>
+                                                    <p className="text-xs text-gray-400">Drop files or click to browse</p>
+                                                </div>
+                                            )}
+                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                        </label>
                                     </div>
-                                    <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                                        className="text-gray-600 hover:text-red-400 text-xs"
-                                    >✕</button>
                                 </div>
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={uploaderQuery}
-                                    onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
-                                    onFocus={() => setUploaderOpen(true)}
-                                    onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
-                                    placeholder={currentUser}
-                                    className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
-                                />
-                            )}
-                            {uploaderOpen && !selectedUploader && (
-                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-36 overflow-y-auto">
-                                    {allPeople
-                                        .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
-                                        .map(person => (
-                                            <div
-                                                key={person.id}
-                                                onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
-                                                className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
-                                            >
-                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+
+                                {/* Version Name + Status */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                                        <input
+                                            type="text"
+                                            value={createVersionForm.version_name}
+                                            onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
+                                        <select
+                                            value={createVersionForm.status}
+                                            onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
+                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        >
+                                            <option value="wtg">Waiting</option>
+                                            <option value="ip">In Progress</option>
+                                            <option value="rev">Review</option>
+                                            <option value="apr">Approved</option>
+                                            <option value="rej">Rejected</option>
+                                            <option value="fin">Final</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Uploaded By */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                                    <div className="relative">
+                                        {selectedUploader ? (
+                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                                                     <span className="text-white text-[9px] font-semibold">
-                                                        {person.name[0].toUpperCase()}
+                                                        {selectedUploader.name[0].toUpperCase()}
                                                     </span>
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-200">{person.name}</p>
-                                                    <p className="text-[10px] text-gray-500">{person.email}</p>
-                                                </div>
+                                                <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                                    className="text-gray-600 hover:text-red-400 text-xs"
+                                                >✕</button>
                                             </div>
-                                        ))
-                                    }
-                                    {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
-                                        <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
-                                    )}
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={uploaderQuery}
+                                                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                                onFocus={() => setUploaderOpen(true)}
+                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                                placeholder={currentUser}
+                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                            />
+                                        )}
+                                        {uploaderOpen && !selectedUploader && (
+                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                                                {allPeople
+                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                                    .map(person => (
+                                                        <div
+                                                            key={person.id}
+                                                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-white text-[9px] font-semibold">
+                                                                    {person.name[0].toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs text-gray-200">{person.name}</p>
+                                                                <p className="text-[10px] text-gray-500">{person.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+
+                                {/* Task */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+                                    <input
+                                        type="text"
+                                        value={createVersionForm.task}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
+                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Link + Project — read-only */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
+                                        <input
+                                            type="text"
+                                            value={assetData?.asset_name || ''}
+                                            readOnly
+                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={projectData?.projectName || ''}
+                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
+                                    <textarea
+                                        value={createVersionForm.description}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                                        rows={2}
+                                        className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
+                                    />
+                                </div>
+
+                            </div>
+
+                            {/* Footer — Cancel ซ้าย, Create ขวา */}
+                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
+                                <button
+                                    onClick={() => resetVersionForm()}
+                                    disabled={isCreatingVersion}
+                                    className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateVersion}
+                                    disabled={isCreatingVersion}
+                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                                >
+                                    {isCreatingVersion ? (
+                                        <>
+                                            <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Creating…</span>
+                                        </>
+                                    ) : 'Create Version'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    {/* Task */}
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
-                        <input
-                            type="text"
-                            value={createVersionForm.task}
-                            onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
-                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                        />
-                    </div>
-
-                    {/* Link + Project — read-only */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
-                            <input
-                                type="text"
-                                value={assetData?.asset_name || ''}
-                                readOnly
-                                className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
-                            <input
-                                type="text"
-                                readOnly
-                                value={projectData?.projectName || ''}
-                                className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
-                        <textarea
-                            value={createVersionForm.description}
-                            onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
-                            rows={2}
-                            className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
-                        />
-                    </div>
-
-                </div>
-
-                {/* Footer — Cancel ซ้าย, Create ขวา */}
-                <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
-                    <button
-                        onClick={() => resetVersionForm()} 
-                        disabled={isCreatingVersion}
-                        className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleCreateVersion}
-                        disabled={isCreatingVersion}
-                        className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
-                    >
-                        {isCreatingVersion ? (
-                            <>
-                                <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Creating…</span>
-                            </>
-                        ) : 'Create Version'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </>
-)}
-{/* ========== End Create Version Modal ========== */}
+                </>
+            )}
 
             {/* Context Menu for Notes */}
             {noteContextMenu && (
@@ -2163,6 +2163,33 @@ const resetVersionForm = () => {
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Note
+                    </button>
+                </div>
+            )}
+
+            {/* Context Menu for Version */}
+            {versionContextMenu && (
+                <div
+                    className="fixed z-[90] bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{
+                        left: versionContextMenu.x,
+                        top: versionContextMenu.y,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            if (versionContextMenu) {
+                                setDeleteVersionConfirm({
+                                    versionId: versionContextMenu.versionId,
+                                    versionName: versionContextMenu.versionName,
+                                });
+                            }
+                        }}
+
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                    >
+                        🗑️ Delete Version
                     </button>
                 </div>
             )}
@@ -2226,6 +2253,80 @@ const resetVersionForm = () => {
                                     className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
                                 >
                                     Delete Note
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteVersionConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => setDeleteVersionConfirm(null)}
+                    />
+
+                    <div
+                        className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <span className="text-3xl">⚠️</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-100">Delete Version</h3>
+                                    <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                                <p className="text-zinc-300 mb-1">Are you sure you want to delete this version?</p>
+                                <p className="font-semibold text-zinc-100 truncate">
+                                    "{deleteVersionConfirm.versionName}"
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteVersionConfirm(null);
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                            const res = await axios.delete(
+                                                `${ENDPOINTS.DELETE_ASSET_VERSION}/${deleteVersionConfirm.versionId}`,
+                                                { data: { entityId: AssetID } }
+                                            );
+                                            setAssetVersions(prev =>
+                                                prev.filter(v => v.id !== deleteVersionConfirm.versionId)
+                                            );
+                                            const newThumb = res.data.newThumbnail;
+                                            if (newThumb) {
+                                                setAssetData(prev =>
+                                                    (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData
+                                                );
+                                                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                            }
+                                            setDeleteVersionConfirm(null);
+                                        } catch {
+                                            alert('ไม่สามารถลบได้');
+                                        }
+                                    }}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                >
+                                    Delete Version
                                 </button>
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Edit3, Package, User, File, Clock, FileText, Trash2 } from 'lucide-react';
+import { X, Calendar, Edit3, Package, User, File, Clock, FileText, Trash2, Check } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 
@@ -77,7 +77,7 @@ type Version = {
     file_url: string;
     thumbnail_url?: string;
     status: string;
-    uploaded_by: number;
+    uploaded_by: number | null;
     created_at: string;
     file_size?: number;
     notes?: string;
@@ -185,46 +185,46 @@ const RightPanel: React.FC<RightPanelProps> = ({
     };
 
     // ✅ handleDeleteVersion - เรียก callback ตรงๆ เช่นกัน
-const handleDeleteVersion = async (versionId: number) => {
-    setIsDeletingVersion(true);
-    try {
-        await axios.delete(ENDPOINTS.DELETE_VERSION, {
-            data: { versionId },
-        });
-        setDeleteConfirm(null);
-        await onDeleteVersionSuccess?.(); // ← parent refetch ใหม่
-    } catch (err) {
-        console.error('❌ Delete version failed:', err);
-        alert("ไม่สามารถลบ Version ได้ กรุณาลองใหม่อีกครั้ง"); // ✅ เพิ่มตรงนี้
-    } finally {
-        setIsDeletingVersion(false);
-    }
-};
+    const handleDeleteVersion = async (versionId: number) => {
+        setIsDeletingVersion(true);
+        try {
+            await axios.delete(ENDPOINTS.DELETE_VERSION, {
+                data: { versionId },
+            });
+            setDeleteConfirm(null);
+            await onDeleteVersionSuccess?.(); // ← parent refetch ใหม่
+        } catch (err) {
+            console.error('❌ Delete version failed:', err);
+            alert("ไม่สามารถลบ Version ได้ กรุณาลองใหม่อีกครั้ง"); // ✅ เพิ่มตรงนี้
+        } finally {
+            setIsDeletingVersion(false);
+        }
+    };
     // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
-const handleAddVersion = async () => {
-    if (!selectedTask || !addVersionForm.version_name.trim()) return;
-    setIsUploadingVersion(true);
-    try {
-        await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
-            task_id: selectedTask.id,        // ✅ ส่งแค่นี้พอ
-            version_name: addVersionForm.version_name.trim(),
-            description:  addVersionForm.description.trim() || undefined,
-            file_url:     addVersionForm.file_url.trim()    || undefined,
-            status:       addVersionForm.status,
-            uploaded_by:  addVersionForm.uploaded_by        || undefined,
-            file_size:    addVersionForm.file_size          || undefined,
-            // ❌ ลบ entity_type, entity_id ออก (backend จัดการเอง)
-        });
+    const handleAddVersion = async () => {
+        if (!selectedTask || !addVersionForm.version_name.trim()) return;
+        setIsUploadingVersion(true);
+        try {
+            await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
+                task_id: selectedTask.id,        // ✅ ส่งแค่นี้พอ
+                version_name: addVersionForm.version_name.trim(),
+                description: addVersionForm.description.trim() || undefined,
+                file_url: addVersionForm.file_url.trim() || undefined,
+                status: addVersionForm.status,
+                uploaded_by: addVersionForm.uploaded_by || undefined,
+                file_size: addVersionForm.file_size || undefined,
+                // ❌ ลบ entity_type, entity_id ออก (backend จัดการเอง)
+            });
 
-        setShowAddVersionModal(false);
-        setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
-        onAddVersionSuccess?.();
-    } catch (err) {
-        console.error('❌ Add version error:', err);
-    } finally {
-        setIsUploadingVersion(false);
-    }
-};
+            setShowAddVersionModal(false);
+            setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
+            onAddVersionSuccess?.();
+        } catch (err) {
+            console.error('❌ Add version error:', err);
+        } finally {
+            setIsUploadingVersion(false);
+        }
+    };
 
 
 
@@ -625,26 +625,59 @@ const handleAddVersion = async () => {
                                                             )}
 
                                                             {/* Meta Info */}
-                                                            <div className="flex items-center gap-4 text-xs flex-wrap text-slate-50">
-                                                                <div className="flex items-center gap-1.5 relative">
-                                                                    <User className="w-3.5 h-3.5 flex-shrink-0" />
+                                                            <div className="flex items-center gap-3 text-xs flex-wrap mt-1">
+
+                                                                {/* Uploaded By */}
+                                                                <div className="relative flex items-center gap-2 group/uploader-container">
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             setShowUserMenu(showUserMenu === version.id ? null : version.id);
                                                                             setUserSearchTerm('');
                                                                         }}
-                                                                        className="truncate hover:text-blue-200 transition-colors cursor-pointer underline bg-gradient-to-br from-gray-500 to-gray-600 hover:from-blue-600 hover:to-blue-700 rounded-xl"
+                                                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-gray-600 to-gray-600 hover:from-slate-600 hover:to-slate-600 border border-transparent transition-all"
                                                                         title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
                                                                     >
-                                                                        {version.uploaded_by_name || 'Unknown'}
+                                                                        {version.uploaded_by_name ? (
+                                                                            <>
+                                                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg flex-shrink-0">
+                                                                                    {version.uploaded_by_name[0].toUpperCase()}
+                                                                                </div>
+                                                                                <span className="text-xs text-gray-300 hover:text-white transition-colors">
+                                                                                    {version.uploaded_by_name}
+                                                                                </span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
+                                                                                    <User className="w-3 h-3 text-slate-400" />
+                                                                                </div>
+                                                                                <span className="text-slate-50 italic text-xs">เลือกผู้อัปโหลด</span>
+                                                                            </>
+                                                                        )}
                                                                     </button>
+
+                                                                    {/* X ลบ — แสดงเมื่อ hover */}
+                                                                    {version.uploaded_by_name && (
+                                                                        <div
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleUpdateVersion(version.id, 'uploaded_by', null);
+                                                                            }}
+                                                                            className="opacity-0 cursor-pointer group-hover/uploader-container:opacity-100 w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-all duration-150 flex-shrink-0"
+                                                                            title="ลบผู้อัปโหลด"
+                                                                        >
+                                                                            <X className="w-3 h-3 text-white" />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Dropdown */}
                                                                     {showUserMenu === version.id && (
-                                                                        <div className="absolute top-full left-0 mt-2 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl shadow-2xl z-[100] w-72 border border-slate-600/50 overflow-hidden ring-1 ring-white/5">
-                                                                            <div className="px-4 py-3 bg-gray-800 border-b border-gray-700/50">
+                                                                        <div className="absolute top-full left-0 mt-1 bg-slate-800 rounded-xl shadow-2xl z-[100] w-64 border border-slate-600/50 overflow-hidden ring-1 ring-white/5">
+                                                                            <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
                                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                                    <User className="w-4 h-4 text-slate-400" />
-                                                                                    <span className="text-sm font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
+                                                                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                                                                    <span className="text-xs font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
                                                                                 </div>
                                                                                 <input
                                                                                     type="text"
@@ -652,12 +685,13 @@ const handleAddVersion = async () => {
                                                                                     value={userSearchTerm}
                                                                                     onChange={(e) => setUserSearchTerm(e.target.value)}
                                                                                     onClick={(e) => e.stopPropagation()}
-                                                                                    className="w-full px-3 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                                                                                    autoFocus
+                                                                                    className="w-full px-2.5 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
                                                                                 />
                                                                             </div>
-                                                                            <div className="max-h-64 overflow-y-auto">
+                                                                            <div className="max-h-52 overflow-y-auto p-1.5 space-y-0.5">
                                                                                 {getFilteredUsers().length === 0 ? (
-                                                                                    <div className="p-4 text-center text-slate-500 text-sm">ไม่พบผู้ใช้</div>
+                                                                                    <div className="p-3 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
                                                                                 ) : (
                                                                                     getFilteredUsers().map((user) => (
                                                                                         <button
@@ -665,14 +699,21 @@ const handleAddVersion = async () => {
                                                                                             onClick={(e) => {
                                                                                                 e.stopPropagation();
                                                                                                 handleUpdateVersion(version.id, 'uploaded_by', user.id);
+                                                                                                setShowUserMenu(null);
+                                                                                                setUserSearchTerm('');
                                                                                             }}
                                                                                             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                                         >
-                                                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${version.uploaded_by === user.id ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-2 ring-blue-400/50' : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'}`}>
+                                                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow ${version.uploaded_by === user.id
+                                                                                                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50'
+                                                                                                    : 'bg-slate-600 text-slate-200'
+                                                                                                }`}>
                                                                                                 {user.username[0].toUpperCase()}
                                                                                             </div>
-                                                                                            <span className="flex-1 text-sm font-medium text-slate-200">{user.username}</span>
-                                                                                            {version.uploaded_by === user.id && <span className="text-blue-400 text-sm">✓</span>}
+                                                                                            <span className="flex-1 text-xs text-slate-200">{user.username}</span>
+                                                                                            {version.uploaded_by === user.id && (
+                                                                                                <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                                                                                            )}
                                                                                         </button>
                                                                                     ))
                                                                                 )}
@@ -680,14 +721,18 @@ const handleAddVersion = async () => {
                                                                         </div>
                                                                     )}
                                                                 </div>
+
+                                                                {/* File Size */}
                                                                 {version.file_size && (
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <File className="w-3.5 h-3.5" />
+                                                                    <div className="flex items-center gap-1 text-slate-400">
+                                                                        <File className="w-3 h-3" />
                                                                         <span>{(version.file_size / 1024 / 1024).toFixed(1)} MB</span>
                                                                     </div>
                                                                 )}
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <Clock className="w-3.5 h-3.5" />
+
+                                                                {/* Date */}
+                                                                <div className="flex items-center gap-1 text-slate-400">
+                                                                    <Clock className="w-3 h-3" />
                                                                     <span>{formatDateThai(version.created_at)}</span>
                                                                 </div>
                                                             </div>
@@ -830,7 +875,7 @@ const handleAddVersion = async () => {
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                             
+
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Uploaded By</label>
                                     <select
