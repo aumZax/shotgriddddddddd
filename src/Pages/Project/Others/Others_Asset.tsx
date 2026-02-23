@@ -186,8 +186,7 @@ export default function Others_Asset() {
     const [selectedTasks, setSelectedTasks] = useState<string[]>([])
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
-    const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-    const AssetID = stored.id;
+    const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
     const [rightPanelTab, setRightPanelTab] = useState('notes');
@@ -205,12 +204,10 @@ export default function Others_Asset() {
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
+    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
 
     //============================================================================================================================================//
-
-    const [createVersionForm, setCreateVersionForm] = useState({
-        version_name: '', status: 'wtg', description: '', link: '', task: '',
-    });
 
     const [checked, setChecked] = useState<CheckedState>({
         All: false,
@@ -228,10 +225,6 @@ export default function Others_Asset() {
         description: '',
         file_url: '',
     });
-
-    const [subject, setSubject] = useState(
-        assetData?.asset_name ? `Note on ${assetData.asset_name}` : ""
-    );
 
     //============================================================================================================================================//
 
@@ -255,11 +248,12 @@ export default function Others_Asset() {
         versionName: string;
     } | null>(null);
 
-    // Delete confirmation modal
     const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
         noteId: number;
         subject: string;
     } | null>(null);
+
+    //============================================================================================================================================//
 
     useEffect(() => {
         if (activeTab === 'Versions') {
@@ -316,7 +310,7 @@ export default function Others_Asset() {
         const selectedAsset = getSelectedAsset();
         if (selectedAsset) {
             setAssetData(selectedAsset);
-            // ✅ Set subject เมื่อ asset ถูก load
+            
             setSubject(`Note on ${selectedAsset.asset_name}`);
         }
     }, []);
@@ -331,7 +325,6 @@ export default function Others_Asset() {
 
         console.log("🔍 AssetID:", AssetID);
         console.log("🔍 projectId:", projectId);
-        console.log("🔍 stored data:", stored);
 
         if (!AssetID || !projectId) {
             console.warn("⚠️ Missing AssetID or projectId");
@@ -663,12 +656,11 @@ export default function Others_Asset() {
             });
 
             setAssetData(prev => prev ? { ...prev, [field]: value } : null);
-
-            const stored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
+            const currentStored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
             localStorage.setItem(
                 "selectedAsset",
                 JSON.stringify({
-                    ...stored,
+                    ...currentStored,
                     [dbField]: value
                 })
             );
@@ -826,11 +818,12 @@ export default function Others_Asset() {
                     if (i === versionFiles.length - 1) {
                         setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
 
-                        const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                        localStorage.setItem(
-                            'selectedAsset',
-                            JSON.stringify({ ...stored, file_url: fileUrl })
-                        );
+                        const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                        localStorage.setItem('selectedAsset', JSON.stringify({ 
+                            ...currentStored, 
+                            file_url: fileUrl,
+                            thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
+                        }));
                     }
 
                 }
@@ -1035,8 +1028,8 @@ export default function Others_Asset() {
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
                                     setAssetData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData);
-                                    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                    localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                    const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                                    localStorage.setItem('selectedAsset', JSON.stringify({ ...currentStored, file_url: newThumb }));
                                 }
                             } catch {
                                 alert('ไม่สามารถลบได้');
@@ -2316,8 +2309,12 @@ export default function Others_Asset() {
                                                 setAssetData(prev =>
                                                     (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData
                                                 );
-                                                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                                const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                                                localStorage.setItem('selectedAsset', JSON.stringify({ 
+                                                    ...currentStored, 
+                                                    file_url: newThumb,
+                                                    thumbnail: newThumb  
+                                                }));
                                             }
                                             setDeleteVersionConfirm(null);
                                         } catch {
@@ -2471,6 +2468,7 @@ export default function Others_Asset() {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

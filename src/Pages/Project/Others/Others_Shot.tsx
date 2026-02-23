@@ -211,8 +211,7 @@ export default function Others_Shot() {
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const [shotAssets, setShotAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
-    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-    const shotId = stored.id;
+    const shotId = JSON.parse(localStorage.getItem("selectedShot") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
     const [isMediaLoading, setIsMediaLoading] = useState(true);
@@ -360,7 +359,6 @@ export default function Others_Shot() {
 
         console.log("🔍 shotId:", shotId);
         console.log("🔍 projectId:", projectId);
-        console.log("🔍 stored data:", stored);
 
         if (!shotId || !projectId) {
             console.warn("⚠️ Missing shotId or projectId");
@@ -530,8 +528,12 @@ export default function Others_Shot() {
                     if (i === versionFiles.length - 1) {
                         setShotData(prev => ({ ...prev, thumbnail: fileUrl }));  // ✅ ใช้ได้เพราะอยู่ใน scope เดียวกัน
 
-                        const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                        localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: fileUrl }));
+                        const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                        localStorage.setItem('selectedShot', JSON.stringify({ 
+                            ...currentStored, 
+                            file_url: fileUrl,
+                            thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
+                        }));
                     }
 
                 }
@@ -742,17 +744,12 @@ export default function Others_Shot() {
             setShowStatusMenu(false);
 
             // 3️⃣ sync localStorage
+            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
             localStorage.setItem(
                 "selectedShot",
                 JSON.stringify({
-                    id: updated.id,
-                    shot_name: updated.shotCode,
-                    sequence: updated.sequence,
-                    description: updated.description,
+                    ...currentStored,
                     status: newStatus,
-                    tags: updated.tags,
-                    thumbnail: updated.thumbnail,
-                    dueDate: updated.dueDate
                 })
             );
 
@@ -782,10 +779,11 @@ export default function Others_Shot() {
             });
 
             setShotData(prev => ({ ...prev, [field]: value }));
+            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
             localStorage.setItem(
                 "selectedShot",
                 JSON.stringify({
-                    ...stored,
+                    ...currentStored,
                     [dbField]: value
                 })
             );
@@ -827,10 +825,11 @@ export default function Others_Shot() {
             const updated = { ...shotData, description: payload.description };
             setShotData(updated);
             // const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
             localStorage.setItem(
                 "selectedShot",
                 JSON.stringify({
-                    ...stored,
+                    ...currentStored,
                     description: payload.description
                 })
             );
@@ -1138,8 +1137,12 @@ export default function Others_Shot() {
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
                                     setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
-                                    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                    localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                    const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                    localStorage.setItem('selectedShot', JSON.stringify({ 
+                                        ...currentStored, 
+                                        file_url: newThumb,
+                                        thumbnail: newThumb   // ← เพิ่มบรรทัดนี้
+                                    }));
                                 }
                             } catch {
                                 alert('ไม่สามารถลบได้');
