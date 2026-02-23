@@ -52,7 +52,7 @@ export default function VideoReviewSystem() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const progressBarRef = useRef<HTMLDivElement | null>(null);
     const [prevVolume, setPrevVolume] = useState(1);
-    const [isLooping, setIsLooping] = useState(false);
+    const [isLooping, setIsLooping] = useState(true);
 
     type Point = { x: number; y: number };
     type Drawing = { id: number; path: Point[]; color: string; width: number; timestamp: number };
@@ -334,14 +334,14 @@ export default function VideoReviewSystem() {
                     {/* Video */}
                     <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden min-h-0">
                         <div className="relative w-full h-full">
-<video 
-  ref={videoRef} 
-  src={videoUrl} 
-  className="w-full h-full object-contain" 
-  loop={isLooping}
-  crossOrigin="anonymous"
-  playsInline
-/>
+                            <video
+                                ref={videoRef}
+                                src={videoUrl}
+                                className="w-full h-full object-contain"
+                                loop={isLooping}
+                                crossOrigin="anonymous"
+                                playsInline
+                            />
                             <canvas
                                 ref={canvasRef} width={1920} height={1080}
                                 className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
@@ -378,7 +378,7 @@ export default function VideoReviewSystem() {
 
                     {/* Video Controls */}
                     <div className="bg-[#161a21] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
-                    
+
                         <div className="flex items-center gap-4 mb-3">
                             <div onClick={togglePlay} className="rounded-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-400 hover:to-red-400 flex items-center justify-center transition-all hover:scale-105 active:scale-95 w-8 h-8">
                                 {isPlaying ? <Pause size={15} /> : <Play size={15} />}
