@@ -139,6 +139,7 @@ const ENDPOINTS = {
   CREATE_SHOT_VERSION: `${BASE_URL}/create-shot-version`,
 
   PROJECT_VERSIONS_GROUPED: `${BASE_URL}/project-versions-grouped`,
+  CREATE_SHOT_ASSET: `${BASE_URL}/assets/create-for-shot`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

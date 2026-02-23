@@ -241,16 +241,11 @@ export default function Others_Shot() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const [subject, setSubject] = useState(shotData?.shotCode ? `Note on ${shotData.shotCode}` : "");
+    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
+    const [isCreatingAsset, setIsCreatingAsset] = useState(false);
 
     //============================================================================================================================================//
-
-    const [subject, setSubject] = useState(
-        shotData?.shotCode ? `Note on ${shotData.shotCode}` : ""
-    );
-
-    const [createVersionForm, setCreateVersionForm] = useState({
-        version_name: '', status: 'wtg', description: '', link: '', task: '',
-    });
 
     const [checked, setChecked] = useState<CheckedState>({
         All: false,
@@ -267,6 +262,12 @@ export default function Others_Shot() {
         due_date: '',
         description: '',
         file_url: '',
+    });
+
+    const [createAssetForm, setCreateAssetForm] = useState({
+        asset_name: '',
+        description: '',
+        asset_type: 'Character', 
     });
 
     //============================================================================================================================================//
@@ -356,7 +357,7 @@ export default function Others_Shot() {
     }, [noteContextMenu]);
 
     useEffect(() => {
-        
+
         console.log("🔍 shotId:", shotId);
         console.log("🔍 projectId:", projectId);
         console.log("🔍 stored data:", stored);
@@ -385,11 +386,17 @@ export default function Others_Shot() {
             setIsPanelOpen(false);
             const t = setTimeout(() => {
                 setIsPanelOpen(true);
-                fetchTaskVersions(selectedTask.id); // เพิ่มบรรทัดนี้
+                fetchTaskVersions(selectedTask.id);
             }, 10);
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
+
+    useEffect(() => {
+    if (activeTab === 'Notes') {
+        fetchNotes();
+    }
+    }, [activeTab, shotData?.id]);
 
     //============================================================================================================================================//
 
@@ -416,6 +423,7 @@ export default function Others_Shot() {
             }
         }
     };
+
     const removePerson = (personId: number) => {
         setSelectedPeople(selectedPeople.filter((person: Person) => person.id !== personId));
     };
@@ -753,10 +761,10 @@ export default function Others_Shot() {
             alert("Failed to update status");
         }
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const updateShotField = async (
         field: keyof ShotData,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
         value: any
     ) => {
         const dbField = shotFieldMap[field];
@@ -769,15 +777,11 @@ export default function Others_Shot() {
         try {
             await axios.post(ENDPOINTS.UPDATESHOT, {
                 shotId: shotData.id,
-                field: dbField, // ✅ ส่งชื่อ column จริง
+                field: dbField, 
                 value
             });
 
-            // update state
             setShotData(prev => ({ ...prev, [field]: value }));
-
-            // sync localStorage
-            // const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
             localStorage.setItem(
                 "selectedShot",
                 JSON.stringify({
@@ -1020,8 +1024,54 @@ export default function Others_Shot() {
         }
     };
 
+    const fetchTaskVersions = async (taskId: number) => {
+        setIsLoadingVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+                entityType: 'task',
+                entityId: taskId
+            });
+            setTaskVersions(res.data);
+        } catch (err) {
+            console.error("Failed to fetch versions:", err);
+            setTaskVersions([]);
+        } finally {
+            setIsLoadingVersions(false);
+        }
+    };
+
+    const handleCreateAsset = async () => {
+    if (isCreatingAsset) return;
+    if (!createAssetForm.asset_name.trim()) {
+        alert('กรุณาระบุชื่อ Asset');
+        return;
+    }
+
+    setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
+    try {
+        const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
+            project_id: projectId,
+            shot_id: shotId,
+            asset_name: createAssetForm.asset_name.trim(),
+            description: createAssetForm.description || null,
+            asset_type: createAssetForm.asset_type || null,
+        });
+
+        if (res.data.success) {
+            setShowCreateShot_Assets(false);
+            setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
+            fetchShotAssets();
+        }
+    } catch (err: any) {
+        alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
+    } finally {
+        setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
+    }
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
+
             case 'Shot Info':
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1105,7 +1155,7 @@ export default function Others_Shot() {
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
                         formatDateThai={formatDate}
-                        onAssetUpdate={fetchShotAssets} // ⬅️ เพิ่มบรรทัดนี้
+                        onAssetUpdate={fetchShotAssets} 
                     />
                 );
 
@@ -1162,22 +1212,6 @@ export default function Others_Shot() {
 
             default:
                 return null;
-        }
-    };
-
-    const fetchTaskVersions = async (taskId: number) => {
-        setIsLoadingVersions(true);
-        try {
-            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
-                entityType: 'task',
-                entityId: taskId
-            });
-            setTaskVersions(res.data);
-        } catch (err) {
-            console.error("Failed to fetch versions:", err);
-            setTaskVersions([]);
-        } finally {
-            setIsLoadingVersions(false);
         }
     };
 
@@ -1886,113 +1920,123 @@ export default function Others_Shot() {
             )}
 
             {showCreateShot_Assets && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* Backdrop */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
-                        className="absolute inset-0 bg-black/60"
-                        onClick={() => setShowCreateShot_Assets(false)}
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !isCreatingAsset && setShowCreateShot_Assets(false)}
                     />
+                    <div className="relative w-full max-w-lg bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
 
-                    {/* Modal */}
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
                         {/* Header */}
-                        <div className="px-5 py-3 border-b border-gray-600 flex items-center justify-between">
-                            <h2 className="text-lg text-gray-200 font-medium">
-                                Create a new Asset
-                            </h2>
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-100">Create Asset</h2>
+                                <p className="text-xs text-blue-300/60 mt-0.5">
+                                    Linked to: <span className="text-blue-300 font-medium">{shotData.shotCode}</span>
+                                </p>
+                            </div>
                             <button
-                                onClick={() => setShowCreateShot_Assets(false)}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                ⚙️
-                            </button>
+                                onClick={() => !isCreatingAsset && setShowCreateShot_Assets(false)}
+                                className="text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors"
+                            >×</button>
                         </div>
 
                         {/* Body */}
-                        <div className="p-5 space-y-4">
-                            <div>
-                                <label className="text-sm text-gray-300 block mb-1">
-                                    Asset Name
+                        <div className="p-6 space-y-4">
+
+                            {/* Asset Name */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">
+                                    Asset Name <span className="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full h-9 px-3  bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-300 block mb-1">
-                                    Description
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full h-20 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                    placeholder="e.g. Hero_Character"
+                                    value={createAssetForm.asset_name}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_name: e.target.value }))}
+                                    autoFocus
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
                                 />
                             </div>
 
-                            <div>
-                                <label className="text-sm text-gray-300 block mb-1">
-                                    Task Template
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                                />
+                            {/* Asset Type */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Asset Type</label>
+                                <select
+                                    value={createAssetForm.asset_type}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_type: e.target.value }))}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                                >
+                                    <option value="Character">Character</option>
+                                    <option value="Environment">Environment</option>
+                                    <option value="Prop">Prop</option>
+                                    <option value="FX">FX</option>
+                                    <option value="Graphic">Graphic</option>
+                                    <option value="Matte Painting">Matte Painting</option>
+                                    <option value="Vehicle">Vehicle</option>
+                                    <option value="Weapon">Weapon</option>
+                                    <option value="Model">Model</option>
+                                    <option value="Theme">Theme</option>
+                                    <option value="Zone">Zone</option>
+                                    <option value="Part">Part</option>
+                                </select>
                             </div>
 
-                            <div>
-                                <label className="text-sm text-gray-300 block mb-1">
-                                    Project
-                                </label>
-                                <input
-                                    disabled
-                                    value="Demo: Animation"
-                                    className="w-full h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-400 text-sm"
-                                />
+                            {/* Link to Shot (read-only) */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Link to Shot</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="text-blue-500/60">🎬</span>
+                                    <span>{shotData.shotCode}</span>
+                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                        auto-linked
+                                    </span>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="text-sm text-gray-300 block mb-1">
-                                    Shot
-                                </label>
-                                <input
-                                    type="text"
-                                    value={shotData.shotCode}
-                                    onChange={(e) =>
-                                        setShotData(prev => ({
-                                            ...prev,
-                                            shotCode: e.target.value
-                                        }))
-                                    }
-                                    className="w-full h-9 px-3 bg-[#3a3a3a] border border-gray-600 rounded text-gray-400 text-sm"
-                                />
+                            {/* Project (read-only) */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Project</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                    {projectData?.projectName || 'Unknown Project'}
+                                </div>
                             </div>
 
-                            <button className="text-sm text-gray-400 hover:text-gray-200">
-                                More fields ▾
-                            </button>
+                            {/* Description */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">Description</label>
+                                <textarea
+                                    placeholder="Optional description..."
+                                    value={createAssetForm.description}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
+                                />
+                            </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="px-5 py-3 border-t border-gray-600 flex justify-between items-center">
-                            <button className="text-sm text-blue-400 hover:underline">
-                                Open Bulk Import
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/20 flex items-center justify-between">
+                            <button
+                                onClick={() => setShowCreateShot_Assets(false)}
+                                disabled={isCreatingAsset}
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all"
+                            >
+                                Cancel
                             </button>
-
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setShowCreateShot_Assets(false)}
-                                    className="px-4 h-8 bg-gray-600 hover:bg-gray-500 text-sm rounded flex items-center justify-center"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    className="px-4 h-8 bg-blue-600 hover:bg-blue-700 text-sm rounded text-white flex items-center justify-center"
-                                >
-                                    Create Asset
-                                </button>
-                            </div>
-
+                            <button
+                                onClick={handleCreateAsset}
+                                disabled={isCreatingAsset || !createAssetForm.asset_name.trim()}
+                                className="px-5 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-white text-sm rounded-lg font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                            >
+                                {isCreatingAsset ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Creating...</span>
+                                    </>
+                                ) : 'Create Asset'}
+                            </button>
                         </div>
                     </div>
                 </div>

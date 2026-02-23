@@ -334,7 +334,14 @@ export default function VideoReviewSystem() {
                     {/* Video */}
                     <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden min-h-0">
                         <div className="relative w-full h-full">
-                            <video ref={videoRef} src={videoUrl} className="w-full h-full object-contain" loop={isLooping} />
+<video 
+  ref={videoRef} 
+  src={videoUrl} 
+  className="w-full h-full object-contain" 
+  loop={isLooping}
+  crossOrigin="anonymous"
+  playsInline
+/>
                             <canvas
                                 ref={canvasRef} width={1920} height={1080}
                                 className={`absolute inset-0 w-full h-full ${selectedTool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}`}
