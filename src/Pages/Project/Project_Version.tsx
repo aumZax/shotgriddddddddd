@@ -665,7 +665,7 @@ export default function Project_Version() {
                                                             <div className="w-20 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl transition-colors border border-orange-500/50 bg-gray-900 whitespace-nowrap">
 
                                                                 {version.task_name ? (
-                                                                    <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
+                                                                    <span className="text-sm text-gray-300 max-w-[120px] block" title={version.task_name}>
                                                                         {version.task_name}
                                                                     </span>
                                                                 ) : (
