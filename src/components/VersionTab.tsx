@@ -4,13 +4,18 @@ import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
 import ENDPOINTS from '../config';
 
 const versionStatusConfig = {
-    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
-    apr: { label: 'apr', fullLabel: 'Approved', color: 'bg-green-600', icon: 'dot' },
-    rej: { label: 'rej', fullLabel: 'Rejected', color: 'bg-red-500', icon: 'dot' },
-    rev: { label: 'rev', fullLabel: 'Review', color: 'bg-yellow-500', icon: 'dot' },
-    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+   wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600", icon: '-' },
+    ip: { label: "ip", fullLabel: "In Progress", color: "bg-blue-500", icon: 'dot' },
+    fin: { label: "fin", fullLabel: "Final", color: "bg-green-500", icon: 'dot' },
+    na: { label: "na", fullLabel: "N/A", color: "bg-gray-400", icon: '-' },
+    rev: { label: "rev", fullLabel: "Pending Review", color: "bg-yellow-600", icon: 'dot' },
+    vwd: { label: "vwd", fullLabel: "Viewed", color: "bg-teal-500", icon: 'dot' },
+    apr: { label: "apr", fullLabel: "Approved", color: "bg-green-500", icon: 'dot' },
+    nef: { label: "nef", fullLabel: "Need fixed", color: "bg-red-500", icon: 'dot' },
+    cmpt: { label: "cmpt", fullLabel: "Complete", color: "bg-blue-600", icon: 'dot' },
+    crv: { label: "crv", fullLabel: "Client review", color: "bg-purple-600", icon: 'dot' },
+    cfrm: { label: "cfrm", fullLabel: "Confirmed", color: "bg-purple-500", icon: 'dot' },
+    dlvr: { label: "dlvr", fullLabel: "Delivered", color: "bg-cyan-500", icon: 'dot' },
 };
 
 type VersionStatus = keyof typeof versionStatusConfig;

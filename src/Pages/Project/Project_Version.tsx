@@ -15,31 +15,19 @@ import { useNavigate } from "react-router-dom";
 type StatusType = keyof typeof statusConfig;
 
 const statusConfig = {
-    wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600" },
-    ip: { label: "ip", fullLabel: "In Progress", color: "bg-blue-500" },
-    fin: { label: "fin", fullLabel: "Final", color: "bg-green-500" },
-    apr: { label: "apr", fullLabel: "Approved", color: "bg-green-500" },
-    cmpt: { label: "cmpt", fullLabel: "Complete", color: "bg-blue-600" },
-    cfrm: { label: "cfrm", fullLabel: "Confirmed", color: "bg-purple-500" },
-    nef: { label: "nef", fullLabel: "Need fixed", color: "bg-red-500" },
-    dlvr: { label: "dlvr", fullLabel: "Delivered", color: "bg-cyan-500" },
-    rts: { label: "rts", fullLabel: "Ready to Start", color: "bg-orange-500" },
-    rev: { label: "rev", fullLabel: "Pending Review", color: "bg-yellow-600" },
-    omt: { label: "omt", fullLabel: "Omit", color: "bg-gray-500" },
-    ren: { label: "ren", fullLabel: "Rendering", color: "bg-pink-500" },
-    hld: { label: "hld", fullLabel: "On Hold", color: "bg-orange-600" },
-    vwd: { label: "vwd", fullLabel: "Viewed", color: "bg-teal-500" },
-    crv: { label: "crv", fullLabel: "Client review", color: "bg-purple-600" },
-    na: { label: "na", fullLabel: "N/A", color: "bg-gray-400" },
-    pndng: { label: "pndng", fullLabel: "Pending", color: "bg-yellow-400" },
-    cap: { label: "cap", fullLabel: "Client Approved", color: "bg-green-400" },
-    recd: { label: "recd", fullLabel: "Received", color: "bg-blue-400" },
-    chk: { label: "chk", fullLabel: "Checking", color: "bg-lime-500" },
-    rdd: { label: "rdd", fullLabel: "Render done", color: "bg-emerald-500" },
-    srd: { label: "srd", fullLabel: "Submit render", color: "bg-indigo-500" },
-    sos: { label: "sos", fullLabel: "Send outsource", color: "bg-violet-500" },
+    wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600", icon: '-' },
+    ip: { label: "ip", fullLabel: "In Progress", color: "bg-blue-500", icon: 'dot' },
+    fin: { label: "fin", fullLabel: "Final", color: "bg-green-500", icon: 'dot' },
+    na: { label: "na", fullLabel: "N/A", color: "bg-gray-400", icon: '-' },
+    rev: { label: "rev", fullLabel: "Pending Review", color: "bg-yellow-600", icon: 'dot' },
+    vwd: { label: "vwd", fullLabel: "Viewed", color: "bg-teal-500", icon: 'dot' },
+    apr: { label: "apr", fullLabel: "Approved", color: "bg-green-500", icon: 'dot' },
+    nef: { label: "nef", fullLabel: "Need fixed", color: "bg-red-500", icon: 'dot' },
+    cmpt: { label: "cmpt", fullLabel: "Complete", color: "bg-blue-600", icon: 'dot' },
+    crv: { label: "crv", fullLabel: "Client review", color: "bg-purple-600", icon: 'dot' },
+    cfrm: { label: "cfrm", fullLabel: "Confirmed", color: "bg-purple-500", icon: 'dot' },
+    dlvr: { label: "dlvr", fullLabel: "Delivered", color: "bg-cyan-500", icon: 'dot' },
 };
-
 type Version = {
     id: number;
     entity_type: string;
@@ -411,7 +399,11 @@ export default function Project_Version() {
                         >
                             {filterStatus ? (
                                 <>
-                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
+                                    {statusConfig[filterStatus as StatusType].icon === '-' ? (
+                                        <span className="text-gray-500 font-bold text-sm">-</span>
+                                    ) : (
+                                        <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
+                                    )}
                                     <span className="text-gray-200">{statusConfig[filterStatus as StatusType].fullLabel}</span>
                                 </>
                             ) : (
@@ -432,13 +424,17 @@ export default function Project_Version() {
                                         <span className={!filterStatus ? 'text-blue-400 font-medium' : 'text-gray-200'}>ทุกสถานะ</span>
                                         {!filterStatus && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
                                     </button>
-                                    {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string }][]).map(([key, config]) => (
+                                    {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
                                         <button
                                             key={key}
                                             onClick={() => { setFilterStatus(key); setShowStatusFilter(false); }}
                                             className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
                                         >
-                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
+                                            {config.icon === '-' ? (
+                                                <span className="text-gray-400 font-bold w-3 text-center">-</span>
+                                            ) : (
+                                                <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
+                                            )}
                                             <div className="text-gray-200 flex items-center gap-3">
                                                 <span className="inline-block w-10 text-gray-400 text-sm">{config.label}</span>
                                                 <span className="text-slate-50 text-sm">{config.fullLabel}</span>
@@ -749,7 +745,12 @@ export default function Project_Version() {
                                                                     }}
                                                                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 whitespace-nowrap"
                                                                 >
-                                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusCfg?.color || "bg-gray-500"}`} />
+                                                                    {/* ✅ แก้ตรงนี้ */}
+                                                                    {statusCfg?.icon === '-' ? (
+                                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                    ) : (
+                                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusCfg?.color || "bg-gray-500"}`} />
+                                                                    )}
                                                                     <span className="text-xs text-gray-300 font-medium">
                                                                         {statusCfg?.label || version.status}
                                                                     </span>
@@ -759,13 +760,18 @@ export default function Project_Version() {
                                                                     <>
                                                                         <div className="fixed inset-0 z-10" onClick={() => setShowStatusMenu(null)} />
                                                                         <div className={`absolute left-0 ${statusMenuPos === "top" ? "bottom-full mb-1" : "top-full mt-1"} z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[200px] max-h-[350px] overflow-y-auto`}>
-                                                                            {(Object.entries(statusConfig) as [string, { label: string; fullLabel: string; color: string }][]).map(([key, cfg]) => (
+                                                                            {(Object.entries(statusConfig) as [string, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, cfg]) => (
                                                                                 <button
                                                                                     key={key}
                                                                                     onClick={e => { e.stopPropagation(); handleStatusChange(version.id, key); }}
                                                                                     className="flex items-center gap-3 w-full px-3 py-2 text-left bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 first:rounded-t-lg last:rounded-b-lg transition-colors"
                                                                                 >
-                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${cfg.color}`} />
+                                                                                    {/* ✅ แก้ตรงนี้ด้วย */}
+                                                                                    {cfg.icon === '-' ? (
+                                                                                        <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                    ) : (
+                                                                                        <div className={`w-2.5 h-2.5 rounded-full ${cfg.color}`} />
+                                                                                    )}
                                                                                     <div className="flex items-center gap-4 text-xs text-gray-200">
                                                                                         <span className="inline-block w-10">{cfg.label}</span>
                                                                                         <span className="text-gray-400">{cfg.fullLabel}</span>

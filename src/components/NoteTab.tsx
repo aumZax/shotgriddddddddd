@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search } from 'lucide-react';
 import ENDPOINTS from '../config';
 
@@ -33,7 +35,7 @@ interface NotesTabProps {
 interface PopupState {
     noteId: number | null;
     field: string | null;
-    anchor: { top: number; left: number; width: number } | null;
+    anchor: { top: number; bottom: number; left: number; width: number } | null;
 }
 
 interface SelectOption {
@@ -95,21 +97,52 @@ const DatePickerContent = ({ value, onSave, onClose }: { value: string; onSave: 
     );
 };
 
-const FloatingPanel = ({ title, anchor, onClose, children, width = 280 }: { title: string; anchor: { top: number; left: number; width: number }; onClose: () => void; children: React.ReactNode; width?: number; }) => {
-    const panelRef = useRef<HTMLDivElement>(null);
-    const [panelHeight, setPanelHeight] = useState(0);
-    useEffect(() => { if (panelRef.current) setPanelHeight(panelRef.current.offsetHeight); });
-    const top = anchor.top - panelHeight - 8;
-    const left = Math.min(anchor.left, window.innerWidth - width - 12);
+const FloatingPanel = ({ title, anchor, onClose, children, width = 280 }: {
+    title: string;
+    anchor: { top: number; bottom: number; left: number; width: number };
+    onClose: () => void;
+    children: React.ReactNode;
+    width?: number;
+}) => {
+    const MARGIN = 8;
+
+    // คำนวณพื้นที่ที่มีทั้งสองฝั่งตั้งแต่ต้น ไม่ต้องรอ measure
+    const spaceAbove = anchor.top - MARGIN;
+    const spaceBelow = window.innerHeight - anchor.bottom - MARGIN;
+    const canGoUp = spaceAbove >= spaceBelow; // เลือกฝั่งที่มีพื้นที่มากกว่า
+
+    const maxPanelHeight = canGoUp ? spaceAbove : spaceBelow;
+    const top = canGoUp ? MARGIN : anchor.bottom + MARGIN; // ถ้าขึ้น ให้ชิดบนจอ
+    const left = Math.min(anchor.left, window.innerWidth - width - MARGIN);
+
     return (
         <>
             <div className="fixed inset-0 z-[9998]" onClick={(e) => { e.stopPropagation(); onClose(); }} />
-            <div ref={panelRef} onClick={(e) => e.stopPropagation()} className="fixed z-[9999] rounded-xl shadow-2xl overflow-hidden" style={{ top: `${Math.max(8, top)}px`, left: `${left}px`, width: `${width}px`, background: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)', animation: 'panelUp .15s cubic-bezier(.16,1,.3,1) both' }}>
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="fixed z-[9999] rounded-xl shadow-2xl flex flex-col"
+                style={{
+                    top: `${top}px`,
+                    left: `${left}px`,
+                    width: `${width}px`,
+                    // ถ้าขึ้น ให้ bottom ชนกับ anchor แทน
+                    ...(canGoUp ? { bottom: `${window.innerHeight - anchor.top + MARGIN}px`, top: 'auto' } : {}),
+                    maxHeight: `${maxPanelHeight}px`,
+                    background: '#1a1d27',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    animation: 'panelUp .15s cubic-bezier(.16,1,.3,1) both'
+                }}
+            >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07] flex-shrink-0">
                     <span className="text-sm font-semibold text-gray-200">{title}</span>
-                    <button onClick={onClose} className="flex items-center justify-center rounded-md text-white transition-all" style={{ background: 'linear-gradient(to bottom right, #dc2626, #ef4444)' }} onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(to bottom right, #ef4444, #f87171)')} onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(to bottom right, #dc2626, #ef4444)')}><X className="w-5 h-5" /></button>
+                    <button onClick={onClose} className="flex items-center justify-center rounded-md text-white transition-all"
+                        style={{ background: 'linear-gradient(to bottom right, #dc2626, #ef4444)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(to bottom right, #ef4444, #f87171)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(to bottom right, #dc2626, #ef4444)')}>
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-                <div className="p-2">{children}</div>
+                <div className="p-2 overflow-y-auto">{children}</div>
             </div>
             <style>{`@keyframes panelUp { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
         </>
@@ -230,9 +263,17 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
         e.stopPropagation();
         e.nativeEvent.stopImmediatePropagation();
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        setPopup({ noteId, field, anchor: { top: rect.top, left: rect.left, width: rect.width } });
+        setPopup({
+            noteId,
+            field,
+            anchor: {
+                top: rect.top,
+                bottom: rect.bottom,   // เพิ่ม bottom
+                left: rect.left,
+                width: rect.width
+            }
+        });
     };
-
     const closePopup = () => setPopup({ noteId: null, field: null, anchor: null });
     const isOpen = (noteId: number, field: string) => popup.noteId === noteId && popup.field === field;
 
@@ -358,8 +399,8 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
                                 </td>
 
                                 {/* Assigned People */}
-                                <td className="px-4 py-4">
-                                    <span onClick={(e) => openPopup(e, note.id, 'assigned_people')} className="inline-flex items-center gap-1 flex-wrap cursor-pointer">
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                    <span onClick={(e) => openPopup(e, note.id, 'assigned_people')} className="inline-flex items-center gap-1 flex-nowrap  cursor-pointer">
                                         {note.assigned_people?.length ? (
                                             <>
                                                 {note.assigned_people.map((p, i) => (
