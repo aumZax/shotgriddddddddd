@@ -119,9 +119,10 @@ const ENDPOINTS = {
   GETALLUSERS: `${BASE_URL}/getallusers`,
 
   TASK_VERSIONS: `${BASE_URL}/task-versions`,
+  
   UPDATE_VERSION: `${BASE_URL}/update-version`,
 
-  ADD_VERSION: `${BASE_URL}/add-version`,
+  ADD_VERSION_TASK: `${BASE_URL}/add-version-task`,
   DELETE_VERSION: `${BASE_URL}/delete-version`,
   EDIT_NOTE: `${BASE_URL}/edit-note`,
 

@@ -508,7 +508,7 @@ export default function Others_Version() {
                                                                 {version.file_url && isImageUrl(version.file_url) ? (
                                                                     <>
                                                                         <img
-                                                                            src={version.file_url}
+                                                                            src={ENDPOINTS.image_url + version.file_url}
                                                                             alt="preview"
                                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
                                                                             onClick={() => setPreviewVersion(version)}
@@ -530,7 +530,7 @@ export default function Others_Version() {
                                                                 ) : version.file_url && isVideoUrl(version.file_url) ? (
                                                                     <>
                                                                         <video
-                                                                            src={version.file_url}
+                                                                            src={ENDPOINTS.image_url + version.file_url}
                                                                             className="w-full h-full object-cover"
                                                                             controls
                                                                         />
@@ -564,11 +564,11 @@ export default function Others_Version() {
                                                                     }}
                                                                     rows={3}
                                                                     className="w-full px-2 py-1 
-               bg-gray-800 
-               border border-blue-500 
-               rounded 
-               text-blue-400 text-sm font-medium 
-               outline-none resize-none"
+                                                                        bg-gray-800 
+                                                                        border border-blue-500 
+                                                                        rounded 
+                                                                        text-blue-400 text-sm font-medium 
+                                                                        outline-none resize-none"
                                                                 />
                                                             ) : (
                                                                 <div className="flex items-center gap-2 group/name">

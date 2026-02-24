@@ -205,7 +205,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
         if (!selectedTask || !addVersionForm.version_name.trim()) return;
         setIsUploadingVersion(true);
         try {
-            await axios.post(`${ENDPOINTS.ADD_VERSION}`, {
+            await axios.post(`${ENDPOINTS.ADD_VERSION_TASK}`, {
                 task_id: selectedTask.id,        // ✅ ส่งแค่นี้พอ
                 version_name: addVersionForm.version_name.trim(),
                 description: addVersionForm.description.trim() || undefined,
