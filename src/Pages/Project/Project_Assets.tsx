@@ -174,7 +174,7 @@ export default function Project_Assets() {
     const [showAddSequenceDropdown, setShowAddSequenceDropdown] = useState(false);
     const [addSequenceInput, setAddSequenceInput] = useState('');
 
-
+    const [searchText, setSearchText] = useState("");
 
     const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]);
     const [assetShots, setAssetShots] = useState<AssetShot[]>([]);
@@ -271,6 +271,14 @@ export default function Project_Assets() {
             setIsLoading(false);
         }
     };
+
+    const filteredAssetData = assetData.map(category => ({
+        ...category,
+        assets: category.assets.filter(asset => {
+            if (!searchText.trim()) return true;
+            return asset.asset_name.toLowerCase().includes(searchText.toLowerCase());
+        })
+    })).filter(category => category.assets.length > 0);
 
 
     // frontend: Project_Assets.tsx
@@ -1125,6 +1133,8 @@ export default function Project_Assets() {
                             <input
                                 type="text"
                                 placeholder="Search Asset..."
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
                                 className="w-40 md:w-56 lg:w-64 h-8 pl-3 pr-10 bg-gray-800/50 border border-gray-600/50 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500/80 focus:bg-gray-800/80 focus:shadow-lg focus:shadow-blue-500/20 transition-all duration-200"
                             />
                         </div>
@@ -1178,282 +1188,280 @@ export default function Project_Assets() {
 
                         {/* Table Body - Grouped by Category */}
                         <div className="space-y-4">
-                            {assetData.map((category, categoryIndex) => (
-                                <div key={category.category} className="space-y-1">
-                                    {/* Category Header */}
-                                    <button
-                                        onClick={() => toggleCategory(category.category)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
-                                    >
-                                        {expandedCategories.includes(category.category) ? (
-                                            <ChevronDown className="w-4 h-4 text-gray-400" />
-                                        ) : (
-                                            <ChevronRight className="w-4 h-4 text-gray-400" />
-                                        )}
-                                        <span className="text-sm font-medium text-gray-200">{category.category}</span>
-                                        <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
-                                            {category.count}
-                                        </span>
-                                    </button>
+                            {filteredAssetData.map((category) => {
+                                const categoryIndex = assetData.findIndex(c => c.category === category.category);
+                                return (
+                                    <div key={category.category} className="space-y-1">
+                                        {/* Category Header */}
+                                        <button
+                                            onClick={() => toggleCategory(category.category)}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
+                                        >
+                                            {expandedCategories.includes(category.category) ? (
+                                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                                            ) : (
+                                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                                            )}
+                                            <span className="text-sm font-medium text-gray-200">{category.category}</span>
+                                            <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
+                                                {category.count}
+                                            </span>
+                                        </button>
 
-                                    {/* Category Assets */}
-                                    {expandedCategories.includes(category.category) && (
-                                        <div className="space-y-1">
-                                            {category.assets.map((asset, assetIndex) => (
-                                                <div
-                                                    key={asset.id}
-                                                    onClick={(e) => {
-                                                        // ⭐ ป้องกัน navigate ถ้าคลิกที่ input/button/textarea
-                                                        const target = e.target as HTMLElement;
-                                                        if (
-                                                            target.tagName === 'INPUT' ||
-                                                            target.tagName === 'TEXTAREA' ||
-                                                            target.tagName === 'BUTTON' ||
-                                                            target.closest('button') ||
-                                                            target.closest('input') ||
-                                                            target.closest('textarea')
-                                                        ) {
-                                                            return;
-                                                        }
+                                        {/* Category Assets */}
+                                        {expandedCategories.includes(category.category) && (
+                                            <div className="space-y-1">
+                                                {category.assets.map((asset) => {
+                                                    const assetIndex = assetData[categoryIndex].assets.findIndex(a => a.id === asset.id);
+                                                    return (
+                                                        <div
+                                                            key={asset.id}
+                                                            onClick={(e) => {
+                                                                const target = e.target as HTMLElement;
+                                                                if (
+                                                                    target.tagName === 'INPUT' ||
+                                                                    target.tagName === 'TEXTAREA' ||
+                                                                    target.tagName === 'BUTTON' ||
+                                                                    target.closest('button') ||
+                                                                    target.closest('input') ||
+                                                                    target.closest('textarea')
+                                                                ) {
+                                                                    return;
+                                                                }
+                                                                handleAssetClick(categoryIndex, assetIndex);
+                                                            }}
+                                                            onContextMenu={(e) => handleContextMenu(e, asset)}
+                                                            className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, assetIndex)
+                                                                ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                                                : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                                                }`}
+                                                        >
+                                                            <div className="flex items-center gap-6 px-4 py-2.5">
+                                                                {/* Thumbnail */}
+                                                                <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                                                    <div className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm">
+                                                                        {asset.file_url ? (
+                                                                            asset.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                                                                <video
+                                                                                    src={ENDPOINTS.image_url + asset.file_url}
+                                                                                    className="w-full h-full object-cover"
+                                                                                    muted
+                                                                                    loop
+                                                                                    autoPlay
+                                                                                />
+                                                                            ) : (
+                                                                                <img
+                                                                                    src={ENDPOINTS.image_url + asset.file_url}
+                                                                                    alt={asset.asset_name}
+                                                                                    className="w-full h-full object-cover"
+                                                                                />
+                                                                            )
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                                <Image className="w-4 h-4 text-gray-500" />
+                                                                                <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                            <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                                <Eye className="w-3.5 h-3.5 text-white" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
-                                                        // ⭐ เรียกใช้ handleAssetClick
-                                                        handleAssetClick(categoryIndex, assetIndex);
-                                                    }}
-                                                    onContextMenu={(e) => handleContextMenu(e, asset)}
-                                                    className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, assetIndex)
-                                                        ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
-                                                        : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-6 px-4 py-2.5">
-                                                        {/* Thumbnail */}
-                                                        <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
-                                                            <div className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm">
-                                                                {/* ⭐ ลบ onClick ออกจาก thumbnail */}
-                                                                {asset.file_url ? (
-                                                                    asset.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                                                        <video
-                                                                            src={ENDPOINTS.image_url + asset.file_url}
-                                                                            className="w-full h-full object-cover"
-                                                                            muted
-                                                                            loop
-                                                                            autoPlay
+                                                                {/* Asset Name */}
+                                                                <div
+                                                                    onClick={(e) => handleFieldClick('asset_name', categoryIndex, assetIndex, e)}
+                                                                    className="w-44 flex-shrink-0 px-2 py-1 cursor-text border-r border-gray-700/50 pr-4"
+                                                                >
+                                                                    {editingField?.categoryIndex === categoryIndex &&
+                                                                        editingField?.assetIndex === assetIndex &&
+                                                                        editingField?.field === 'asset_name' ? (
+                                                                        <input
+                                                                            type="text"
+                                                                            value={asset.asset_name}
+                                                                            onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'asset_name', e.target.value)}
+                                                                            onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'asset_name')}
+                                                                            onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'asset_name')}
+                                                                            autoFocus
+                                                                            className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
+                                                                            onClick={(e) => e.stopPropagation()}
                                                                         />
                                                                     ) : (
-                                                                        <img
-                                                                            src={ENDPOINTS.image_url + asset.file_url}
-                                                                            alt={asset.asset_name}
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    )
-                                                                ) : (
-                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                                        <Image className="w-4 h-4 text-gray-500" />
-                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
-                                                                    </div>
-                                                                )}
+                                                                        <h3 className="text-sm font-medium text-gray-100 truncate border border-gray-500/20 hover:bg-gray-700 rounded">
+                                                                            {asset.asset_name}
+                                                                        </h3>
+                                                                    )}
+                                                                </div>
 
-                                                                {/* Hover Overlay */}
-                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
-                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                        <Eye className="w-3.5 h-3.5 text-white" />
+                                                                {/* Type */}
+                                                                <div className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4">
+                                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                                                                        <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate" title={category.category}>
+                                                                            {category.category}
+                                                                        </span>
                                                                     </div>
+                                                                </div>
+
+                                                                {/* Status */}
+                                                                <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                                    <button
+                                                                        onClick={(e) => handleFieldClick('status', categoryIndex, assetIndex, e)}
+                                                                        className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                    >
+                                                                        {statusConfig[asset.status].icon === '-' ? (
+                                                                            <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                        ) : (
+                                                                            <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[asset.status].color} shadow-sm`}></div>
+                                                                        )}
+                                                                        <span className="text-xs text-gray-300 font-medium truncate">
+                                                                            {statusConfig[asset.status].label}
+                                                                        </span>
+                                                                    </button>
+
+                                                                    {/* Status Dropdown */}
+                                                                    {showStatusMenu?.categoryIndex === categoryIndex &&
+                                                                        showStatusMenu?.assetIndex === assetIndex && (
+                                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[180px] border border-gray-600 whitespace-nowrap`}>
+                                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                                    <button
+                                                                                        key={key}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleStatusChange(categoryIndex, assetIndex, key);
+                                                                                        }}
+                                                                                        className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                                    >
+                                                                                        {config.icon === '-' ? (
+                                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                                        ) : (
+                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                        )}
+                                                                                        <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                                            <span className="inline-block w-8">{config.label}</span>
+                                                                                            <span>{config.fullLabel}</span>
+                                                                                        </div>
+                                                                                        {asset.status === key && (
+                                                                                            <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                                        )}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                </div>
+
+                                                                {/* Description */}
+                                                                <div
+                                                                    onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
+                                                                    className="flex-1 min-w-0 px-2 py-1 cursor-text border-r border-gray-700/50"
+                                                                >
+                                                                    {editingField?.categoryIndex === categoryIndex &&
+                                                                        editingField?.assetIndex === assetIndex &&
+                                                                        editingField?.field === 'description' ? (
+                                                                        <textarea
+                                                                            value={asset.description}
+                                                                            onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'description', e.target.value)}
+                                                                            onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'description')}
+                                                                            onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'description')}
+                                                                            autoFocus
+                                                                            rows={1}
+                                                                            className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        />
+                                                                    ) : (
+                                                                        <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed border border-gray-500/20 hover:bg-gray-700 rounded" title={asset.description}>
+                                                                            {asset.description || '\u00A0'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Shots */}
+                                                                <div className="flex-1 min-w-0 px-2 py-1">
+                                                                    {(() => {
+                                                                        const currentAssetShots = allAssetShots[asset.id] || [];
+                                                                        return currentAssetShots.length > 0 ? (
+                                                                            <div className="flex items-center gap-2">
+                                                                                {currentAssetShots.length <= 2 ? (
+                                                                                    <div className="flex-1 flex items-center gap-1.5">
+                                                                                        {currentAssetShots.map((shot) => (
+                                                                                            <div
+                                                                                                key={shot.shot_id}
+                                                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                                                                title={shot.shot_description || shot.shot_name}
+                                                                                            >
+                                                                                                <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                                                    {shot.shot_name}
+                                                                                                </span>
+                                                                                                {shot.shot_status === 'fin' && (
+                                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                                )}
+                                                                                                {shot.shot_status === 'ip' && (
+                                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
+                                                                                            <Box className="w-3.5 h-3.5 text-green-400" />
+                                                                                            <span className="text-xs font-semibold text-green-300">
+                                                                                                {currentAssetShots.length}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                                            {currentAssetShots.slice(0, 2).map((shot) => (
+                                                                                                <div
+                                                                                                    key={shot.shot_id}
+                                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                                    title={shot.shot_description || shot.shot_name}
+                                                                                                >
+                                                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                                        {shot.shot_name}
+                                                                                                    </span>
+                                                                                                    {shot.shot_status === 'fin' && (
+                                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                                    )}
+                                                                                                    {shot.shot_status === 'ip' && (
+                                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                            <span className="text-gray-500 text-xs">...</span>
+                                                                                        </div>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSelectedAssetForDetail(asset);
+                                                                                    fetchAssetDetail(asset.id);
+                                                                                    fetchAssetSequences(asset.id);
+                                                                                    fetchAssetShots(asset.id);
+                                                                                    setShowAssetDetailPanel(true);
+                                                                                }}
+                                                                                className="bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
+                                                                                title="Add shots"
+                                                                            >
+                                                                                <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                                    No shots - Click to Add
+                                                                                </span>
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </div>
-
-                                                        {/* Asset Name */}
-                                                        <div
-                                                            onClick={(e) => handleFieldClick('asset_name', categoryIndex, assetIndex, e)}
-                                                            className="w-44 flex-shrink-0 px-2 py-1 cursor-text border-r border-gray-700/50 pr-4"
-                                                        >
-                                                            {editingField?.categoryIndex === categoryIndex &&
-                                                                editingField?.assetIndex === assetIndex &&
-                                                                editingField?.field === 'asset_name' ? (
-                                                                <input
-                                                                    type="text"
-                                                                    value={asset.asset_name}
-                                                                    onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'asset_name', e.target.value)}
-                                                                    onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'asset_name')}
-                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'asset_name')}
-                                                                    autoFocus
-                                                                    className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                />
-                                                            ) : (
-                                                                <h3 className="text-sm font-medium text-gray-100 truncate border border-gray-500/20 hover:bg-gray-700 rounded">
-                                                                    {asset.asset_name}
-                                                                </h3>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Type */}
-                                                        <div className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4">
-                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                                                <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate" title={category.category}>
-                                                                    {category.category}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Status */}
-                                                        <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
-                                                            <button
-                                                                onClick={(e) => handleFieldClick('status', categoryIndex, assetIndex, e)}
-                                                                className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                                            >
-                                                                {statusConfig[asset.status].icon === '-' ? (
-                                                                    <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
-                                                                ) : (
-                                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[asset.status].color} shadow-sm`}></div>
-                                                                )}
-                                                                <span className="text-xs text-gray-300 font-medium truncate">
-                                                                    {statusConfig[asset.status].label}
-                                                                </span>
-                                                            </button>
-
-                                                            {/* Status Dropdown */}
-                                                            {showStatusMenu?.categoryIndex === categoryIndex &&
-                                                                showStatusMenu?.assetIndex === assetIndex && (
-                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[180px] border border-gray-600 whitespace-nowrap`}>
-                                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                            <button
-                                                                                key={key}
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleStatusChange(categoryIndex, assetIndex, key);
-                                                                                }}
-                                                                                className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
-                                                                            >
-                                                                                {config.icon === '-' ? (
-                                                                                    <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                                ) : (
-                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                                )}
-                                                                                <div className="text-xs text-gray-200 flex items-center gap-5">
-                                                                                    <span className="inline-block w-8">{config.label}</span>
-                                                                                    <span>{config.fullLabel}</span>
-                                                                                </div>
-                                                                                {asset.status === key && (
-                                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto" />
-                                                                                )}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                        </div>
-
-                                                        {/* Description */}
-                                                        <div
-                                                            onClick={(e) => handleFieldClick('description', categoryIndex, assetIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1 cursor-text border-r border-gray-700/50"
-                                                        >
-                                                            {editingField?.categoryIndex === categoryIndex &&
-                                                                editingField?.assetIndex === assetIndex &&
-                                                                editingField?.field === 'description' ? (
-                                                                <textarea
-                                                                    value={asset.description}
-                                                                    onChange={(e) => handleFieldChange(categoryIndex, assetIndex, 'description', e.target.value)}
-                                                                    onBlur={() => handleFieldBlur(categoryIndex, assetIndex, 'description')}
-                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, assetIndex, 'description')}
-                                                                    autoFocus
-                                                                    rows={1}
-                                                                    className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                />
-                                                            ) : (
-                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed border border-gray-500/20 hover:bg-gray-700 rounded" title={asset.description}>
-                                                                    {asset.description || '\u00A0'}
-                                                                </p>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Shots */}
-                                                        <div className="flex-1 min-w-0 px-2 py-1">
-                                                            {(() => {
-                                                                const currentAssetShots = allAssetShots[asset.id] || [];
-
-                                                                return currentAssetShots.length > 0 ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        {currentAssetShots.length <= 2 ? (
-                                                                            <div className="flex-1 flex items-center gap-1.5">
-                                                                                {currentAssetShots.map((shot) => (
-                                                                                    <div
-                                                                                        key={shot.shot_id}
-                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
-                                                                                        title={shot.shot_description || shot.shot_name}
-                                                                                    >
-                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
-                                                                                            {shot.shot_name}
-                                                                                        </span>
-                                                                                        {shot.shot_status === 'fin' && (
-                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                                        )}
-                                                                                        {shot.shot_status === 'ip' && (
-                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <>
-                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-md">
-                                                                                    <Box className="w-3.5 h-3.5 text-green-400" />
-                                                                                    <span className="text-xs font-semibold text-green-300">
-                                                                                        {currentAssetShots.length}
-                                                                                    </span>
-                                                                                </div>
-
-                                                                                <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-                                                                                    {currentAssetShots.slice(0, 2).map((shot) => (
-                                                                                        <div
-                                                                                            key={shot.shot_id}
-                                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
-                                                                                            title={shot.shot_description || shot.shot_name}
-                                                                                        >
-                                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
-                                                                                                {shot.shot_name}
-                                                                                            </span>
-                                                                                            {shot.shot_status === 'fin' && (
-                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                                            )}
-                                                                                            {shot.shot_status === 'ip' && (
-                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    ))}
-                                                                                    <span className="text-gray-500 text-xs">...</span>
-                                                                                </div>
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setSelectedAssetForDetail(asset);
-                                                                            fetchAssetDetail(asset.id);
-                                                                            fetchAssetSequences(asset.id);
-                                                                            fetchAssetShots(asset.id);
-                                                                            setShowAssetDetailPanel(true);
-                                                                        }}
-                                                                        className="bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
-                                                                        title="Add shots"
-                                                                    >
-                                                                        <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
-                                                                            No shots - Click to Add
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
