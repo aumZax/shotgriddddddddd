@@ -1333,6 +1333,7 @@ export default function Project_Tasks() {
                                                     <tr
                                                         key={task.id}
                                                         onContextMenu={(e) => handleTaskContextMenu(e, task)}
+                                                        onClick={() => setSelectedTask(task)}
                                                         className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
                                                     >
                                                         <td className="px-4 py-4">
@@ -1380,7 +1381,6 @@ export default function Project_Tasks() {
                                                                     // โหมดแสดงผล
                                                                     <>
                                                                         <span
-                                                                            onClick={() => setSelectedTask(task)}
                                                                             className="text-blue-400 hover:text-blue-300 underline decoration-blue-400 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer truncate max-w-[150px]"
                                                                             title={task.task_name}
                                                                         >
@@ -1544,6 +1544,8 @@ export default function Project_Tasks() {
                                                             <div className="relative" ref={pipelineDropdownRef}>
                                                                 <button
                                                                     onClick={(e) => {
+                                                                    e.stopPropagation();
+
                                                                         if (editingPipelineTaskId === task.id) {
                                                                             setEditingPipelineTaskId(null);
                                                                         } else {
@@ -1752,59 +1754,11 @@ export default function Project_Tasks() {
                                                             </div>
                                                         </td>
 
-                                                        {/* ⭐ Column #6: Description - แก้ไขเพื่อให้อัพเดทได้ */}
-                                                        {/* <td className="px-4 py-4">
-                                                            <textarea
-                                                                value={task.description || ""}
-                                                                onChange={(e) => {
-                                                                    // อัพเดท state ทันทีเพื่อให้ UI responsive
-                                                                    const updatedGroups = [...taskGroups];
-                                                                    const groupIndex = updatedGroups.findIndex(g => g.tasks.includes(task));
-                                                                    const taskIndex = updatedGroups[groupIndex].tasks.indexOf(task);
-                                                                    updatedGroups[groupIndex].tasks[taskIndex].description = e.target.value;
-                                                                    setTaskGroups(updatedGroups);
-                                                                }}
-                                                                onBlur={async (e) => {
-                                                                    // บันทึกลง backend เมื่อ blur
-                                                                    const newDescription = e.target.value.trim();
-                                                                    await updateTask(task.id, 'description', newDescription);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                                        // กด Enter (ไม่กด Shift) = บันทึก
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-
-                                                                        const target = e.currentTarget;
-                                                                        // const newDescription = target.value.trim();
-
-                                                                        // Blur ก่อน await เพื่อให้ onBlur จัดการ update
-                                                                        target.blur();
-
-                                                                        // ไม่ต้อง await ที่นี่ เพราะ onBlur จะจัดการให้
-                                                                    } else if (e.key === 'Escape') {
-                                                                        // กด Escape = ยกเลิก
-                                                                        e.preventDefault();
-                                                                        e.currentTarget.blur();
-                                                                    }
-                                                                    // กด Shift+Enter = ขึ้นบรรทัดใหม่ (default behavior)
-                                                                }}
-                                                                rows={2}
-                                                                placeholder="เพิ่มรายละเอียด..."
-                                                                className="w-full max-w-xs text-sm text-gray-300 bg-gray-800/60
-                                                                border border-gray-700 rounded px-2 py-1
-                                                                outline-none resize-none
-                                                                focus:border-blue-500 focus:bg-gray-800 
-                                                                transition-colors"
-                                                            />
-                                                        </td> */}
-
-
-                                                        {/* Column #7: สถานะ */}
+                                                        {/* Column #7: Status */}
                                                         <td className="px-4 py-4">
                                                             <div className="w-20 flex-shrink-0 relative">
                                                                 <button
-                                                                    onClick={(e) => handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e)}
+                                                                    onClick={(e) => { e.stopPropagation(); handleFieldClick('status', taskGroups.findIndex(g => g.tasks.includes(task)), group.tasks.indexOf(task), e) }}
                                                                     className="flex w-full items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                     disabled={isLoading(`status-${task.id}`)} // ⭐ เพิ่ม
                                                                 >
@@ -1827,7 +1781,7 @@ export default function Project_Tasks() {
                                                                             {/* Backdrop */}
                                                                             <div
                                                                                 className="fixed inset-0 z-10"
-                                                                                onClick={() => setShowStatusMenu(null)}
+                                                                                onClick={(e) => {e.stopPropagation(); setShowStatusMenu(null)}}
                                                                             />
 
                                                                             {/* Menu */}
@@ -1880,6 +1834,7 @@ export default function Project_Tasks() {
                                                                 {/* ปุ่มแสดงรายชื่อ + เปิด Dropdown */}
                                                                 <button
                                                                     onClick={(e) => {
+                                                                    e.stopPropagation();
                                                                         if (editingAssigneeTaskId === task.id) {
                                                                             setEditingAssigneeTaskId(null);
                                                                         } else {
@@ -2073,6 +2028,8 @@ export default function Project_Tasks() {
                                                             <div className="relative" ref={reviewerDropdownRef}>
                                                                 <button
                                                                     onClick={(e) => {
+                                                                    e.stopPropagation();
+
                                                                         if (editingReviewerTaskId === task.id) {
                                                                             setEditingReviewerTaskId(null);
                                                                         } else {
@@ -2264,6 +2221,7 @@ export default function Project_Tasks() {
                                                                 <div className="flex items-center gap-2">
                                                                     <input
                                                                         type="date"
+                                                                        onClick={(e) => e.stopPropagation()}
                                                                         autoFocus
                                                                         value={formatDateForInput(task.start_date)}
                                                                         onChange={(e) => {
@@ -2296,7 +2254,7 @@ export default function Project_Tasks() {
                                                                 </div>
                                                             ) : (
                                                                 <div
-                                                                    onClick={() => setEditingStartDateTaskId(task.id)}
+                                                                     onClick={(e) => { e.stopPropagation(); setEditingStartDateTaskId(task.id); }}
                                                                     className="group/date flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-800/50 rounded px-2 py-1 transition-colors"
                                                                 >
                                                                     {task.start_date ? (
@@ -2322,6 +2280,7 @@ export default function Project_Tasks() {
                                                                     <input
                                                                         type="date"
                                                                         autoFocus
+                                                                        onClick={(e) => e.stopPropagation()}
                                                                         value={formatDateForInput(task.due_date)}
                                                                         onChange={(e) => {
                                                                             const newDate = e.target.value;
@@ -2353,7 +2312,7 @@ export default function Project_Tasks() {
                                                                 </div>
                                                             ) : (
                                                                 <div
-                                                                    onClick={() => setEditingDueDateTaskId(task.id)}
+                                                                    onClick={(e) => { e.stopPropagation(); setEditingDueDateTaskId(task.id); }}
                                                                     className="group/date flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-800/50 rounded px-2 py-1 transition-colors"
                                                                 >
                                                                     {task.due_date ? (

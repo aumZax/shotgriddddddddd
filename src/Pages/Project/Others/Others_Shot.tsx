@@ -129,8 +129,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers: TaskReviewer[];     
-    pipeline_step: PipelineStep | null;  
+    reviewers: TaskReviewer[];
+    pipeline_step: PipelineStep | null;
 };
 
 type TaskAssignee = {
@@ -221,7 +221,7 @@ export default function Others_Shot() {
     const [shotVersions, setShotVersions] = useState<any[]>([]);
     const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
     const [,] = useState<Version | null>(null);
-    const [rightPanelTab, setRightPanelTab] = useState('notes'); 
+    const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -241,7 +241,7 @@ export default function Others_Shot() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [subject, setSubject] = useState(shotData?.shotCode ? `Note on ${shotData.shotCode}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
+    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
     const [isCreatingAsset, setIsCreatingAsset] = useState(false);
 
     //============================================================================================================================================//
@@ -266,7 +266,7 @@ export default function Others_Shot() {
     const [createAssetForm, setCreateAssetForm] = useState({
         asset_name: '',
         description: '',
-        asset_type: 'Character', 
+        asset_type: 'Character',
     });
 
     //============================================================================================================================================//
@@ -391,9 +391,9 @@ export default function Others_Shot() {
     }, [selectedTask]);
 
     useEffect(() => {
-    if (activeTab === 'Notes') {
-        fetchNotes();
-    }
+        if (activeTab === 'Notes') {
+            fetchNotes();
+        }
     }, [activeTab, shotData?.id]);
 
     //============================================================================================================================================//
@@ -529,8 +529,8 @@ export default function Others_Shot() {
                         setShotData(prev => ({ ...prev, thumbnail: fileUrl }));  // ✅ ใช้ได้เพราะอยู่ใน scope เดียวกัน
 
                         const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                        localStorage.setItem('selectedShot', JSON.stringify({ 
-                            ...currentStored, 
+                        localStorage.setItem('selectedShot', JSON.stringify({
+                            ...currentStored,
                             file_url: fileUrl,
                             thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
                         }));
@@ -761,7 +761,7 @@ export default function Others_Shot() {
 
     const updateShotField = async (
         field: keyof ShotData,
-   
+
         value: any
     ) => {
         const dbField = shotFieldMap[field];
@@ -774,7 +774,7 @@ export default function Others_Shot() {
         try {
             await axios.post(ENDPOINTS.UPDATESHOT, {
                 shotId: shotData.id,
-                field: dbField, 
+                field: dbField,
                 value
             });
 
@@ -872,7 +872,8 @@ export default function Others_Shot() {
 
                 const uploadData = await uploadResponse.json();
                 console.log('✅ Upload successful:', uploadData);
-                uploadedFileUrl = uploadData.file.fileUrl;
+                // ✅ Fixed (handles both { files: [...] } and { file: {...} } response shapes)
+                uploadedFileUrl = uploadData?.files?.[0]?.fileUrl ?? uploadData?.file?.fileUrl ?? null;
             } else {
                 console.log('ℹ️ No file selected');
             }
@@ -1040,32 +1041,32 @@ export default function Others_Shot() {
     };
 
     const handleCreateAsset = async () => {
-    if (isCreatingAsset) return;
-    if (!createAssetForm.asset_name.trim()) {
-        alert('กรุณาระบุชื่อ Asset');
-        return;
-    }
-
-    setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
-    try {
-        const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
-            project_id: projectId,
-            shot_id: shotId,
-            asset_name: createAssetForm.asset_name.trim(),
-            description: createAssetForm.description || null,
-            asset_type: createAssetForm.asset_type || null,
-        });
-
-        if (res.data.success) {
-            setShowCreateShot_Assets(false);
-            setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
-            fetchShotAssets();
+        if (isCreatingAsset) return;
+        if (!createAssetForm.asset_name.trim()) {
+            alert('กรุณาระบุชื่อ Asset');
+            return;
         }
-    } catch (err: any) {
-        alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
-    } finally {
-        setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
-    }
+
+        setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
+        try {
+            const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
+                project_id: projectId,
+                shot_id: shotId,
+                asset_name: createAssetForm.asset_name.trim(),
+                description: createAssetForm.description || null,
+                asset_type: createAssetForm.asset_type || null,
+            });
+
+            if (res.data.success) {
+                setShowCreateShot_Assets(false);
+                setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
+                fetchShotAssets();
+            }
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
+        } finally {
+            setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
+        }
     };
 
     const renderTabContent = () => {
@@ -1138,8 +1139,8 @@ export default function Others_Shot() {
                                 if (newThumb) {
                                     setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
                                     const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                    localStorage.setItem('selectedShot', JSON.stringify({ 
-                                        ...currentStored, 
+                                    localStorage.setItem('selectedShot', JSON.stringify({
+                                        ...currentStored,
                                         file_url: newThumb,
                                         thumbnail: newThumb   // ← เพิ่มบรรทัดนี้
                                     }));
@@ -1158,7 +1159,7 @@ export default function Others_Shot() {
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
                         formatDateThai={formatDate}
-                        onAssetUpdate={fetchShotAssets} 
+                        onAssetUpdate={fetchShotAssets}
                     />
                 );
 
@@ -2607,7 +2608,7 @@ export default function Others_Shot() {
                                 });
                             }
                         }}
-                        
+
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Version

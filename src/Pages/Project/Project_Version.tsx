@@ -137,8 +137,8 @@ export default function Project_Version() {
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null); // version id
     const [statusMenuPos, setStatusMenuPos] = useState<"top" | "bottom">("bottom");
 
-    // Preview modal
-    const [previewVersion, setPreviewVersion] = useState<Version | null>(null);
+    // Thumbnail modal
+    const [previewVersion, setThumbnailVersion] = useState<Version | null>(null);
 
     // Delete confirm
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; name: string } | null>(null);
@@ -155,7 +155,7 @@ export default function Project_Version() {
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const [showEntityFilter, setShowEntityFilter] = useState(false);
-const [showStatusFilter, setShowStatusFilter] = useState(false);
+    const [showStatusFilter, setShowStatusFilter] = useState(false);
 
     // -------------------- Fetch --------------------
     useEffect(() => {
@@ -345,129 +345,128 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
 
 
                 {/* ---- Toolbar ---- */}
-                {/* ---- Toolbar ---- */}
-<div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
-    {/* Search */}
-    <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-        <input
-            type="text"
-            placeholder="ค้นหา version, task, entity..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 h-9 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-        />
-        {searchQuery && (
-            <div onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
-                <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
-            </div>
-        )}
-    </div>
+                <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
+                    {/* Search */}
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input
+                            type="text"
+                            placeholder="ค้นหา version, task, entity..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 h-9 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                        {searchQuery && (
+                            <div onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+                            </div>
+                        )}
+                    </div>
 
-    {/* Filter: Entity Type - Custom Dropdown */}
-    <div className="relative">
-        <div
-            onClick={() => setShowEntityFilter(prev => !prev)}
-            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
-        >
-            {filterEntityType ? (
-                <span className="text-blue-400 font-medium capitalize">{filterEntityType}</span>
-            ) : (
-                <span>ทุก Entity</span>
-            )}
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-        </div>
-
-        {showEntityFilter && (
-            <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowEntityFilter(false)} />
-                <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[140px] py-1">
-                    {[
-                        { value: '', label: 'ทุก Entity' },
-                        { value: 'shot', label: 'Shot' },
-                        { value: 'asset', label: 'Asset' },
-                        { value: 'sequence', label: 'Sequence' },
-                    ].map(opt => (
-                        <button
-                            key={opt.value}
-                            onClick={() => { setFilterEntityType(opt.value); setShowEntityFilter(false); }}
-                            className="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                    {/* Filter: Entity Type - Custom Dropdown */}
+                    <div className="relative">
+                        <div
+                            onClick={() => setShowEntityFilter(prev => !prev)}
+                            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
                         >
-                            <span className={filterEntityType === opt.value ? 'text-blue-400 text-sm' : 'text-gray-200 text-sm'}>
-                                {opt.label}
-                            </span>
-                            {filterEntityType === opt.value && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
-                        </button>
-                    ))}
-                </div>
-            </>
-        )}
-    </div>
-
-    {/* Filter: Status - Custom Dropdown */}
-<div className="relative">
-    <div
-        onClick={() => setShowStatusFilter(prev => !prev)}
-        className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
-    >
-        {filterStatus ? (
-            <>
-                <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
-                <span className="text-gray-200">{statusConfig[filterStatus as StatusType].fullLabel}</span>
-            </>
-        ) : (
-            <span>ทุกสถานะ</span>
-        )}
-        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-    </div>
-
-    {showStatusFilter && (
-        <>
-            <div className="fixed inset-0 z-10" onClick={() => setShowStatusFilter(false)} />
-            <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[220px] max-h-[350px] overflow-y-auto py-1
-                     scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 whitespace-nowrap">
-                <button
-                    onClick={() => { setFilterStatus(''); setShowStatusFilter(false); }}
-                    className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
-                >
-                    <span className={!filterStatus ? 'text-blue-400 font-medium' : 'text-gray-200'}>ทุกสถานะ</span>
-                    {!filterStatus && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
-                </button>
-                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string }][]).map(([key, config]) => (
-                    <button
-                        key={key}
-                        onClick={() => { setFilterStatus(key); setShowStatusFilter(false); }}
-                        className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
-                    >
-                        <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
-                        <div className="text-gray-200 flex items-center gap-3">
-                            <span className="inline-block w-10 text-gray-400 text-sm">{config.label}</span>
-                            <span className="text-slate-50 text-sm">{config.fullLabel}</span>
+                            {filterEntityType ? (
+                                <span className="text-blue-400 font-medium capitalize">{filterEntityType}</span>
+                            ) : (
+                                <span>ทุก Entity</span>
+                            )}
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                         </div>
-                        {filterStatus === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
-                    </button>
-                ))}
-            </div>
-        </>
-    )}
-</div>
 
-    {/* Clear filters */}
-    {(searchQuery || filterStatus || filterEntityType) && (
-        <div
-            onClick={() => { setSearchQuery(""); setFilterStatus(""); setFilterEntityType(""); }}
-            className="h-9 px-3 bg-gray-800 hover:bg-red-500/30 border border-red-500 rounded-lg text-red-400 text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-            <X className="w-3.5 h-3.5" /> Clear
-        </div>
-    )}
+                        {showEntityFilter && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowEntityFilter(false)} />
+                                <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[140px] py-1">
+                                    {[
+                                        { value: '', label: 'ทุก Entity' },
+                                        { value: 'shot', label: 'Shot' },
+                                        { value: 'asset', label: 'Asset' },
+                                        { value: 'sequence', label: 'Sequence' },
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => { setFilterEntityType(opt.value); setShowEntityFilter(false); }}
+                                            className="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                        >
+                                            <span className={filterEntityType === opt.value ? 'text-blue-400 text-sm' : 'text-gray-200 text-sm'}>
+                                                {opt.label}
+                                            </span>
+                                            {filterEntityType === opt.value && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
 
-    <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
-        <span>แสดง</span>
-        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold">{displayTotal}</span>
-        <span>/ {totalVersions} versions</span>
-    </div>
-</div>
+                    {/* Filter: Status - Custom Dropdown */}
+                    <div className="relative">
+                        <div
+                            onClick={() => setShowStatusFilter(prev => !prev)}
+                            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
+                        >
+                            {filterStatus ? (
+                                <>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
+                                    <span className="text-gray-200">{statusConfig[filterStatus as StatusType].fullLabel}</span>
+                                </>
+                            ) : (
+                                <span>ทุกสถานะ</span>
+                            )}
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                        </div>
+
+                        {showStatusFilter && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowStatusFilter(false)} />
+                                <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[220px] max-h-[350px] overflow-y-auto py-1
+                     scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 whitespace-nowrap">
+                                    <button
+                                        onClick={() => { setFilterStatus(''); setShowStatusFilter(false); }}
+                                        className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                    >
+                                        <span className={!filterStatus ? 'text-blue-400 font-medium' : 'text-gray-200'}>ทุกสถานะ</span>
+                                        {!filterStatus && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                    </button>
+                                    {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string }][]).map(([key, config]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => { setFilterStatus(key); setShowStatusFilter(false); }}
+                                            className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                        >
+                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
+                                            <div className="text-gray-200 flex items-center gap-3">
+                                                <span className="inline-block w-10 text-gray-400 text-sm">{config.label}</span>
+                                                <span className="text-slate-50 text-sm">{config.fullLabel}</span>
+                                            </div>
+                                            {filterStatus === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Clear filters */}
+                    {(searchQuery || filterStatus || filterEntityType) && (
+                        <div
+                            onClick={() => { setSearchQuery(""); setFilterStatus(""); setFilterEntityType(""); }}
+                            className="h-9 px-3 bg-gray-800 hover:bg-red-500/30 border border-red-500 rounded-lg text-red-400 text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                            <X className="w-3.5 h-3.5" /> Clear
+                        </div>
+                    )}
+
+                    <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
+                        <span>แสดง</span>
+                        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold">{displayTotal}</span>
+                        <span>/ {totalVersions} versions</span>
+                    </div>
+                </div>
 
                 {/* ---- Table ---- */}
                 <div className="flex-1 overflow-auto">
@@ -475,10 +474,10 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                         <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10">
                             <tr className="border-b-2 border-blue-500/30">
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-12">#</th>
-                                <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Preview</th>
+                                <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</th>
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Version Name</th>
-                                <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Link</th>
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Task</th>
+                                <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Link</th>
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Uploaded By</th>
                                 <th className="px-1 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
@@ -567,16 +566,16 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                             </div>
                                                         </td>
 
-                                                        {/* Preview */}
+                                                        {/* Thumbnail */}
                                                         <td className="px-4 py-4">
                                                             <div className="relative w-32 h-20 rounded-lg overflow-hidden group">
                                                                 {version.file_url && isImageUrl(version.file_url) ? (
                                                                     <>
                                                                         <img
                                                                             src={ENDPOINTS.image_url + version.file_url}
-                                                                            alt="preview"
+                                                                            alt="thumbnail"
                                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                                                                            onClick={() => setPreviewVersion(version)}
+                                                                            onClick={() => setThumbnailVersion(version)}
                                                                             onError={(e) => {
                                                                                 (e.target as HTMLImageElement).closest('.relative')!.classList.add('show-fallback');
                                                                                 (e.target as HTMLImageElement).style.display = "none";
@@ -585,9 +584,14 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                                         {/* Overlay on hover */}
                                                                         <div
                                                                             className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
-                                                                            onClick={() => setPreviewVersion(version)}
+                                                                            onClick={() => setThumbnailVersion(version)}
                                                                         >
-                                                                            <Eye className="w-6 h-6 text-white drop-shadow" />
+                                                                             {/* Hover Overlay */}
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                        <Eye className="w-3.5 h-3.5 text-white" />
+                                                                    </div>
+                                                                </div>
                                                                         </div>
                                                                         {/* Subtle border glow */}
                                                                         <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 group-hover:ring-blue-400/40 transition-all duration-200 pointer-events-none" />
@@ -606,14 +610,17 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                                         {/* Subtle grid pattern */}
                                                                         <div className="absolute inset-0 opacity-[0.03]" />
                                                                         <Image className="w-5 h-5 text-gray-600 relative" />
-                                                                        <p className="text-gray-600 text-[9px] tracking-widest uppercase relative">No Preview</p>
+                                                                        <p className="text-gray-600 text-[9px] tracking-widest uppercase relative">No Thumbnail</p>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </td>
 
+
+                                                    
+
                                                         {/* Version Name — inline editable */}
-                                                        <td className="px-2 py-4 w-80">
+                                                        <td className="px-2 py-4 w-40">
                                                             {isEditingThisName ? (
                                                                 <textarea
                                                                     autoFocus
@@ -637,8 +644,7 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                                 />
                                                             ) : (
                                                                 <div className="flex items-center gap-2 group/name">
-                                                                    <p className="text-sm font-medium text-gray-200 leading-tight 
-              truncate max-w-[160px] block"
+                                                                    <p className="text-sm font-medium text-gray-200 leading-tight hover:text-blue-400 truncate max-w-[160px] block"
                                                                         title={version.version_name || `Version ${version.version_number}`}>
                                                                         {version.version_name || `Version ${version.version_number}`}
                                                                     </p>
@@ -651,6 +657,22 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                                     </button>
                                                                 </div>
                                                             )}
+                                                        </td>
+
+
+                                                            {/* Task */}
+                                                        <td className="px-2 py-4">
+                                                            <div className="w-20 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl transition-colors border border-orange-500/50 bg-gray-900 whitespace-nowrap">
+
+                                                                {version.task_name ? (
+                                                                    <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
+                                                                        {version.task_name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+                                                                )}
+                                                            </div>
+
                                                         </td>
 
 
@@ -716,19 +738,10 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                             )}
                                                         </td>
 
-                                                        {/* Task */}
-                                                        <td className="px-2 py-4">
-                                                            {version.task_name ? (
-                                                                <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
-                                                                    {version.task_name}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
-                                                            )}
-                                                        </td>
+
 
                                                         {/* Status */}
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-2 py-4">
                                                             <div className="relative">
                                                                 <button
                                                                     onClick={e => {
@@ -769,7 +782,6 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                             </div>
                                                         </td>
 
-                                                        {/* Uploaded By — dropdown เลือก user */}
                                                         {/* Uploaded By — dropdown เลือก user */}
                                                         <td className="px-2 py-4">
                                                             <div className="relative">
@@ -927,12 +939,12 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                                                 />
                                                             ) : (
                                                                 <div
-                                                                    className="flex items-start gap-2 group/desc cursor-pointer"
+                                                                    className="flex items-start gap-2 group/desc cursor-pointer rounded-sm hover:bg-slate-800"
                                                                     onClick={() => startEditing(version.id, "description", version.description || "")}
                                                                     title="คลิกเพื่อแก้ไข"
                                                                 >
                                                                     {version.description ? (
-                                                                        <span className="text-sm text-gray-300 truncate max-w-[200px] block hover:text-gray-100 transition-colors" title={version.description}>
+                                                                        <span className="text-sm text-gray-300 truncate max-w-[200px] block transition-colors" title={version.description}>
                                                                             {version.description}
                                                                         </span>
                                                                     ) : (
@@ -956,7 +968,7 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                 </div>
             </main>
 
-            {/* ===================== Image Preview Modal ===================== */}
+            {/* ===================== Image Thumbnail Modal ===================== */}
             {previewVersion && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
                     <div className="relative max-w-5xl w-full mx-4 rounded-2xl overflow-hidden bg-gray-900 border border-gray-700 shadow-2xl">
@@ -976,7 +988,7 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                                 </div>
                             </div>
                             <button
-                                onClick={() => setPreviewVersion(null)}
+                                onClick={() => setThumbnailVersion(null)}
                                 className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
                             >
                                 <X className="w-4 h-4 text-gray-400" />
@@ -987,7 +999,7 @@ const [showStatusFilter, setShowStatusFilter] = useState(false);
                         <div className="p-4 flex items-center justify-center bg-gray-950 max-h-[70vh]">
                             <img
                                 src={previewVersion.file_url}
-                                alt={previewVersion.version_name || "preview"}
+                                alt={previewVersion.version_name || "thumbnail"}
                                 className="max-w-full max-h-[65vh] object-contain rounded-lg"
                             />
                         </div>
