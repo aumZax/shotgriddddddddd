@@ -586,12 +586,12 @@ export default function Project_Version() {
                                                                             className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
                                                                             onClick={() => setThumbnailVersion(version)}
                                                                         >
-                                                                             {/* Hover Overlay */}
-                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
-                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                        <Eye className="w-3.5 h-3.5 text-white" />
-                                                                    </div>
-                                                                </div>
+                                                                            {/* Hover Overlay */}
+                                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                                <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                                    <Eye className="w-3.5 h-3.5 text-white" />
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                         {/* Subtle border glow */}
                                                                         <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 group-hover:ring-blue-400/40 transition-all duration-200 pointer-events-none" />
@@ -617,10 +617,10 @@ export default function Project_Version() {
                                                         </td>
 
 
-                                                    
+
 
                                                         {/* Version Name — inline editable */}
-                                                        <td className="px-2 py-4 w-40">
+                                                        <td className="px-2 py-4">
                                                             {isEditingThisName ? (
                                                                 <textarea
                                                                     autoFocus
@@ -660,18 +660,15 @@ export default function Project_Version() {
                                                         </td>
 
 
-                                                            {/* Task */}
+                                                        {/* Task */}
                                                         <td className="px-2 py-4">
-                                                            <div className="w-20 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl transition-colors border border-orange-500/50 bg-gray-900 whitespace-nowrap">
-
-                                                                {version.task_name ? (
-                                                                    <span className="text-sm text-gray-300 max-w-[120px] block" title={version.task_name}>
-                                                                        {version.task_name}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
-                                                                )}
-                                                            </div>
+                                                            {version.task_name ? (
+                                                                <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
+                                                                    {version.task_name}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+                                                            )}
 
                                                         </td>
 
