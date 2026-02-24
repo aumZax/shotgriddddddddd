@@ -149,7 +149,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 'Sequence': '/Project_Sequence',
                 'Tasks': '/Project_Tasks',
                 // 'Media': '/Project_Media',
-                'Versions': '/Others_Version',
+                'Versions': '/Project_Version',
 
             };
 

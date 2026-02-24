@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import Navbar_Project from "../../../components/Navbar_Project";
+import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
-import ENDPOINTS from "../../../config";
+import ENDPOINTS from "../../config";
 import {
     Check, ChevronDown, ChevronRight, Clock,
     Eye, FileText, HardDrive,
@@ -115,7 +115,7 @@ const isVideoUrl = (url: string) => {
 };
 
 // ===================== Component =====================
-export default function Others_Version() {
+export default function Project_Version() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState<GroupedVersions[]>([]);
     const [isLoading, setIsLoading] = useState(true);
