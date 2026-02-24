@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search } from 'lucide-react';
 import ENDPOINTS from '../config';
 
