@@ -514,7 +514,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                            
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
-                                    <span>งาน</span>
+                                    <span>Task</span>
                                     <span className="text-blue-400">↑</span>
                                 </div>
                                 <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 normal-case">
@@ -531,7 +531,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
                                 Description
                             </th> */}
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                สถานะ
+                               Status
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 Assigned

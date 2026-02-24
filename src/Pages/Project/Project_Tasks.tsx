@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
 import ENDPOINTS from "../../config";
-import { Calendar, Check, ChevronRight, ClipboardList, Clock, Pencil, Users, X, UserPlus, Trash2 } from 'lucide-react';
+import { Calendar, Check, ChevronRight, ClipboardList, Clock, Pencil, Users, X, UserPlus, Trash2, ChevronDown, Search } from 'lucide-react';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
@@ -138,6 +138,14 @@ export default function Project_Tasks() {
     const [taskVersions, setTaskVersions] = useState<Version[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
 
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterStatus, setFilterStatus] = useState<string>("");
+    const [filterEntityType, setFilterEntityType] = useState<string>("");
+    const [showStatusFilter, setShowStatusFilter] = useState(false);
+    const [showEntityFilter, setShowEntityFilter] = useState(false);
+
     // แก้ไข useEffect ที่จัดการ selectedTask
     useEffect(() => {
         if (selectedTask) {
@@ -153,21 +161,21 @@ export default function Project_Tasks() {
 
 
     // เพิ่มฟังก์ชันนี้หลัง fetchPipelineStepsByType
-const fetchTaskVersions = async (taskId: number) => {
-    setIsLoadingVersions(true);
-    try {
-        const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
-            entityId: taskId   // ✅ task.id เสมอ
-            // ❌ ลบ entityType ออก ไม่จำเป็นแล้ว
-        });
-        setTaskVersions(res.data);
-    } catch (err) {
-        console.error("Failed to fetch versions:", err);
-        setTaskVersions([]);
-    } finally {
-        setIsLoadingVersions(false);
-    }
-};
+    const fetchTaskVersions = async (taskId: number) => {
+        setIsLoadingVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.TASK_VERSIONS}`, {
+                entityId: taskId   // ✅ task.id เสมอ
+                // ❌ ลบ entityType ออก ไม่จำเป็นแล้ว
+            });
+            setTaskVersions(res.data);
+        } catch (err) {
+            console.error("Failed to fetch versions:", err);
+            setTaskVersions([]);
+        } finally {
+            setIsLoadingVersions(false);
+        }
+    };
 
 
 
@@ -1004,6 +1012,23 @@ const fetchTaskVersions = async (taskId: number) => {
     };
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const filteredGroups = taskGroups
+        .map(g => ({
+            ...g,
+            tasks: g.tasks.filter(task => {
+                const matchSearch = !searchQuery ||
+                    task.task_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    g.entity_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    task.assignees?.some(a => a.username.toLowerCase().includes(searchQuery.toLowerCase()));
+                const matchStatus = !filterStatus || task.status === filterStatus;
+                const matchEntity = !filterEntityType || g.entity_type === filterEntityType;
+                return matchSearch && matchStatus && matchEntity;
+            })
+        }))
+        .filter(g => g.tasks.length > 0);
+
+    const displayTotal = filteredGroups.reduce((s, g) => s + g.tasks.length, 0);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
     return (
@@ -1017,19 +1042,158 @@ const fetchTaskVersions = async (taskId: number) => {
             <main className="pt-12 h-[calc(100vh-3.5rem)] flex">
                 {/* Main content */}
                 <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+
+
+                    {/* ---- Toolbar ---- */}
+                    <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
+                        {/* Search */}
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="ค้นหา task, entity, assignee..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-4 h-9 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            />
+                            {searchQuery && (
+                                <div onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                    <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Filter: Entity Type - Custom Dropdown */}
+                        <div className="relative">
+                            <div
+                                onClick={() => setShowEntityFilter(prev => !prev)}
+                                className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 focus:outline-none hover:border-blue-500 flex items-center gap-2 transition-colors"
+                            >
+                                {filterEntityType ? (
+                                    <span className="text-blue-400 font-medium capitalize">{filterEntityType}</span>
+                                ) : (
+                                    <span>ทุก Entity</span>
+                                )}
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                            </div>
+
+                            {showEntityFilter && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setShowEntityFilter(false)} />
+                                    <div className="absolute left-0 top-full mt-1 z-50 bg-gradient-to-r from-gray-800 to-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[140px] py-1">
+                                        {[
+                                            { value: '', label: 'ทุก Entity' },
+                                            { value: 'shot', label: 'Shot' },
+                                            { value: 'asset', label: 'Asset' },
+                                            { value: 'sequence', label: 'Sequence' },
+                                            { value: 'unassigned', label: 'Unassigned' },
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => { setFilterEntityType(opt.value); setShowEntityFilter(false); }}
+                                                className="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                            >
+                                                <span className={filterEntityType === opt.value ? 'text-blue-400 text-sm' : 'text-gray-200 text-sm'}>
+                                                    {opt.label}
+                                                </span>
+                                                {filterEntityType === opt.value && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Filter: Status - Custom Dropdown */}
+                        <div className="relative">
+                            <div
+                                onClick={() => setShowStatusFilter(prev => !prev)}
+                                className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 focus:outline-none hover:border-blue-500 flex items-center gap-2 transition-colors"
+                            >
+                                {filterStatus ? (
+                                    <>
+                                        {statusConfig[filterStatus as StatusType].icon === '-' ? (
+                                            <span className="text-gray-500 font-bold text-sm">-</span>
+                                        ) : (
+                                            <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
+                                        )}
+                                        <span className="text-gray-200">{statusConfig[filterStatus as StatusType].fullLabel}</span>
+                                    </>
+                                ) : (
+                                    <span>ทุกสถานะ</span>
+                                )}
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                            </div>
+
+                            {showStatusFilter && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setShowStatusFilter(false)} />
+                                    <div className="absolute left-0 top-full mt-1 z-50 bg-gradient-to-r from-gray-800 to-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[220px] max-h-[350px] overflow-y-auto py-1
+                                             scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 whitespace-nowrap">
+                                        <button
+                                            onClick={() => { setFilterStatus(''); setShowStatusFilter(false); }}
+                                            className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                        >
+                                            <span className={!filterStatus ? 'text-blue-400 font-medium' : 'text-gray-200'}>ทุกสถานะ</span>
+                                            {!filterStatus && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                        </button>
+                                        {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => { setFilterStatus(key); setShowStatusFilter(false); }}
+                                                className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                                            >
+                                                {config.icon === '-' ? (
+                                                    <span className="text-gray-400 font-bold w-3 text-center">-</span>
+                                                ) : (
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
+                                                )}
+                                                <div className="text-gray-200 flex items-center gap-3">
+                                                    <span className="inline-block w-10 text-gray-400 text-sm">{config.label}</span>
+                                                    <span className="text-slate-50 text-sm">{config.fullLabel}</span>
+                                                </div>
+                                                {filterStatus === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <button onClick={() => setShowCreateMytask(true)} className="h-8 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap">
+                            Add Task
+                        </button>
+
+                        {/* Clear filters */}
+                        {(searchQuery || filterStatus || filterEntityType) && (
+                            <div
+                                onClick={() => { setSearchQuery(""); setFilterStatus(""); setFilterEntityType(""); }}
+                                className="h-9 px-3 bg-gray-800 hover:bg-red-500/30 border border-red-500 rounded-lg text-red-400 text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                                <X className="w-3.5 h-3.5" /> Clear
+                            </div>
+                        )}
+
+                        <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
+                            <span>แสดง</span>
+                            <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold">{displayTotal}</span>
+                            <span>/ {totalTasks} tasks</span>
+                        </div>
+                    </div>
+
+
+
                     <div className="flex-1 overflow-auto">
                         <table className="w-full border-collapse">
                             <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10 backdrop-blur-sm">
                                 <tr className="border-b-2 border-blue-500/30">
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-16">
-                                       <button onClick={() => setShowCreateMytask(true)} className="h-8 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap">
-                                            Add Task
-                                        </button>
+                                        #
                                     </th>
-                                 
+
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-2">
-                                            <span>งาน</span>
+                                            <span>Task</span>
                                             {/* <span className="text-blue-400">↑</span> */}
                                         </div>
                                         <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 normal-case">
@@ -1047,7 +1211,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                     </th>
 
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <div>สถานะ</div>
+                                        <div>Status</div>
 
                                     </th>
                                     <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -1111,7 +1275,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    taskGroups.map((group) => {
+                                    filteredGroups.map((group) => {
                                         const groupKey = `${group.entity_type}_${group.entity_id}`;
                                         const isExpanded = expandedGroups.has(groupKey);
 
@@ -1177,7 +1341,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                                             </div>
                                                         </td>
 
-                                                 
+
 
 
                                                         {/* task name */}
@@ -1217,7 +1381,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                                                     <>
                                                                         <span
                                                                             onClick={() => setSelectedTask(task)}
-                                                                            className="text-blue-400 hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer truncate max-w-[150px]"
+                                                                            className="text-blue-400 hover:text-blue-300 underline decoration-blue-400 hover:decoration-blue-300 underline-offset-3 transition-colors font-medium cursor-pointer truncate max-w-[150px]"
                                                                             title={task.task_name}
                                                                         >
                                                                             {task.task_name}
@@ -1413,7 +1577,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                                                             setSelectedPipelineStepId(task.pipeline_step?.id || null);
                                                                         }
                                                                     }}
-                                                                    className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 transition-all cursor-pointer"
+                                                                    className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 transition-all cursor-pointer whitespace-nowrap"
                                                                 >
                                                                     {task.pipeline_step ? (
                                                                         <>
@@ -2347,7 +2511,7 @@ const fetchTaskVersions = async (taskId: number) => {
                                 </div>
                             )}
 
-                         
+
 
                             {/* ⭐ ลบส่วน Pipeline Step ออกทั้งหมด */}
 

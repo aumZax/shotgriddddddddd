@@ -153,6 +153,10 @@ export default function Others_Version() {
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const [userMenuPos, setUserMenuPos] = useState<{ vertical: "top" | "bottom"; horizontal: "left" | "right" }>({ vertical: "bottom", horizontal: "left" });
 
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const [showEntityFilter, setShowEntityFilter] = useState(false);
+const [showStatusFilter, setShowStatusFilter] = useState(false);
+
     // -------------------- Fetch --------------------
     useEffect(() => {
         fetchVersions();
@@ -222,13 +226,13 @@ export default function Others_Version() {
                 ...g,
                 versions: g.versions.map(v => {
                     if (v.id !== versionId) return v;
-                   if (field === "uploaded_by") {
-    if (value === null) {
-        return { ...v, uploaded_by: null, uploaded_by_name: undefined };
-    }
-    const user = projectUsers.find(u => u.id === value);
-    return { ...v, uploaded_by: value, uploaded_by_name: user?.username || "Unknown" };
-}
+                    if (field === "uploaded_by") {
+                        if (value === null) {
+                            return { ...v, uploaded_by: null, uploaded_by_name: undefined };
+                        }
+                        const user = projectUsers.find(u => u.id === value);
+                        return { ...v, uploaded_by: value, uploaded_by_name: user?.username || "Unknown" };
+                    }
                     return { ...v, [field]: value };
                 })
             })));
@@ -338,71 +342,132 @@ export default function Others_Version() {
             <Navbar_Project activeTab="Versions" />
 
             <main className="pt-12 h-[calc(100vh-3.5rem)] flex flex-col bg-gray-900 overflow-hidden">
+
+
                 {/* ---- Toolbar ---- */}
-                <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
-                    {/* Search */}
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                        <input
-                            type="text"
-                            placeholder="ค้นหา version, task, entity..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 h-9 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                        />
-                        {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
-                            </button>
-                        )}
-                    </div>
+                {/* ---- Toolbar ---- */}
+<div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800">
+    {/* Search */}
+    <div className="relative flex-1 max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input
+            type="text"
+            placeholder="ค้นหา version, task, entity..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 h-9 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+        />
+        {searchQuery && (
+            <div onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+            </div>
+        )}
+    </div>
 
-                    {/* Filter: Entity Type */}
-                    <div className="relative">
-                        <select
-                            value={filterEntityType}
-                            onChange={e => setFilterEntityType(e.target.value)}
-                            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-                        >
-                            <option value="">ทุก Entity</option>
-                            <option value="shot">Shot</option>
-                            <option value="asset">Asset</option>
-                            <option value="sequence">Sequence</option>
-                        </select>
-                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    </div>
+    {/* Filter: Entity Type - Custom Dropdown */}
+    <div className="relative">
+        <div
+            onClick={() => setShowEntityFilter(prev => !prev)}
+            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
+        >
+            {filterEntityType ? (
+                <span className="text-blue-400 font-medium capitalize">{filterEntityType}</span>
+            ) : (
+                <span>ทุก Entity</span>
+            )}
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+        </div>
 
-                    {/* Filter: Status */}
-                    <div className="relative">
-                        <select
-                            value={filterStatus}
-                            onChange={e => setFilterStatus(e.target.value)}
-                            className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-                        >
-                            <option value="">ทุกสถานะ</option>
-                            {Object.entries(statusConfig).map(([k, v]) => (
-                                <option key={k} value={k}>{v.fullLabel}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    </div>
-
-                    {/* Clear filters */}
-                    {(searchQuery || filterStatus || filterEntityType) && (
+        {showEntityFilter && (
+            <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowEntityFilter(false)} />
+                <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[140px] py-1">
+                    {[
+                        { value: '', label: 'ทุก Entity' },
+                        { value: 'shot', label: 'Shot' },
+                        { value: 'asset', label: 'Asset' },
+                        { value: 'sequence', label: 'Sequence' },
+                    ].map(opt => (
                         <button
-                            onClick={() => { setSearchQuery(""); setFilterStatus(""); setFilterEntityType(""); }}
-                            className="h-9 px-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-1.5 transition-colors"
+                            key={opt.value}
+                            onClick={() => { setFilterEntityType(opt.value); setShowEntityFilter(false); }}
+                            className="flex items-center gap-3 w-full px-3 py-2 text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
                         >
-                            <X className="w-3.5 h-3.5" /> Clear
+                            <span className={filterEntityType === opt.value ? 'text-blue-400 text-sm' : 'text-gray-200 text-sm'}>
+                                {opt.label}
+                            </span>
+                            {filterEntityType === opt.value && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
                         </button>
-                    )}
-
-                    <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
-                        <span>แสดง</span>
-                        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold">{displayTotal}</span>
-                        <span>/ {totalVersions} versions</span>
-                    </div>
+                    ))}
                 </div>
+            </>
+        )}
+    </div>
+
+    {/* Filter: Status - Custom Dropdown */}
+<div className="relative">
+    <div
+        onClick={() => setShowStatusFilter(prev => !prev)}
+        className="h-9 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 flex items-center gap-2 transition-colors cursor-pointer"
+    >
+        {filterStatus ? (
+            <>
+                <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[filterStatus as StatusType].color}`} />
+                <span className="text-gray-200">{statusConfig[filterStatus as StatusType].fullLabel}</span>
+            </>
+        ) : (
+            <span>ทุกสถานะ</span>
+        )}
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+    </div>
+
+    {showStatusFilter && (
+        <>
+            <div className="fixed inset-0 z-10" onClick={() => setShowStatusFilter(false)} />
+            <div className="absolute left-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[220px] max-h-[350px] overflow-y-auto py-1
+                     scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 whitespace-nowrap">
+                <button
+                    onClick={() => { setFilterStatus(''); setShowStatusFilter(false); }}
+                    className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                >
+                    <span className={!filterStatus ? 'text-blue-400 font-medium' : 'text-gray-200'}>ทุกสถานะ</span>
+                    {!filterStatus && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                </button>
+                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string }][]).map(([key, config]) => (
+                    <button
+                        key={key}
+                        onClick={() => { setFilterStatus(key); setShowStatusFilter(false); }}
+                        className="flex items-center gap-3 w-full px-3 py-2 text-left text-sm transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-500"
+                    >
+                        <div className={`w-2.5 h-2.5 rounded-full ${config.color} flex-shrink-0`} />
+                        <div className="text-gray-200 flex items-center gap-3">
+                            <span className="inline-block w-10 text-gray-400 text-sm">{config.label}</span>
+                            <span className="text-slate-50 text-sm">{config.fullLabel}</span>
+                        </div>
+                        {filterStatus === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                    </button>
+                ))}
+            </div>
+        </>
+    )}
+</div>
+
+    {/* Clear filters */}
+    {(searchQuery || filterStatus || filterEntityType) && (
+        <div
+            onClick={() => { setSearchQuery(""); setFilterStatus(""); setFilterEntityType(""); }}
+            className="h-9 px-3 bg-gray-800 hover:bg-red-500/30 border border-red-500 rounded-lg text-red-400 text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+            <X className="w-3.5 h-3.5" /> Clear
+        </div>
+    )}
+
+    <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
+        <span>แสดง</span>
+        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold">{displayTotal}</span>
+        <span>/ {totalVersions} versions</span>
+    </div>
+</div>
 
                 {/* ---- Table ---- */}
                 <div className="flex-1 overflow-auto">
@@ -708,7 +773,7 @@ export default function Others_Version() {
                                                         {/* Uploaded By — dropdown เลือก user */}
                                                         <td className="px-2 py-4">
                                                             <div className="relative">
-<div className="flex items-center gap-5 group/uploader-container">
+                                                                <div className="flex items-center gap-5 group/uploader-container">
 
                                                                     <button
                                                                         onClick={(e) => {
@@ -806,7 +871,7 @@ export default function Others_Version() {
                                                                             {/* User List */}
                                                                             <div className="max-h-56 overflow-y-auto p-1.5">
 
-                                                                               
+
                                                                                 {/* รายชื่อ Users */}
                                                                                 {projectUsers
                                                                                     .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
@@ -966,9 +1031,10 @@ export default function Others_Version() {
                             });
                             setContextMenu(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm hover:bg-gray-700 rounded-b-lg"
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm rounded-lg transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                     >
-                        <Trash2 className="w-4 h-4" /> Delete Version
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                        Delete Version
                     </button>
                 </div>,
                 document.body
