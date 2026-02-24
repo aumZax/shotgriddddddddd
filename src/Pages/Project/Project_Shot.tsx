@@ -122,6 +122,7 @@ export default function ProjectShot() {
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const [showSequenceDropdown, setShowSequenceDropdown] = useState(false);
     const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
+    const [searchText, setSearchText] = useState("");
 
     // States สำหรับ Assets Management
     const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
@@ -176,6 +177,17 @@ export default function ProjectShot() {
             return null;
         }
     };
+
+    const filteredShotData = shotData.map(category => ({
+        ...category,
+        shots: category.shots.filter(shot => {
+            if (!searchText.trim()) return true;
+            const keyword = searchText.toLowerCase();
+            return shot.shot_name?.toLowerCase().includes(keyword); // ⭐ เหลือแค่ shot_name
+        })
+    })).filter(category => category.shots.length > 0);
+
+
     // 1. ดึงข้อมูล Assets ทั้งหมด
     const fetchAllProjectAssets = async () => {
         try {
@@ -907,7 +919,10 @@ export default function ProjectShot() {
                             <input
                                 type="text"
                                 placeholder="Search Shot..."
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
                                 className="w-40 md:w-56 lg:w-64 h-8 pl-3 pr-10 bg-gray-800/50 border border-gray-600/50 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500/80 focus:bg-gray-800/80 focus:shadow-lg focus:shadow-blue-500/20 transition-all duration-200"
+
                             />
                         </div>
                     </div>
@@ -971,315 +986,298 @@ export default function ProjectShot() {
 
                         {/* Table Body - Grouped by Category */}
                         <div className="space-y-4">
-                            {shotData.map((category, categoryIndex) => (
-                                <div key={category.category} className="space-y-1">
-                                    {/* Category Header */}
-                                    <button
-                                        onClick={() => toggleCategory(category.category)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
-                                    >
-                                        {expandedCategories.includes(category.category) ? (
-                                            <ChevronDown className="w-4 h-4 text-gray-400" />
-                                        ) : (
-                                            <ChevronRight className="w-4 h-4 text-gray-400" />
-                                        )}
-                                        <span className="text-sm font-medium text-gray-200">{category.category}</span>
-                                        <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
-                                            {category.count}
-                                        </span>
-                                    </button>
+                            {filteredShotData.map((category) => {
+                                // ⭐ หา index จริงจาก shotData เดิม
+                                const categoryIndex = shotData.findIndex(c => c.category === category.category);
 
-                                    {/* Category Shots */}
-                                    {expandedCategories.includes(category.category) && (
-                                        <div className="space-y-1">
-                                            {category.shots.map((shot, shotIndex) => (
-                                                <div
-                                                    key={`${category.category}-${shot.id}-${shotIndex}`}
-                                                    onContextMenu={(e) => handleContextMenu(e, shot)}
-                                                    onClick={() => {
-                                                        // ส่งข้อมูลให้ครบถ้วนรวมถึง sequence และ assets
-                                                        localStorage.setItem(
-                                                            "selectedShot",
-                                                            JSON.stringify({
-                                                                id: shot.id,
-                                                                shot_name: shot.shot_name,
-                                                                description: shot.description,
-                                                                status: shot.status,
-                                                                thumbnail: shot.thumbnail || "",
-                                                                sequence: category.category,
-                                                                // ⭐ เพิ่มข้อมูล sequence และ assets
-                                                                sequenceDetail: shot.sequence || null,
-                                                                assets: shot.assets || []
-                                                            })
-                                                        );
+                                return (
+                                    <div key={category.category} className="space-y-1">
+                                        {/* Category Header */}
+                                        <button
+                                            onClick={() => toggleCategory(category.category)}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 rounded-lg transition-all duration-200 border border-gray-700/50"
+                                        >
+                                            {expandedCategories.includes(category.category) ? (
+                                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                                            ) : (
+                                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                                            )}
+                                            <span className="text-sm font-medium text-gray-200">{category.category}</span>
+                                            <span className="text-xs text-blue-400 font-semibold px-2 py-0.5 bg-blue-500/10 rounded-full">
+                                                {category.count}
+                                            </span>
+                                        </button>
 
-                                                        // Navigate ไปหน้าใหม่
-                                                        navigate("/Project_Shot/Others_Shot");
+                                        {/* Category Shots */}
+                                        {expandedCategories.includes(category.category) && (
+                                            <div className="space-y-1">
+                                                {category.shots.map((shot) => {
+                                                    // ⭐ หา shotIndex จริงจาก shotData เดิม
+                                                    const shotIndex = shotData[categoryIndex].shots.findIndex(s => s.id === shot.id);
 
-                                                        // อัพเดท state
-                                                        setSelectedShot({ categoryIndex, shotIndex });
-                                                    }}
-                                                    className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
-                                                        ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
-                                                        : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-6 px-4 py-2.5">
-                                                        {/* Thumbnail */}
-                                                        <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
-                                                            <div
-                                                                className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm"
-                                                            >
-                                                                {shot.thumbnail ? (
-                                                                    shot.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                                                        <video
-                                                                            src={ENDPOINTS.image_url + shot.thumbnail}
-                                                                            className="w-full h-full object-cover"
-                                                                            muted
-                                                                            loop
-                                                                            autoPlay
+                                                    return (
+                                                        <div
+                                                            key={`${category.category}-${shot.id}-${shotIndex}`}
+                                                            onContextMenu={(e) => handleContextMenu(e, shot)}
+                                                            onClick={() => {
+                                                                localStorage.setItem(
+                                                                    "selectedShot",
+                                                                    JSON.stringify({
+                                                                        id: shot.id,
+                                                                        shot_name: shot.shot_name,
+                                                                        description: shot.description,
+                                                                        status: shot.status,
+                                                                        thumbnail: shot.thumbnail || "",
+                                                                        sequence: category.category,
+                                                                        sequenceDetail: shot.sequence || null,
+                                                                        assets: shot.assets || []
+                                                                    })
+                                                                );
+                                                                navigate("/Project_Shot/Others_Shot");
+                                                                setSelectedShot({ categoryIndex, shotIndex });
+                                                            }}
+                                                            className={`group cursor-pointer rounded-md transition-all duration-150 border ${isSelected(categoryIndex, shotIndex)
+                                                                ? 'bg-blue-900/30 border-l-4 border-blue-500 border-r border-t border-b border-blue-500/30'
+                                                                : 'bg-gray-800/40 hover:bg-gray-800/70 border-l-4 border-transparent border-r border-t border-b border-gray-700/30'
+                                                                }`}
+                                                        >
+                                                            <div className="flex items-center gap-6 px-4 py-2.5">
+                                                                {/* Thumbnail */}
+                                                                <div className="w-28 flex-shrink-0 border-r border-gray-700/50 pr-4">
+                                                                    <div className="relative w-full h-16 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden shadow-sm">
+                                                                        {shot.thumbnail ? (
+                                                                            shot.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                                                                <video
+                                                                                    src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                                    className="w-full h-full object-cover"
+                                                                                    muted
+                                                                                    loop
+                                                                                    autoPlay
+                                                                                />
+                                                                            ) : (
+                                                                                <img
+                                                                                    src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                                    alt={shot.shot_name}
+                                                                                    className="w-full h-full object-cover"
+                                                                                />
+                                                                            )
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
+                                                                                <Image className="w-4 h-4 text-gray-500" />
+                                                                                <p className="text-gray-500 text-[9px]">No Image</p>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                            <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                                <Eye className="w-3.5 h-3.5 text-white" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
+                                                                {/* Shot Name */}
+                                                                <div
+                                                                    onClick={(e) => handleFieldClick('shot_name', categoryIndex, shotIndex, e)}
+                                                                    className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4"
+                                                                >
+                                                                    {editingField?.categoryIndex === categoryIndex &&
+                                                                        editingField?.shotIndex === shotIndex &&
+                                                                        editingField?.field === 'shot_name' ? (
+                                                                        <input
+                                                                            type="text"
+                                                                            value={shot.shot_name}
+                                                                            onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'shot_name', e.target.value)}
+                                                                            onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'shot_name')}
+                                                                            onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'shot_name')}
+                                                                            autoFocus
+                                                                            className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
+                                                                            onClick={(e) => e.stopPropagation()}
                                                                         />
-
                                                                     ) : (
-                                                                        <img
-                                                                            src={ENDPOINTS.image_url + shot.thumbnail}
-                                                                            alt={shot.shot_name}
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    )
-                                                                ) : (
-                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
-                                                                        <Image className="w-4 h-4 text-gray-500" />
-                                                                        <p className="text-gray-500 text-[9px]">No Image</p>
-                                                                    </div>
-                                                                )}
+                                                                        <h3 className="text-sm font-medium text-gray-100 truncate px-2.5 py-1 border border-gray-500/20 hover:bg-gray-700 rounded-md">
+                                                                            {shot.shot_name}
+                                                                        </h3>
+                                                                    )}
+                                                                </div>
 
-                                                                {/* Hover Overlay */}
-                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
-                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                        <Eye className="w-3.5 h-3.5 text-white" />
-                                                                    </div>
+                                                                {/* Sequence */}
+                                                                <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
+                                                                    {shot.sequence ? (
+                                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md">
+                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
+                                                                                {shot.sequence.sequence_name}
+                                                                            </span>
+                                                                            {shot.sequence.status === 'fin' && (
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                            )}
+                                                                            {shot.sequence.status === 'ip' && (
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-gray-500 text-xs italic">-</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Status */}
+                                                                <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
+                                                                    <button
+                                                                        onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
+                                                                        className="flex w-full items-center gap-2 px-3 py-1.5 transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-xl"
+                                                                    >
+                                                                        {statusConfig[shot.status as StatusType].icon === '-' ? (
+                                                                            <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
+                                                                        ) : (
+                                                                            <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[shot.status as StatusType].color} shadow-sm`}></div>
+                                                                        )}
+                                                                        <span className="text-xs text-gray-300 font-medium truncate">
+                                                                            {statusConfig[shot.status as StatusType].label}
+                                                                        </span>
+                                                                    </button>
+
+                                                                    {/* Status Dropdown */}
+                                                                    {showStatusMenu?.categoryIndex === categoryIndex &&
+                                                                        showStatusMenu?.shotIndex === shotIndex && (
+                                                                            <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[200px] 
+                                                    max-h-[350px] overflow-y-auto
+                                                    border border-gray-600 whitespace-nowrap
+                                                    scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500`}>
+                                                                                {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
+                                                                                    <button
+                                                                                        key={key}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleStatusChange(categoryIndex, shotIndex, key);
+                                                                                        }}
+                                                                                        className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
+                                                                                    >
+                                                                                        {config.icon === '-' ? (
+                                                                                            <span className="text-gray-400 font-bold w-2 text-center">-</span>
+                                                                                        ) : (
+                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
+                                                                                        )}
+                                                                                        <div className="text-xs text-gray-200 flex items-center gap-5">
+                                                                                            <span className="inline-block w-8">{config.label}</span>
+                                                                                            <span>{config.fullLabel}</span>
+                                                                                        </div>
+                                                                                        {shot.status === key && (
+                                                                                            <Check className="w-4 h-4 text-blue-400 ml-auto" />
+                                                                                        )}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                </div>
+
+                                                                {/* Description */}
+                                                                <div
+                                                                    onClick={(e) => handleFieldClick('description', categoryIndex, shotIndex, e)}
+                                                                    className="flex-1 min-w-0 px-2 py-1 cursor-text pr-4 border-r border-gray-700/50"
+                                                                >
+                                                                    {editingField?.categoryIndex === categoryIndex &&
+                                                                        editingField?.shotIndex === shotIndex &&
+                                                                        editingField?.field === 'description' ? (
+                                                                        <textarea
+                                                                            value={shot.description}
+                                                                            onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'description', e.target.value)}
+                                                                            onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'description')}
+                                                                            onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'description')}
+                                                                            autoFocus
+                                                                            rows={1}
+                                                                            className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        />
+                                                                    ) : (
+                                                                        <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed p-1 border border-gray-500/20 rounded hover:bg-gray-700" title={shot.description}>
+                                                                            {shot.description || '\u00A0'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Assets */}
+                                                                <div className="flex-1 min-w-0 px-2 py-1">
+                                                                    {(() => {
+                                                                        const currentAssets = allShotAssets[shot.id] || shot.assets || [];
+                                                                        return currentAssets.length > 0 ? (
+                                                                            <div className="flex items-center gap-2">
+                                                                                {currentAssets.length <= 2 ? (
+                                                                                    <div className="flex-1 flex items-center gap-1.5">
+                                                                                        {currentAssets.map((asset) => (
+                                                                                            <div
+                                                                                                key={asset.id}
+                                                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                                                                title={asset.description || asset.asset_name}
+                                                                                            >
+                                                                                                <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+                                                                                                    {asset.asset_name}
+                                                                                                </span>
+                                                                                                {asset.status === 'fin' && (
+                                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                                )}
+                                                                                                {asset.status === 'ip' && (
+                                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
+                                                                                            <Box className="w-3.5 h-3.5 text-blue-400" />
+                                                                                            <span className="text-xs font-semibold text-blue-300">
+                                                                                                {currentAssets.length}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                                                                                            {currentAssets.slice(0, 2).map((asset) => (
+                                                                                                <div
+                                                                                                    key={asset.id}
+                                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
+                                                                                                    title={asset.description || asset.asset_name}
+                                                                                                >
+                                                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                                                        {asset.asset_name}
+                                                                                                    </span>
+                                                                                                    {asset.status === 'fin' && (
+                                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+                                                                                                    )}
+                                                                                                    {asset.status === 'ip' && (
+                                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                            <span className="text-gray-500 text-xs">...</span>
+                                                                                        </div>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setExpandedShotId(shot.id);
+                                                                                    fetchShotDetail(shot.id);
+                                                                                    setShowExpandedPanel(true);
+                                                                                }}
+                                                                                className="bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
+                                                                                title="Add assets"
+                                                                            >
+                                                                                <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
+                                                                                    No assets - Click to Add
+                                                                                </span>
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </div>
-
-
-
-                                                        {/* Shot Name */}
-                                                        <div
-                                                            onClick={(e) => handleFieldClick('shot_name', categoryIndex, shotIndex, e)}
-                                                            className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4"
-                                                        >
-                                                            {editingField?.categoryIndex === categoryIndex &&
-                                                                editingField?.shotIndex === shotIndex &&
-                                                                editingField?.field === 'shot_name' ? (
-                                                                <input
-                                                                    type="text"
-                                                                    value={shot.shot_name}
-                                                                    onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'shot_name', e.target.value)}
-                                                                    onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'shot_name')}
-                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'shot_name')}
-                                                                    autoFocus
-                                                                    className="w-full text-sm font-medium text-gray-100 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                />
-                                                            ) : (
-                                                                <h3 className="text-sm font-medium text-gray-100 truncate
-                                                                    px-2.5 py-1
-                                                                    border border-gray-500/20
-                                                                    hover:bg-gray-700
-                                                                    rounded-md">
-                                                                    {shot.shot_name}
-                                                                </h3>
-
-                                                            )}
-                                                        </div>
-                                                        {/* Sequence */}
-                                                        <div className="w-48 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4">
-                                                            {shot.sequence ? (
-                                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md">
-                                                                    <span className="text-xs text-gray-300 font-medium whitespace-nowrap truncate max-w-[120px]" title={shot.sequence.sequence_name}>
-                                                                        {shot.sequence.sequence_name}
-                                                                    </span>
-                                                                    {shot.sequence.status === 'fin' && (
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                    )}
-                                                                    {shot.sequence.status === 'ip' && (
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-gray-500 text-xs italic">-</span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Status */}
-                                                        <div className="w-28 flex-shrink-0 relative border-r border-gray-700/50 pr-4">
-                                                            <button
-                                                                onClick={(e) => handleFieldClick('status', categoryIndex, shotIndex, e)}
-                                                                className="flex w-full items-center gap-2 px-3 py-1.5 transition-colors  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-xl"
-                                                            >
-                                                                {statusConfig[shot.status as StatusType].icon === '-' ? (
-                                                                    <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
-                                                                ) : (
-                                                                    <div className={`w-2.5 h-2.5 rounded-full ${statusConfig[shot.status as StatusType].color} shadow-sm`}></div>
-                                                                )}
-                                                                <span className="text-xs text-gray-300 font-medium truncate">
-                                                                    {statusConfig[shot.status as StatusType].label}
-                                                                </span>
-                                                            </button>
-
-                                                            {/* Status Dropdown */}
-                                                            {showStatusMenu?.categoryIndex === categoryIndex &&
-                                                                showStatusMenu?.shotIndex === shotIndex && (
-                                                                    <div className={`absolute left-0 ${statusMenuPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-gray-800 rounded-lg shadow-2xl z-50 min-w-[200px] 
-                                                                                max-h-[350px] overflow-y-auto
-                                                                                border border-gray-600 whitespace-nowrap
-                                                                                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500`}>
-                                                                        {(Object.entries(statusConfig) as [StatusType, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, config]) => (
-                                                                            <button
-                                                                                key={key}
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleStatusChange(categoryIndex, shotIndex, key);
-                                                                                }}
-                                                                                className="flex items-center gap-5 w-full px-3 py-2 first:rounded-t-lg last:rounded-b-lg text-left transition-colors  bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500"
-                                                                            >
-                                                                                {config.icon === '-' ? (
-                                                                                    <span className="text-gray-400 font-bold w-2 text-center">-</span>
-                                                                                ) : (
-                                                                                    <div className={`w-2.5 h-2.5 rounded-full ${config.color}`}></div>
-                                                                                )}
-                                                                                <div className="text-xs text-gray-200 flex items-center gap-5">
-                                                                                    <span className="inline-block w-8">
-                                                                                        {config.label}
-                                                                                    </span>
-                                                                                    <span>{config.fullLabel}</span>
-                                                                                </div>
-                                                                                {shot.status === key && ( // ✅ แสดง checkmark
-                                                                                    <Check className="w-4 h-4 text-blue-400 ml-auto" />
-                                                                                )}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                        </div>
-
-                                                        {/* Description */}
-                                                        <div
-                                                            onClick={(e) => handleFieldClick('description', categoryIndex, shotIndex, e)}
-                                                            className="flex-1 min-w-0 px-2 py-1 cursor-text pr-4 border-r border-gray-700/50"
-                                                        >
-                                                            {editingField?.categoryIndex === categoryIndex &&
-                                                                editingField?.shotIndex === shotIndex &&
-                                                                editingField?.field === 'description' ? (
-                                                                <textarea
-                                                                    value={shot.description}
-                                                                    onChange={(e) => handleFieldChange(categoryIndex, shotIndex, 'description', e.target.value)}
-                                                                    onBlur={() => handleFieldBlur(categoryIndex, shotIndex, 'description')}
-                                                                    onKeyDown={(e) => handleKeyDown(e, categoryIndex, shotIndex, 'description')}
-                                                                    autoFocus
-                                                                    rows={1}
-                                                                    className="w-full text-xs text-gray-200 bg-gray-600 border border-blue-500 rounded px-2 py-1 outline-none resize-none"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                />
-                                                            ) : (
-                                                                <p className="text-xs text-gray-400 line-clamp-1 leading-relaxed p-1 border border-gray-500/20 rounded hover:bg-gray-700" title={shot.description}>
-                                                                    {shot.description || '\u00A0'}
-                                                                </p>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Assets */}
-                                                        {/* Assets Column */}
-                                                        <div className="flex-1 min-w-0 px-2 py-1">
-                                                            {(() => {
-                                                                // ⭐ ใช้ allShotAssets ถ้ามี ไม่งั้นใช้ shot.assets
-                                                                const currentAssets = allShotAssets[shot.id] || shot.assets || [];
-
-                                                                return currentAssets.length > 0 ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        {currentAssets.length <= 2 ? (
-                                                                            <div className="flex-1 flex items-center gap-1.5">
-                                                                                {currentAssets.map((asset) => (
-                                                                                    <div
-                                                                                        key={asset.id}
-                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
-                                                                                        title={asset.description || asset.asset_name}
-                                                                                    >
-                                                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
-                                                                                            {asset.asset_name}
-                                                                                        </span>
-                                                                                        {asset.status === 'fin' && (
-                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                                        )}
-                                                                                        {asset.status === 'ip' && (
-                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <>
-                                                                                <div className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-md">
-
-                                                                                    <Box className="w-3.5 h-3.5 text-blue-400" />
-                                                                                    <span className="text-xs font-semibold text-blue-300">
-                                                                                        {currentAssets.length}
-                                                                                    </span>
-                                                                                </div>
-
-                                                                                <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-                                                                                    {currentAssets.slice(0, 2).map((asset) => (
-                                                                                        <div
-                                                                                            key={asset.id}
-                                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30 flex-shrink-0"
-                                                                                            title={asset.description || asset.asset_name}
-                                                                                        >
-                                                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
-                                                                                                {asset.asset_name}
-                                                                                            </span>
-                                                                                            {asset.status === 'fin' && (
-                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-                                                                                            )}
-                                                                                            {asset.status === 'ip' && (
-                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    ))}
-                                                                                    <span className="text-gray-500 text-xs">...</span>
-                                                                                </div>
-
-
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setExpandedShotId(shot.id);
-                                                                            fetchShotDetail(shot.id);
-                                                                            setShowExpandedPanel(true);
-                                                                        }}
-                                                                        className=" bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-md transition-all group flex items-center gap-1 px-2 py-1"
-                                                                        title="Add assets"
-                                                                    >
-                                                                        <span className="text-xs text-gray-400/70 group-hover:text-gray-400 font-medium transition-colors">
-                                                                            No assets - Click to Add
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

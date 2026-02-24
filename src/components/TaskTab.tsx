@@ -259,7 +259,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick }: TasksTabProps) => {
         const due = new Date(dueDate);
         const diffTime = due.getTime() - start.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+        return diffDays + 1;
     };
 
     const getCurrentUser = () => {
