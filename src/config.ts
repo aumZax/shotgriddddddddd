@@ -149,7 +149,6 @@ const ENDPOINTS = {
   VIDEO_COMMENTS_CREATE: `${BASE_URL}/video-comments`,
   VIDEO_COMMENTS_LIST: `${BASE_URL}/video-comments/list`,
   VIDEO_COMMENTS_UPDATE: `${BASE_URL}/video-comments/update`,
-  VIDEO_COMMENTS_DELETE: `${BASE_URL}/video-comments/delete`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

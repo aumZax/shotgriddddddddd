@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer, UserRound, ChevronDown, Search, X, Users, Check } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -96,6 +96,10 @@ export default function VideoReviewSystem() {
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
     const [editingText, setEditingText] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // ── เพิ่ม state ใหม่ 2 ตัว (วางใต้ selectedAuthor state เดิม) ──
+    const [userSearchOpen, setUserSearchOpen] = useState(false);
+    const [userSearchQuery, setUserSearchQuery] = useState('');
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -777,7 +781,7 @@ export default function VideoReviewSystem() {
                                                         <button
                                                             onClick={() => updateComment(comment.id)}
                                                             disabled={isUpdating}  // ← เพิ่ม
-                                                            className="px-2.5 py-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg text-xs text-white font-medium disabled:opacity-50 flex items-center gap-1.5"
+                                                            className="px-2.5 py-1 bg-gradient-to-r from-blue-400 to-cyan-400 hover:from-blue-300 hover:to-cyan-300 rounded-lg text-xs text-white font-medium disabled:opacity-50 flex items-center gap-1.5"
                                                         >
                                                             {isUpdating ? (
                                                                 <>
@@ -791,7 +795,7 @@ export default function VideoReviewSystem() {
                                                         <button
                                                             onClick={() => setEditingCommentId(null)}
                                                             disabled={isUpdating}  // ← เพิ่ม
-                                                            className="px-2.5 py-1 bg-white/[0.06] rounded-lg text-xs text-gray-400 hover:text-white disabled:opacity-50"
+                                                            className="px-2.5 py-1  bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 rounded-lg text-xs text-slate-50 hover:text-white disabled:opacity-50"
                                                         >
                                                             Cancel
                                                         </button>
@@ -819,11 +823,11 @@ export default function VideoReviewSystem() {
                                     </div>
 
                                     {/* ── Comment Input ── */}
-                                    <div className="border-t border-white/[0.05] p-3 flex-shrink-0 bg-[#0a0c10]">
+                                    <div className="border-t border-white/[0.20] p-3 flex-shrink-0 bg-[#0a0c10]">
 
                                         {/* Version Info Banner */}
                                         {videoData.versionUploadedBy && (
-                                            <div className="mb-2 px-2.5 py-2 bg-white/[0.03] border border-white/[0.07] rounded-xl">
+                                            <div className="mb-2 px-2.5 py-2 bg-white/[0.03] border border-white/[0.5] rounded-xl">
                                                 <div className="flex items-start gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">
                                                         {videoData.versionUploadedBy[0].toUpperCase()}
@@ -846,26 +850,91 @@ export default function VideoReviewSystem() {
                                         )}
 
                                         {/* ── User Selector ── */}
-                                        <div className="mb-2">
-                                            <select
-                                                value={selectedAuthor?.id ?? ''}
-                                                onChange={e => {
-                                                    const user = users.find(u => u.id === Number(e.target.value));
-                                                    setSelectedAuthor(user || null);
-                                                }}
-                                                className="w-full bg-white/[0.04] border border-white/[0.07] rounded-lg px-2.5 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-cyan-400/50"
+                                        {/* ── User Selector (แทนของเดิมทั้งหมด) ── */}
+                                        <div className="mb-2 relative">
+                                            {/* Trigger button */}
+                                            <div
+                                                onClick={() => { setUserSearchOpen(o => !o); setUserSearchQuery(''); }}
+                                                className="w-full flex items-center gap-2 bg-white/[0.04] border border-white/[0.5] hover:border-white/[0.5] rounded-lg px-2.5 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-cyan-400/50 transition-colors"
                                             >
-                                                <option value="">— Select your name —</option>
-                                                {users.map(u => (
-                                                    <option key={u.id} value={u.id}>{u.username}</option>
-                                                ))}
-                                            </select>
+                                                {selectedAuthor ? (
+                                                    <>
+                                                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                                                            {selectedAuthor.username[0].toUpperCase()}
+                                                        </span>
+                                                        <span className="flex-1 text-left text-white font-medium truncate">{selectedAuthor.username}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="w-5 h-5 rounded-full bg-white border border-white/[0.5] flex items-center justify-center flex-shrink-0">
+                                                                <UserRound className="w-3 h-3 text-gray-600" />
+                                                        </span>
+                                                        <span className="flex-1 text-left text-gray-200">Select your name…</span>
+                                                    </>
+                                                )}
+                                                <ChevronDown className={`w-3 h-3 text-gray-200 flex-shrink-0 transition-transform duration-150 ${userSearchOpen ? 'rotate-180' : ''}`}/>
+                                            </div>
+
+                                            {/* Dropdown */}
+                                            {userSearchOpen && (
+                                                <div className="absolute bottom-full mb-1 left-0 right-0 z-50 bg-[#2d2d30] border border-white/[0.5] rounded-xl shadow-2xl shadow-black/60 overflow-hidden">
+                                                    {/* Search */}
+                                                    <div className="p-2 border-b border-white/[0.5]">
+                                                        <div className="flex items-center gap-1.5 bg-white/[0.5] rounded-lg px-2.5 py-1.5">
+                                                            <Search className="w-3 h-3 text-gray-600 flex-shrink-0" />
+                                                            <input
+                                                                autoFocus
+                                                                type="text"
+                                                                value={userSearchQuery}
+                                                                onChange={e => setUserSearchQuery(e.target.value)}
+                                                                placeholder="Search name…"
+                                                                className="flex-1 bg-transparent text-xs text-white placeholder-gray-600 focus:outline-none"
+                                                            />
+                                                            {userSearchQuery && (
+                                                                <button onClick={() => setUserSearchQuery('')} className="text-gray-600 hover:text-gray-200">
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* List */}
+                                                    <div className="max-h-44 overflow-y-auto overscroll-contain">
+                                                        {(() => {
+                                                            const filtered = users.filter(u =>
+                                                                u.username.toLowerCase().includes(userSearchQuery.toLowerCase())
+                                                            );
+                                                            if (filtered.length === 0) return (
+                                                                <div className="flex flex-col items-center justify-center py-5 text-gray-600">
+                                                                    <Users className="w-5 h-5 mb-1.5 opacity-40" />
+                                                                    <span className="text-[11px]">No user found</span>
+                                                                </div>
+                                                            );
+                                                            return filtered.map(u => (
+                                                                <div
+                                                                    key={u.id}
+                                                                    onClick={() => { setSelectedAuthor(u); setUserSearchOpen(false); setUserSearchQuery(''); }}
+                                                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors text-left ${selectedAuthor?.id === u.id ? 'bg-cyan-400/10 text-cyan-300' : 'text-gray-300 hover:bg-white/[0.10] hover:text-white'}`}
+                                                                >
+                                                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${selectedAuthor?.id === u.id ? 'bg-gradient-to-br from-blue-400 to-cyan-400 text-white' : 'bg-white/[0.08] text-gray-400'}`}>
+                                                                        {u.username[0].toUpperCase()}
+                                                                    </span>
+                                                                    <span className="flex-1 truncate">{u.username}</span>
+                                                                    {selectedAuthor?.id === u.id && (
+                                                                        <Check className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                                                                    )}
+                                                                </div>
+                                                            ));
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* ── Input Row ── */}
                                         <div className="flex gap-2 items-end">
-                                            <div className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
-                                                <div className="text-[10px] text-gray-600 mb-1 font-mono">
+                                            <div className="flex-1 bg-white/[0.04] border border-white/[0.5] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
+                                                <div className="text-[10px] text-gray-200 mb-1 font-mono">
                                                     {(() => {
                                                         const unposted = drawings.filter(d => !postedDrawingIds.includes(d.id));
                                                         const times = [...new Set(unposted.map(d => formatTime(d.timestamp)))];
@@ -879,7 +948,7 @@ export default function VideoReviewSystem() {
                                                     onKeyPress={e => e.key === 'Enter' && !isPosting && addComment()}
                                                     placeholder={selectedAuthor ? 'Leave feedback…' : 'Select your name first…'}
                                                     disabled={!selectedAuthor}
-                                                    className="w-full bg-transparent text-xs text-white placeholder-gray-600 focus:outline-none disabled:opacity-40"
+                                                    className="w-full bg-transparent text-xs text-white placeholder-gray-200 focus:outline-none disabled:opacity-40"
                                                 />
                                             </div>
                                             <button
