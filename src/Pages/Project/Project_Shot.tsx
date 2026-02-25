@@ -754,7 +754,30 @@ export default function ProjectShot() {
                 description: description.trim(),
             };
 
-            await axios.post(ENDPOINTS.CREATESHOT, payload);
+            const { data } = await axios.post(ENDPOINTS.CREATESHOT, payload);
+
+            if (taskTemplate && taskTemplate.trim() !== '') {
+
+                let typeNum: number | null = null;
+
+                if (taskTemplate === "Animation - Shot") typeNum = 0;
+                else if (taskTemplate === "Film VFX - Comp Only Shot") typeNum = 1;
+                else if (taskTemplate === "Film VFX - Full CG Shot w/ Character") typeNum = 2;
+                else if (taskTemplate === "Film VFX - Full CG Shot w/o Character") typeNum = 3;
+
+                if (typeNum !== null) {
+                    await axios.post(ENDPOINTS.CREATE_TASK_SHOT, {
+                        projectId: projectData?.projectId,
+                        entity_type: "shot",
+                        entity_id: data.shotId,
+                        typeNum: typeNum,
+                    });
+                } else {
+                    console.warn("Unknown template:", taskTemplate);
+                }
+
+            }
+
             setShowCreateShot(false);
             setShotName('');
             setDescription('');
@@ -1511,7 +1534,7 @@ export default function ProjectShot() {
                         }}
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
-                        🗑️ Delete Sequence
+                        🗑️ Delete Shot
                     </button>
                 </div>
             )}

@@ -335,10 +335,14 @@ export default function Others_Shot() {
     }, [versionContextMenu]);
 
     useEffect(() => {
+        fetchShotVersions(); // โหลดทันทีตอน mount
+    }, [shotData?.id]);
+
+    useEffect(() => {
         if (activeTab === 'Versions') {
-            fetchShotVersions();
+            fetchShotVersions(); // ยังคง refresh เมื่อกดแถบ Versions
         }
-    }, [activeTab, shotData?.id]);
+    }, [activeTab]);
 
     useEffect(() => {
         if (deleteNoteConfirm) {
@@ -485,6 +489,9 @@ export default function Others_Shot() {
         if (isCreatingVersion) return;
         if (!createVersionForm.version_name.trim()) {
             alert('กรุณาระบุชื่อ Version'); return;
+        }
+        if (!selectedUploader) {
+            alert('กรุณาเลือกผู้อัพโหลด (Uploaded By)'); return;
         }
         setIsCreatingVersion(true);
         try {
@@ -1335,7 +1342,14 @@ export default function Others_Shot() {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-                                                            // Save ข้อมูลลง localStorage ก่อน navigate
+                                                            // หา version ล่าสุดที่มี file_url เป็น video
+                                                            const latestVideoVersion = shotVersions.find(v =>
+                                                                v.file_url?.match(/\.(mp4|webm|ogg|mov|avi)$/i)
+                                                            );
+
+                                                            console.log('🎬 latestVideoVersion:', latestVideoVersion);
+                                                            console.log('📦 versionId:', latestVideoVersion?.id);
+
                                                             localStorage.setItem("selectedVideo", JSON.stringify({
                                                                 videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
                                                                 shotCode: shotData.shotCode,
@@ -1344,6 +1358,12 @@ export default function Others_Shot() {
                                                                 description: shotData.description,
                                                                 dueDate: shotData.dueDate,
                                                                 shotId: shotData.id,
+                                                                versionId: latestVideoVersion?.id ?? null,
+                                                                versionName: latestVideoVersion?.version_name ?? null,      // ← เพิ่ม
+                                                                versionStatus: latestVideoVersion?.status ?? null,          // ← เพิ่ม
+                                                                versionUploadedBy: latestVideoVersion?.uploaded_by_name ?? null,
+                                                                versionCreatedAt: latestVideoVersion?.created_at ?? null,
+                                                                versionDescription: latestVideoVersion?.description ?? null,
                                                             }));
                                                             navigate('/Others_Video');
                                                         } else {
@@ -2408,7 +2428,7 @@ export default function Others_Shot() {
                                 {/* Version Name + Status */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span> </label>
                                         <input
                                             type="text"
                                             value={createVersionForm.version_name}
@@ -2435,7 +2455,9 @@ export default function Others_Shot() {
 
                                 {/* Uploaded By */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                                        Uploaded By <span className="text-red-400">*</span>  {/* ✅ เพิ่ม * */}
+                                    </label>
                                     <div className="relative">
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
@@ -2459,7 +2481,8 @@ export default function Others_Shot() {
                                                 onFocus={() => setUploaderOpen(true)}
                                                 onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
                                                 placeholder={currentUser}
-                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                                className={`h-8 px-2.5 bg-white/4 border rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors
+                    ${!selectedUploader ? 'border-red-500/50' : 'border-white/8'}`}
                                             />
                                         )}
                                         {uploaderOpen && !selectedUploader && (

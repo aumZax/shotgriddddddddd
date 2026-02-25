@@ -1766,7 +1766,7 @@ export default function Project_Assets() {
                         }}
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
-                        🗑️ Delete Sequence
+                        🗑️ Delete Asset
                     </button>
                 </div>
             )}
