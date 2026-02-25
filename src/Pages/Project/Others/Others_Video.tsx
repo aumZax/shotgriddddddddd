@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, X, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -99,21 +99,6 @@ export default function VideoReviewSystem() {
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    useEffect(() => {
-        if (!videoData.versionId) return;
-        setIsLoadingComments(true);  // ← เพิ่ม
-        fetch(ENDPOINTS.VIDEO_COMMENTS_LIST, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version_id: videoData.versionId }),
-        })
-            .then(r => r.json())
-            .then((data: any[]) => {
-                // ... โค้ดเดิม ...
-            })
-            .catch(console.error)
-            .finally(() => setIsLoadingComments(false));  // ← เพิ่ม
-    }, [videoData.versionId]);
 
     // ── Load users ──────────────────────────────────────────────────────────
     useEffect(() => {
@@ -130,6 +115,7 @@ export default function VideoReviewSystem() {
     // ── Load comments from DB ───────────────────────────────────────────────
     useEffect(() => {
         if (!videoData.versionId) return;
+        setIsLoadingComments(true);
         fetch(ENDPOINTS.VIDEO_COMMENTS_LIST, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -175,7 +161,8 @@ export default function VideoReviewSystem() {
                 setPostedDrawingIds(allIds);
                 setDrawings(mapped.flatMap(c => c.drawings));
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setIsLoadingComments(false));
     }, [videoData.versionId]);
 
     // ── Video event listeners ────────────────────────────────────────────────
