@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "https://acting-consolidated-yamaha-fair.trycloudflare.com";
+const BASE_URL = "https://feel-zum-makers-forums.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
 
@@ -23,7 +23,7 @@ const ENDPOINTS = {
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
   UPLOAD_AVATAR: `${BASE_URL}/upload/avatar`,
-  image_url: "https://acting-consolidated-yamaha-fair.trycloudflare.com/",
+  image_url: "https://feel-zum-makers-forums.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
