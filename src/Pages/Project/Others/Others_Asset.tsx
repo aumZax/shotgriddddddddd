@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
@@ -152,7 +153,7 @@ const getSelectedAsset = (): AssetData | null => {
 };
 
 export default function Others_Asset() {
-
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Asset Info');
     const [assetData, setAssetData] = useState<AssetData | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -205,7 +206,7 @@ export default function Others_Asset() {
     const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
+    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
 
     //============================================================================================================================================//
 
@@ -254,6 +255,9 @@ export default function Others_Asset() {
     } | null>(null);
 
     //============================================================================================================================================//
+    useEffect(() => {
+        fetchAssetVersions();
+    }, [AssetID]);
 
     useEffect(() => {
         if (activeTab === 'Versions') {
@@ -310,7 +314,7 @@ export default function Others_Asset() {
         const selectedAsset = getSelectedAsset();
         if (selectedAsset) {
             setAssetData(selectedAsset);
-            
+
             setSubject(`Note on ${selectedAsset.asset_name}`);
         }
     }, []);
@@ -819,8 +823,8 @@ export default function Others_Asset() {
                         setAssetData(prev => prev ? { ...prev, thumbnail: fileUrl } : null);
 
                         const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                        localStorage.setItem('selectedAsset', JSON.stringify({ 
-                            ...currentStored, 
+                        localStorage.setItem('selectedAsset', JSON.stringify({
+                            ...currentStored,
                             file_url: fileUrl,
                             thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
                         }));
@@ -1038,7 +1042,7 @@ export default function Others_Asset() {
                         formatDate={formatDate}
                     />
                 );
-            
+
             case 'Sub Assets':
                 return (
                     <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
@@ -1059,7 +1063,7 @@ export default function Others_Asset() {
     };
 
     //============================================================================================================================================//
-    
+
     if (!assetData) {
         return (
             <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
@@ -1168,7 +1172,29 @@ export default function Others_Asset() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        setShowPreview(true);
+                                                        if (assetData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
+                                                            const latestVideoVersion = assetVersions.find(v =>
+                                                                v.file_url?.match(/\.(mp4|webm|ogg|mov|avi)$/i)
+                                                            );
+                                                            localStorage.setItem("selectedVideo", JSON.stringify({
+                                                                videoUrl: ENDPOINTS.image_url + assetData.thumbnail,
+                                                                shotCode: assetData.asset_name,
+                                                                sequence: assetData.sequence,
+                                                                status: assetData.status,
+                                                                description: assetData.description || "",
+                                                                dueDate: assetData.dueDate || "",
+                                                                shotId: assetData.id,
+                                                                versionId: latestVideoVersion?.id ?? null,
+                                                                versionName: latestVideoVersion?.version_name ?? null,
+                                                                versionStatus: latestVideoVersion?.status ?? null,
+                                                                versionUploadedBy: latestVideoVersion?.uploaded_by_name ?? null,
+                                                                versionCreatedAt: latestVideoVersion?.created_at ?? null,
+                                                                versionDescription: latestVideoVersion?.description ?? null,
+                                                            }));
+                                                            navigate('/Others_Video');
+                                                        } else {
+                                                            setShowPreview(true);
+                                                        }
                                                     }}
                                                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-400 hover:to-blue-400 active:scale-95 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-blue-500/50 transition-all duration-200"
                                                 >
@@ -2310,10 +2336,10 @@ export default function Others_Asset() {
                                                     (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData
                                                 );
                                                 const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                                                localStorage.setItem('selectedAsset', JSON.stringify({ 
-                                                    ...currentStored, 
+                                                localStorage.setItem('selectedAsset', JSON.stringify({
+                                                    ...currentStored,
                                                     file_url: newThumb,
-                                                    thumbnail: newThumb  
+                                                    thumbnail: newThumb
                                                 }));
                                             }
                                             setDeleteVersionConfirm(null);

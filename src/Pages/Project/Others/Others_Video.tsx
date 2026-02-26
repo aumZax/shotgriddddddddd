@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Undo2, MessageSquare, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer, UserRound, ChevronDown, Search, X, Users, Check } from 'lucide-react';
+import { Play, Pause, Pencil, Undo2, MessageSquare, Info, Trash2, ChevronRight, ChevronLeft, Volume2, VolumeX, Repeat, MousePointer, UserRound, ChevronDown, Search, X, Users, Check, EyeOff, Eye } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -103,6 +103,9 @@ export default function VideoReviewSystem() {
 
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const [showAnnotations, setShowAnnotations] = useState(true);
+
+
 
     // ── Load users ──────────────────────────────────────────────────────────
     useEffect(() => {
@@ -221,7 +224,7 @@ export default function VideoReviewSystem() {
     }, [isPlaying]);
 
     // ── Canvas drawing ───────────────────────────────────────────────────────
-    useEffect(() => { drawCanvas(); }, [drawings, currentPath, currentTime]);
+    useEffect(() => { drawCanvas(); }, [drawings, currentPath, currentTime, showAnnotations]);
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     const formatTime = (seconds: number): string => {
@@ -316,6 +319,8 @@ export default function VideoReviewSystem() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!showAnnotations) return; // ← เพิ่ม
         drawings
             .filter(d => Math.abs(d.timestamp - currentTime) < 0.5)
             .forEach(d => {
@@ -392,7 +397,7 @@ export default function VideoReviewSystem() {
             if (!data.success) throw new Error('Post failed');
 
             setPostedDrawingIds(prev => [...prev, ...currentDrawings.map(d => d.id)]);
-            setComments(prev => [...prev, {
+            setComments(prev => [{
                 id: data.commentId,
                 author: selectedAuthor.username,
                 author_id: selectedAuthor.id,
@@ -403,7 +408,7 @@ export default function VideoReviewSystem() {
                 text: newComment,
                 completed: false,
                 drawings: currentDrawings,
-            }]);
+            }, ...prev]);
             setNewComment('');
         } catch (err) {
             console.error('Post comment error:', err);
@@ -447,7 +452,7 @@ export default function VideoReviewSystem() {
             <header className="h-14 bg-[#0a0c10]/95 backdrop-blur border-b border-white/[0.06] px-5 flex items-center justify-between flex-shrink-0 z-20">
                 <div className="flex items-center gap-3">
                     <div className="flex flex-col gap-0.5">
-                        <span className="text-xl font-semibold text-white leading-tight">{videoData.versionName}</span>
+                        <span className="text-xl font-semibold text-white leading-tight">Version Name: {videoData.versionName}</span>
                         <span className="text-[11px] text-gray-400 leading-tight">
                             {videoData.shotCode}
                         </span>
@@ -522,6 +527,19 @@ export default function VideoReviewSystem() {
                         <div className="flex-1" />
 
                         <div className="flex items-center gap-1.5">
+
+                            {/* ── Toggle Annotations ── */}
+                            <button
+                                onClick={() => setShowAnnotations(o => !o)}
+                                title={showAnnotations ? 'Hide Draws' : 'Show Draws'}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-slate-50 transition-all ${showAnnotations
+                                    ? 'bg-gradient-to-r from-green-600 to-green-400'
+                                    : 'bg-gradient-to-r from-yellow-600 to-yellow-400 opacity-60'
+                                    }`}
+                            >
+                                {showAnnotations ? <Eye className="w-3 h-3 scale-150" /> : <EyeOff className="w-3 h-3 scale-150" />}
+                            </button>
+
                             <button onClick={undoDrawing} disabled={unpostedCount === 0} title="Undo (Ctrl+Z)"
                                 className={`p-1.5 rounded-lg text-slate-50 ${unpostedCount === 0 ? 'bg-gradient-to-r from-gray-700 to-gray-600 opacity-40 cursor-not-allowed' : 'bg-gradient-to-r from-blue-400 to-cyan-400'}`}>
                                 <Undo2 className="w-3.5 h-3.5" />
@@ -867,12 +885,12 @@ export default function VideoReviewSystem() {
                                                 ) : (
                                                     <>
                                                         <span className="w-5 h-5 rounded-full bg-white border border-white/[0.5] flex items-center justify-center flex-shrink-0">
-                                                                <UserRound className="w-3 h-3 text-gray-600" />
+                                                            <UserRound className="w-3 h-3 text-gray-600" />
                                                         </span>
                                                         <span className="flex-1 text-left text-gray-200">Select your name…</span>
                                                     </>
                                                 )}
-                                                <ChevronDown className={`w-3 h-3 text-gray-200 flex-shrink-0 transition-transform duration-150 ${userSearchOpen ? 'rotate-180' : ''}`}/>
+                                                <ChevronDown className={`w-3 h-3 text-gray-200 flex-shrink-0 transition-transform duration-150 ${userSearchOpen ? 'rotate-180' : ''}`} />
                                             </div>
 
                                             {/* Dropdown */}
@@ -892,8 +910,8 @@ export default function VideoReviewSystem() {
                                                             />
                                                             {userSearchQuery && (
                                                                 <button onClick={() => setUserSearchQuery('')} className="text-gray-600 hover:text-gray-200">
-                                                                        <X className="w-3 h-3" />
-                                                                    </button>
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </div>

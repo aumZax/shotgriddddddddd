@@ -4,18 +4,31 @@ import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
 import ENDPOINTS from '../config';
 
 const versionStatusConfig = {
-   wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600", icon: '-' },
-    ip: { label: "ip", fullLabel: "In Progress", color: "bg-blue-500", icon: 'dot' },
-    fin: { label: "fin", fullLabel: "Final", color: "bg-green-500", icon: 'dot' },
-    na: { label: "na", fullLabel: "N/A", color: "bg-gray-400", icon: '-' },
-    rev: { label: "rev", fullLabel: "Pending Review", color: "bg-yellow-600", icon: 'dot' },
-    vwd: { label: "vwd", fullLabel: "Viewed", color: "bg-teal-500", icon: 'dot' },
-    apr: { label: "apr", fullLabel: "Approved", color: "bg-green-500", icon: 'dot' },
-    nef: { label: "nef", fullLabel: "Need fixed", color: "bg-red-500", icon: 'dot' },
-    cmpt: { label: "cmpt", fullLabel: "Complete", color: "bg-blue-600", icon: 'dot' },
-    crv: { label: "crv", fullLabel: "Client review", color: "bg-purple-600", icon: 'dot' },
-    cfrm: { label: "cfrm", fullLabel: "Confirmed", color: "bg-purple-500", icon: 'dot' },
-    dlvr: { label: "dlvr", fullLabel: "Delivered", color: "bg-cyan-500", icon: 'dot' },
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+
+    // Pipeline Steps ใหม่
+    apr: { label: 'apr', fullLabel: 'Approved', color: 'bg-green-500', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need fixed', color: 'bg-red-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    rev: { label: 'rev', fullLabel: 'Pending Review', color: 'bg-yellow-600', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    ren: { label: 'ren', fullLabel: 'Rendering', color: 'bg-pink-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    vwd: { label: 'vwd', fullLabel: 'Viewed', color: 'bg-teal-500', icon: 'dot' },
+    crv: { label: 'crv', fullLabel: 'Client review', color: 'bg-purple-600', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    pndng: { label: 'pndng', fullLabel: 'Pending', color: 'bg-yellow-400', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    recd: { label: 'recd', fullLabel: 'Received', color: 'bg-blue-400', icon: 'dot' },
+    chk: { label: 'chk', fullLabel: 'Checking', color: 'bg-lime-500', icon: 'dot' },
+    rdd: { label: 'rdd', fullLabel: 'Render done', color: 'bg-emerald-500', icon: 'dot' },
+    srd: { label: 'srd', fullLabel: 'Submit render', color: 'bg-indigo-500', icon: 'dot' },
+    sos: { label: 'sos', fullLabel: 'Send outsource', color: 'bg-violet-500', icon: 'dot' }
 };
 
 type VersionStatus = keyof typeof versionStatusConfig;
