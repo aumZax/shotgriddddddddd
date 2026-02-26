@@ -8,6 +8,7 @@ import Register from "./Pages/Register";
 import Home from "./Pages/Home";
 import Inbox from "./Pages/Inbox";
 import Mytask from "./Pages/Mytask";
+import PeopleList from "./Pages/PeopleList"
 import ENDPOINTS from "./config";
 
 //Preject
@@ -47,19 +48,19 @@ interface Project {
 
 const PROJECT_PAGES = [
   { label: "Project Detail", path: "/Project_Detail", icon: LayoutDashboard },
-  { label: "Assets",    path: "/Project_Assets",   icon: Box },
-  { label: "Shots",     path: "/Project_Shot",      icon: Film },
-  { label: "Sequences", path: "/Project_Sequence",  icon: List },
-  { label: "Tasks",     path: "/Project_Tasks",     icon: CheckSquare },
-  { label: "Version",   path: "/Project_Version",   icon: GitBranch },
-  { label: "People",    path: "/Others_People",     icon: Users },
+  { label: "Assets", path: "/Project_Assets", icon: Box },
+  { label: "Shots", path: "/Project_Shot", icon: Film },
+  { label: "Sequences", path: "/Project_Sequence", icon: List },
+  { label: "Tasks", path: "/Project_Tasks", icon: CheckSquare },
+  { label: "Version", path: "/Project_Version", icon: GitBranch },
+  { label: "People", path: "/Others_People", icon: Users },
 ];
 
 
 function MainLayout() {
   const [isOpen, setIsOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
-  const [allPagesOpen, setAllPagesOpen] = useState(false);
+  const [peopleListOpen, setAllPagesOpen] = useState(false);
   const [hoveredProjectId, setHoveredProjectId] = useState<number | null>(null);
   const [subMenuPos, setSubMenuPos] = useState({ top: 0, left: 0 });
 
@@ -71,6 +72,15 @@ function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [projects, setProjects] = useState<Project[]>([]);
+
+  const [users, setUsers] = useState<{ id: number; username: string; email?: string; status?: string; permission_group?: string; groups_name?: string; created_at?: string }[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+
+  const filteredUsers = users.filter((u) =>
+    u.username.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
 
   const [authUser] = useState<{ email: string; imageURL: string; id?: number }>(() => {
     try {
@@ -269,33 +279,51 @@ function MainLayout() {
 
   const subMenuPortal = hoveredProject
     ? ReactDOM.createPortal(
-        <div
-          id="project-submenu-portal"
-          style={{ position: "fixed", top: subMenuPos.top, left: subMenuPos.left, zIndex: 9999 }}
-          className="w-52 bg-gray-800 border border-gray-700/60 rounded-lg shadow-2xl overflow-hidden"
-          onMouseEnter={handleSubEnter}
-          onMouseLeave={handleSubLeave}
-        >
-          {PROJECT_PAGES.map((page, i) => {
-            const Icon = page.icon;
-            return (
-              <button
-                key={page.path}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleProjectClick(hoveredProject, page.path);
-                }}
-                className={`w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-blue-600/30 transition-colors duration-100 flex items-center gap-3 cursor-pointer ${i !== PROJECT_PAGES.length - 1 ? "border-b border-gray-700/30" : ""}`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0 text-gray-500 group-hover:text-blue-400" />
-                {page.label}
-              </button>
-            );
-          })}
-        </div>,
-        document.body
-      )
+      <div
+        id="project-submenu-portal"
+        style={{ position: "fixed", top: subMenuPos.top, left: subMenuPos.left, zIndex: 9999 }}
+        className="w-52 bg-gray-800 border border-gray-700/60 rounded-lg shadow-2xl overflow-hidden"
+        onMouseEnter={handleSubEnter}
+        onMouseLeave={handleSubLeave}
+      >
+        {PROJECT_PAGES.map((page, i) => {
+          const Icon = page.icon;
+          return (
+            <button
+              key={page.path}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                handleProjectClick(hoveredProject, page.path);
+              }}
+              className={`w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-blue-600/30 transition-colors duration-100 flex items-center gap-3 cursor-pointer ${i !== PROJECT_PAGES.length - 1 ? "border-b border-gray-700/30" : ""}`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0 text-gray-500 group-hover:text-blue-400" />
+              {page.label}
+            </button>
+          );
+        })}
+      </div>,
+      document.body
+    )
     : null;
+
+
+  const fetchUsers = async () => {
+    if (users.length > 0) return; // ดึงแค่ครั้งเดียว
+    setUsersLoading(true);
+    try {
+      const response = await fetch(ENDPOINTS.PROJECT_USERS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -403,15 +431,71 @@ function MainLayout() {
             <div className="relative" ref={allPagesRef}>
               <span
                 className="hidden sm:inline-flex items-center gap-1 hover:text-blue-400 cursor-pointer text-xl font-medium text-gray-300 transition-all duration-300 whitespace-nowrap"
-                onClick={() => setAllPagesOpen(!allPagesOpen)}
+                onClick={() => {
+                  const next = !peopleListOpen;
+                  setAllPagesOpen(next);
+                  if (next) fetchUsers();
+                  else setUserSearch("");
+                }}
               >
-                <span>All Pages</span>
-                <ChevronDown className="w-5 h-5" />
+                <span>People List</span>
+                <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${peopleListOpen ? 'rotate-180' : ''}`} />
+
               </span>
-              {allPagesOpen && (
-                <div className="absolute bg-gray-800 shadow-2xl rounded-lg mt-1 w-32 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md">
-                  <Link to="/page1" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200 border-b border-gray-700/30" onClick={() => setAllPagesOpen(false)}>Page 1</Link>
-                  <Link to="/page2" className="block px-3 py-2 hover:bg-blue-600/20 text-xl text-gray-300 transition-colors duration-200" onClick={() => setAllPagesOpen(false)}>Page 2</Link>
+              {peopleListOpen && (
+                <div className="absolute bg-gray-800 shadow-2xl rounded-lg mt-1 w-56 z-10 border border-gray-700/50 overflow-hidden backdrop-blur-md">
+                  {/* Header */}
+                  <div className="px-3 py-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-700/50">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">All Users</p>
+                  </div>
+
+                  {/* Search Box */}
+                  <div className="px-2 py-2 border-b border-gray-700/50">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full h-7 px-2 text-sm bg-gray-700/60 border border-gray-600/50 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* List */}
+                  <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                    {usersLoading ? (
+                      <div className="px-4 py-4 text-center text-sm text-gray-500">Loading...</div>
+                    ) : filteredUsers.length === 0 ? (
+                      <div className="px-4 py-4 text-center text-sm text-gray-500">
+                        {userSearch ? "No results found" : "No users found"}
+                      </div>
+                    ) : (
+                      filteredUsers.map((user, i) => (
+                        <div
+                          key={user.id}
+                          className={`flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-blue-600/20 hover:text-white transition-colors duration-150 cursor-pointer
+      ${i !== filteredUsers.length - 1 ? "border-b border-gray-700/30" : ""}`}
+                          onClick={() => {
+                            navigate("/people-list", { state: { user } });
+                            setAllPagesOpen(false);
+                            setUserSearch("");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span className="truncate">{user.username}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer count */}
+                  {!usersLoading && users.length > 0 && (
+                    <div className="px-3 py-1.5 border-t border-gray-700/50 bg-gray-900/40">
+                      <p className="text-xs text-gray-500">
+                        {filteredUsers.length} / {users.length} users
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -508,6 +592,7 @@ export default function App() {
         <Route path="/Project_Shot/Others_Shot" element={<Others_Shot />} />
         <Route path="/Project_Sequence/Others_Sequence" element={<Others_Sequence />} />
         <Route path="/Project_Version" element={<Project_Version />} />
+        <Route path="/people-list" element={<PeopleList />} />
 
         <Route path="/Others_People" element={<Others_People />} />
 

@@ -37,7 +37,7 @@
 // [] // ไม่มี
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-import  { useState } from 'react';
+import { useState } from 'react';
 import { BarChart3, CheckCircle2, Clock, AlertCircle, Film, Image, ListChecks, Layers, Search } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
@@ -111,7 +111,7 @@ export default function Project_Detail() {
     const [loadingStats, setLoadingStats] = useState(true);
     const [loadingProjectImage, setLoadingProjectImage] = useState(true);
     const [loadingSequenceImages, setLoadingSequenceImages] = useState<Record<number, boolean>>({});
-    
+
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     console.log("🔍 Project Data from localStorage:", projectData); // เพิ่มบรรทัดนี้
     const projectId = projectData?.projectId;
@@ -334,17 +334,17 @@ export default function Project_Detail() {
             <div className="max-w-7xl mx-auto p-5">
                 {/* Project Header */}
                 <div className="mb-6 bg-gradient-to-br from-gray-800 via-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl">
-                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 lg:min-h-auto"> 
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 lg:min-h-auto">
                         {/* Left: Thumbnail */}
-                        <div className="lg:col-span-2 relative h-72 lg:h-auto items-center justify-center overflow-hidden bg-gray-900/50">
+                        <div className="lg:col-span-2 relative h-72 lg:h-72 overflow-hidden bg-gray-900/50">
                             {projectThumbnail ? (
-                                <div className="relative w-full h-full p-6">
+                                <div className="relative w-full h-full p-6 flex items-center justify-center">
                                     {/* Decorative corners */}
                                     <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-purple-500/40"></div>
                                     <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-purple-500/40"></div>
                                     <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-500/40"></div>
                                     <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-purple-500/40"></div>
-                                    
+
                                     {/* Loading Overlay */}
                                     {loadingProjectImage && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
@@ -354,21 +354,21 @@ export default function Project_Detail() {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     {/* Background blur effect */}
                                     <img
-                                        src={ENDPOINTS.image_url+projectThumbnail}
+                                        src={ENDPOINTS.image_url + projectThumbnail}
                                         className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-20"
                                         alt=""
-                                        onLoad={handleProjectImageLoad}
                                     />
-                                    
-                                    {/* Main image with proper sizing */}
+
+                                    {/* Main image */}
                                     <div className="relative z-10 w-full h-full flex items-center justify-center">
                                         <img
-                                            src={ENDPOINTS.image_url+projectThumbnail}
+                                            src={ENDPOINTS.image_url + projectThumbnail}
                                             alt={projectName}
                                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+                                            style={{ maxHeight: '220px' }}
                                             onLoad={handleProjectImageLoad}
                                         />
                                     </div>
@@ -392,7 +392,7 @@ export default function Project_Detail() {
                                 </h1>
                                 <div className="h-1 w-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                             </div>
-                            
+
                             {/* Info badges */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 group">
@@ -402,7 +402,7 @@ export default function Project_Detail() {
                                         <span className="text-white font-semibold break-words">{projectCreatedBy}</span>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3 group">
                                     <div className="flex flex-wrap items-center gap-3 px-5 py-3 bg-gradient-to-r from-gray-700/80 to-gray-700/50 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all duration-300 shadow-lg backdrop-blur-sm">
                                         <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 animate-pulse flex-shrink-0"></div>
@@ -448,16 +448,16 @@ export default function Project_Detail() {
                                     />
                                 </div>
                                 <div className="relative">
-                                   <select
-    value={filterStatus}
-    onChange={(e) => setFilterStatus(e.target.value)}
-    className="appearance-none bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 cursor-pointer hover:from-gray-600 hover:to-gray-700 hover:border-purple-500/50 shadow-lg"
->
-    <option value="all" className="bg-gray-800">All</option>
-    <option value="wtg" className="bg-gray-800">Waiting to Start</option>
-    <option value="ip" className="bg-gray-800">In Progress</option>
-    <option value="fin" className="bg-gray-800">Final</option>
-</select>
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="appearance-none bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 cursor-pointer hover:from-gray-600 hover:to-gray-700 hover:border-purple-500/50 shadow-lg"
+                                    >
+                                        <option value="all" className="bg-gray-800">All</option>
+                                        <option value="wtg" className="bg-gray-800">Waiting to Start</option>
+                                        <option value="ip" className="bg-gray-800">In Progress</option>
+                                        <option value="fin" className="bg-gray-800">Final</option>
+                                    </select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                         <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -508,7 +508,7 @@ export default function Project_Detail() {
                                                             </div>
                                                         )}
                                                         <img
-                                                            src={ENDPOINTS.image_url+seq.file_url}
+                                                            src={ENDPOINTS.image_url + seq.file_url}
                                                             alt={seq.sequence_name}
                                                             className="w-full h-full object-cover"
                                                             onLoad={() => handleSequenceImageLoad(seq.id)}
