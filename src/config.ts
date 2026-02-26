@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "hhttps://palm-reform-logistics-reaction.trycloudflare.com";
+const BASE_URL = "https://palm-reform-logistics-reaction.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
 
