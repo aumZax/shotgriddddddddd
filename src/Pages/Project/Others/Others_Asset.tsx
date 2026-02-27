@@ -164,6 +164,8 @@ export default function Others_Asset() {
     const [selectedUploader, setSelectedUploader] = useState<Person | null>(null);
     const [uploaderQuery, setUploaderQuery] = useState('');
     const [uploaderOpen, setUploaderOpen] = useState(false);
+    const [taskSearchQuery, setTaskSearchQuery] = useState('');
+    const [taskSearchOpen, setTaskSearchOpen] = useState(false);
     const [editingField, setEditingField] = useState<string | null>(null);
     const [showPreview, setShowPreview] = useState(false);
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
@@ -208,7 +210,17 @@ export default function Others_Asset() {
     const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
+
+    // ── createVersionForm: เพิ่ม task_id เพื่อเก็บ id ของ task ที่เลือก ──
+    const [createVersionForm, setCreateVersionForm] = useState({
+        version_name: '',
+        status: 'wtg',
+        description: '',
+        link: '',
+        task: '',
+        task_id: null as number | null,
+    });
+
     const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
     const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingAssetVersions;
@@ -720,12 +732,21 @@ export default function Others_Asset() {
 
     const resetVersionForm = () => {
         setShowCreateVersion(false);
-        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+        setCreateVersionForm({
+            version_name: '',
+            status: 'wtg',
+            description: '',
+            link: '',
+            task: '',
+            task_id: null,   // ← reset task_id ด้วย
+        });
         setVersionFiles([]);
         setVersionFilePreviews([]);
         setVersionNameFromFile(null);
         setSelectedUploader(null);
         setUploaderQuery('');
+        setTaskSearchQuery('');
+        setTaskSearchOpen(false);
         setVersionModalPosition({ x: 0, y: 0 });
     };
 
@@ -857,7 +878,7 @@ export default function Others_Asset() {
                         localStorage.setItem('selectedAsset', JSON.stringify({
                             ...currentStored,
                             file_url: fileUrl,
-                            thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
+                            thumbnail: fileUrl
                         }));
                     }
 
@@ -866,7 +887,7 @@ export default function Others_Asset() {
 
             alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
             setShowCreateVersion(false);
-            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '', task_id: null });
             setVersionFiles([]);
             setVersionFilePreviews([]);
             fetchAssetVersions();
@@ -881,22 +902,30 @@ export default function Others_Asset() {
         }
     };
 
-    const createSingleVersion = async (fileUrl: string | null, versionName?: string) => {
+    // ── createSingleVersion: รับ task_id เพิ่มเพื่อส่งไป API ──
+    const createSingleVersion = async (
+        fileUrl: string | null,
+        versionName?: string,
+        formSnapshot?: typeof createVersionForm,  // ← รับ snapshot
+        fileId?: string | null                    // ← รับ file_id ตรงๆ ไม่ใช้ localStorage
+    ) => {
+        const form = formSnapshot ?? createVersionForm; // fallback ถ้าไม่ส่งมา
+
         const res = await fetch(ENDPOINTS.CREATE_ASSET_VERSION, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 entityType: 'asset',
                 entityId: assetData?.id,
-                version_name: versionName || createVersionForm.version_name.trim(),
-                status: createVersionForm.status,
-                description: createVersionForm.description || null,
-                link: createVersionForm.link || null,
-                task: createVersionForm.task || null,
+                version_name: versionName || form.version_name.trim(),
+                status: form.status,
+                description: form.description || null,
+                link: form.link || null,
+                task: form.task || null,
+                task_id: form.task_id ?? null,   // ✅ ใช้ ?? แทน ||
                 file_url: fileUrl,
-                file_id: localStorage.getItem("file_id"),
-                uploaded_by: selectedUploader?.id ?? null,  // ← ส่ง id (int)
-
+                file_id: fileId ?? localStorage.getItem("file_id"), // ✅ ใช้ param ก่อน fallback
+                uploaded_by: selectedUploader?.id ?? null,
             })
         });
         if (!res.ok) throw new Error('Create version failed');
@@ -1071,7 +1100,7 @@ export default function Others_Asset() {
                                 const res = await axios.delete(`${ENDPOINTS.DELETE_ASSET_VERSION}/${versionId}`, {
                                     data: { entityId: AssetID }
                                 });
-                                removeVersionFromState(versionId);  // ← ใช้ helper เหมือน Shot
+                                removeVersionFromState(versionId);
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
                                     setAssetData(prev => prev ? { ...prev, thumbnail: newThumb } : prev);
@@ -1079,7 +1108,7 @@ export default function Others_Asset() {
                                     localStorage.setItem('selectedAsset', JSON.stringify({
                                         ...currentStored,
                                         file_url: newThumb,
-                                        thumbnail: newThumb   // ← เพิ่ม thumbnail ด้วยเหมือน Shot
+                                        thumbnail: newThumb
                                     }));
                                 } else {
                                     // ลบหมดแล้ว → clear thumbnail
@@ -1221,7 +1250,7 @@ export default function Others_Asset() {
                                         </div>
                                     )}
 
-                                    {/* Hover Controls - ปรับปรุง */}
+                                    {/* Hover Controls */}
                                     {assetData.thumbnail && (
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
                                             <div className="flex gap-3">
@@ -1452,7 +1481,7 @@ export default function Others_Asset() {
                                                         </span>
                                                         <span>{config.fullLabel}</span>
                                                     </div>
-                                                    {assetData.status === key && ( // ✅ แสดง checkmark
+                                                    {assetData.status === key && (
                                                         <Check className="w-4 h-4 text-blue-400 ml-auto " />
                                                     )}
                                                 </button>
@@ -1981,24 +2010,19 @@ export default function Others_Asset() {
 
                     <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
                         <div
-                            style={{
-                                transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
-                                maxHeight: 'calc(100vh - 60px)',
-                            }}
-                            className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
+                            style={{ transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)` }}
+                            className="relative w-[360px] pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-visible"
                         >
-                            {/* Header — ลากได้ */}
+                            {/* Header */}
                             <div
                                 onMouseDown={(e) => {
                                     const startX = e.clientX;
                                     const startY = e.clientY;
                                     const startPos = { ...versionModalPosition };
-                                    const onMove = (me: MouseEvent) => {
-                                        setVersionModalPosition({
-                                            x: startPos.x + me.clientX - startX,
-                                            y: startPos.y + me.clientY - startY,
-                                        });
-                                    };
+                                    const onMove = (me: MouseEvent) => setVersionModalPosition({
+                                        x: startPos.x + me.clientX - startX,
+                                        y: startPos.y + me.clientY - startY,
+                                    });
                                     const onUp = () => {
                                         document.removeEventListener('mousemove', onMove);
                                         document.removeEventListener('mouseup', onUp);
@@ -2006,20 +2030,18 @@ export default function Others_Asset() {
                                     document.addEventListener('mousemove', onMove);
                                     document.addEventListener('mouseup', onUp);
                                 }}
-                                className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                                className="flex items-center justify-between px-4 py-3 border-b border-white/6 cursor-grab active:cursor-grabbing select-none"
                             >
                                 <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
                                 <div
                                     onMouseDown={e => e.stopPropagation()}
                                     onClick={() => resetVersionForm()}
-                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
-                                >
-                                    ✕
-                                </div>
+                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm cursor-pointer"
+                                >✕</div>
                             </div>
 
                             {/* Body */}
-                            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+                            <div className="px-4 py-4 space-y-3">
 
                                 {/* File Upload */}
                                 <div className="space-y-1">
@@ -2031,7 +2053,7 @@ export default function Others_Asset() {
                                         className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
                                             ? 'border-blue-500/60 bg-blue-500/8'
                                             : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
-                                            }`}
+                                        }`}
                                     >
                                         <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
                                             {versionFiles.length > 0 ? (
@@ -2067,18 +2089,15 @@ export default function Others_Asset() {
                                     </div>
                                 </div>
 
-                                {/* Version Name + Status */}
-                                <div className="grid grid-cols-1 gap-3">
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
-                                        <input
-                                            type="text"
-                                            value={createVersionForm.version_name}
-                                            onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
-                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                        />
-                                    </div>
-                                    
+                                {/* Version Name */}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={createVersionForm.version_name}
+                                        onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
                                 </div>
 
                                 {/* Uploaded By */}
@@ -2088,9 +2107,7 @@ export default function Others_Asset() {
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
                                                 <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-[9px] font-semibold">
-                                                        {selectedUploader.name[0].toUpperCase()}
-                                                    </span>
+                                                    <span className="text-white text-[9px] font-semibold">{selectedUploader.name[0].toUpperCase()}</span>
                                                 </div>
                                                 <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
                                                 <div
@@ -2120,9 +2137,7 @@ export default function Others_Asset() {
                                                             className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
                                                         >
                                                             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                                <span className="text-white text-[9px] font-semibold">
-                                                                    {person.name[0].toUpperCase()}
-                                                                </span>
+                                                                <span className="text-white text-[9px] font-semibold">{person.name[0].toUpperCase()}</span>
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs text-gray-200">{person.name}</p>
@@ -2139,15 +2154,97 @@ export default function Others_Asset() {
                                     </div>
                                 </div>
 
-                                {/* Task */}
+                                {/* Task — Searchable Combobox */}
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
-                                    <input
-                                        type="text"
-                                        value={createVersionForm.task}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
-                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                    />
+                                    {createVersionForm.task_id ? (() => {
+                                        const t = tasks.find(t => t.id === createVersionForm.task_id);
+                                        if (!t) return null;
+                                        return (
+                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                                {t.pipeline_step ? (
+                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
+                                                ) : (
+                                                    <span className="text-sm flex-shrink-0">📋</span>
+                                                )}
+                                                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
+                                                {t.pipeline_step && (
+                                                    <span
+                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                        style={{
+                                                            backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
+                                                            color: t.pipeline_step.color_hex || '#9ca3af',
+                                                        }}
+                                                    >{t.pipeline_step.step_code}</span>
+                                                )}
+                                                <div
+                                                    onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
+                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
+                                                >✕</div>
+                                            </div>
+                                        );
+                                    })() : (
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={taskSearchQuery}
+                                                onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
+                                                onFocus={() => setTaskSearchOpen(true)}
+                                                onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
+                                                placeholder="ค้นหา task..."
+                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                            />
+                                            {taskSearchOpen && (
+                                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                                                    <div
+                                                        onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
+                                                    >
+                                                        <span className="text-xs text-gray-500 italic">— ไม่ระบุ task —</span>
+                                                    </div>
+                                                    {tasks
+                                                        .filter(t =>
+                                                            t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                            (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                        )
+                                                        .map(task => (
+                                                            <div
+                                                                key={task.id}
+                                                                onMouseDown={() => {
+                                                                    setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
+                                                                    setTaskSearchQuery('');
+                                                                    setTaskSearchOpen(false);
+                                                                }}
+                                                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                            >
+                                                                {task.pipeline_step ? (
+                                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
+                                                                ) : (
+                                                                    <span className="text-xs flex-shrink-0">📋</span>
+                                                                )}
+                                                                <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
+                                                                {task.pipeline_step && (
+                                                                    <span
+                                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                                        style={{
+                                                                            backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
+                                                                            color: task.pipeline_step.color_hex || '#9ca3af',
+                                                                        }}
+                                                                    >{task.pipeline_step.step_code}</span>
+                                                                )}
+                                                            </div>
+                                                        ))
+                                                    }
+                                                    {tasks.filter(t =>
+                                                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                    ).length === 0 && taskSearchQuery && (
+                                                        <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Link + Project — read-only */}
@@ -2185,8 +2282,8 @@ export default function Others_Asset() {
 
                             </div>
 
-                            {/* Footer — Cancel ซ้าย, Create ขวา */}
-                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
+                            {/* Footer */}
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-white/6">
                                 <button
                                     onClick={() => resetVersionForm()}
                                     disabled={isCreatingVersion}
@@ -2197,8 +2294,7 @@ export default function Others_Asset() {
                                 <button
                                     onClick={handleCreateVersion}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white  bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
-
+                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
                                 >
                                     {isCreatingVersion ? (
                                         <>
@@ -2208,6 +2304,7 @@ export default function Others_Asset() {
                                     ) : 'Create Version'}
                                 </button>
                             </div>
+
                         </div>
                     </div>
                 </>
@@ -2266,7 +2363,7 @@ export default function Others_Asset() {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete Confirmation Modal - Notes */}
             {deleteNoteConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
@@ -2332,6 +2429,7 @@ export default function Others_Asset() {
                 </div>
             )}
 
+            {/* Delete Confirmation Modal - Versions */}
             {deleteVersionConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
@@ -2412,8 +2510,8 @@ export default function Others_Asset() {
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
                 onUpdateVersion={updateVersion}
-                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}    // ✅ เพิ่ม
-                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)} // ✅ เพิ่ม
+                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
+                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
             />
 
             {/* Right Panel - Note Details */}

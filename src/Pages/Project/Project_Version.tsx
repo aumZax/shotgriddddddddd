@@ -1060,7 +1060,7 @@ export default function Project_Version() {
                         {/* Image */}
                         <div className="p-4 flex items-center justify-center bg-gray-950 max-h-[70vh]">
                             <img
-                                src={previewVersion.file_url}
+                                src={ENDPOINTS.image_url+previewVersion.file_url}
                                 alt={previewVersion.version_name || "thumbnail"}
                                 className="max-w-full max-h-[65vh] object-contain rounded-lg"
                             />
