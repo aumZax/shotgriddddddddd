@@ -130,8 +130,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers: TaskReviewer[];     
-    pipeline_step: PipelineStep | null;  
+    reviewers: TaskReviewer[];
+    pipeline_step: PipelineStep | null;
 };
 
 type TaskAssignee = {
@@ -222,7 +222,7 @@ export default function Others_Shot() {
     const [shotVersions, setShotVersions] = useState<any[]>([]);
     const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
     const [,] = useState<Version | null>(null);
-    const [rightPanelTab, setRightPanelTab] = useState('notes'); 
+    const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -242,12 +242,12 @@ export default function Others_Shot() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [subject, setSubject] = useState(shotData?.shotCode ? `Note on ${shotData.shotCode}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
+    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
     const [isCreatingAsset, setIsCreatingAsset] = useState(false);
     const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
     const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingShotVersions;
-        
+
     //============================================================================================================================================//
 
     const [checked, setChecked] = useState<CheckedState>({
@@ -270,7 +270,7 @@ export default function Others_Shot() {
     const [createAssetForm, setCreateAssetForm] = useState({
         asset_name: '',
         description: '',
-        asset_type: 'Character', 
+        asset_type: 'Character',
     });
 
     //============================================================================================================================================//
@@ -392,9 +392,9 @@ export default function Others_Shot() {
     }, [selectedTask]);
 
     useEffect(() => {
-    if (activeTab === 'Notes') {
-        fetchNotes();
-    }
+        if (activeTab === 'Notes') {
+            fetchNotes();
+        }
     }, [activeTab, shotData?.id]);
 
     //============================================================================================================================================//
@@ -476,22 +476,35 @@ export default function Others_Shot() {
         try {
             const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
             const data = res.data;
-             if (Array.isArray(data) && data.length > 0) {
-            setShotVersions(data);
-            setIsThumbnailLocked(data.length >= 2); 
-        } else {
-            setShotVersions([]);
-            setIsThumbnailLocked(false);
-        }
+            if (Array.isArray(data) && data.length > 0) {
+                setShotVersions(data);
+                setIsThumbnailLocked(data.length >= 2);
+            } else {
+                setShotVersions([]);
+                setIsThumbnailLocked(false);
+            }
 
         }
         finally { setIsLoadingShotVersions(false); }
+
+    };
+
+    // ✅ helper: filter versions array แล้ว sync isThumbnailLocked ด้วยเสมอ
+    const removeVersionFromState = (versionId: number) => {
+        setShotVersions(prev => {
+            const updated = prev.filter(v => v.id !== versionId);
+            setIsThumbnailLocked(updated.length >= 2);
+            return updated;
+        });
     };
 
     const handleCreateVersion = async () => {
         if (isCreatingVersion) return;
         if (!createVersionForm.version_name.trim()) {
             alert('กรุณาระบุชื่อ Version'); return;
+        }
+        if (!selectedUploader) {
+            alert('กรุณาระบุชื่อผู้อัพโหลด'); return;
         }
         setIsCreatingVersion(true);
         try {
@@ -536,8 +549,8 @@ export default function Others_Shot() {
                         setShotData(prev => ({ ...prev, thumbnail: fileUrl }));  // ✅ ใช้ได้เพราะอยู่ใน scope เดียวกัน
 
                         const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                        localStorage.setItem('selectedShot', JSON.stringify({ 
-                            ...currentStored, 
+                        localStorage.setItem('selectedShot', JSON.stringify({
+                            ...currentStored,
                             file_url: fileUrl,
                             thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
                         }));
@@ -733,6 +746,7 @@ export default function Others_Shot() {
             setShotAssets([]);
         } finally {
             setLoadingAssets(false);
+
         }
     };
 
@@ -768,7 +782,7 @@ export default function Others_Shot() {
 
     const updateShotField = async (
         field: keyof ShotData,
-   
+
         value: any
     ) => {
         const dbField = shotFieldMap[field];
@@ -781,7 +795,7 @@ export default function Others_Shot() {
         try {
             await axios.post(ENDPOINTS.UPDATESHOT, {
                 shotId: shotData.id,
-                field: dbField, 
+                field: dbField,
                 value
             });
 
@@ -1045,32 +1059,89 @@ export default function Others_Shot() {
     };
 
     const handleCreateAsset = async () => {
-    if (isCreatingAsset) return;
-    if (!createAssetForm.asset_name.trim()) {
-        alert('กรุณาระบุชื่อ Asset');
-        return;
-    }
-
-    setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
-    try {
-        const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
-            project_id: projectId,
-            shot_id: shotId,
-            asset_name: createAssetForm.asset_name.trim(),
-            description: createAssetForm.description || null,
-            asset_type: createAssetForm.asset_type || null,
-        });
-
-        if (res.data.success) {
-            setShowCreateShot_Assets(false);
-            setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
-            fetchShotAssets();
+        if (isCreatingAsset) return;
+        if (!createAssetForm.asset_name.trim()) {
+            alert('กรุณาระบุชื่อ Asset');
+            return;
         }
-    } catch (err: any) {
-        alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
-    } finally {
-        setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
-    }
+
+        setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
+        try {
+            const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
+                project_id: projectId,
+                shot_id: shotId,
+                asset_name: createAssetForm.asset_name.trim(),
+                description: createAssetForm.description || null,
+                asset_type: createAssetForm.asset_type || null,
+            });
+
+            if (res.data.success) {
+                setShowCreateShot_Assets(false);
+                setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
+                fetchShotAssets();
+            }
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
+        } finally {
+            setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
+        }
+    };
+
+    // ============================================================
+    // Shared thumbnail upload logic (used by both handlers)
+    // ============================================================
+    const handleThumbnailUpload = async (file: File) => {
+        if (file.size > 500 * 1024 * 1024) {
+            alert(`ไฟล์ใหญ่เกิน 500MB (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+            return;
+        }
+
+        setIsUploadingThumbnail(true);
+
+        const formData = new FormData();
+        formData.append("shotId", shotData.id.toString());
+        formData.append("file", file);
+        formData.append("fileName", file.name);
+        formData.append("oldImageUrl", shotData.thumbnail || "");
+        formData.append("type", file.type.split('/')[0]);
+
+        try {
+            const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            console.log('📥 Upload response:', res.status, data);
+
+            if (res.ok) {
+                const newFileUrl = data?.files?.[0]?.fileUrl;
+
+                if (!newFileUrl) {
+                    alert('ไม่ได้รับ URL กลับมา');
+                    return;
+                }
+
+                // Force re-render by clearing then setting thumbnail
+                setShotData(prev => ({ ...prev, thumbnail: '' }));
+                setTimeout(() => {
+                    setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
+                }, 50);
+
+                const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
+                localStorage.setItem("selectedShot", JSON.stringify({ ...stored, thumbnail: newFileUrl }));
+            } else {
+                console.error('❌ Upload failed:', data);
+                alert("Upload failed: " + (data.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("❌ Upload error:", err);
+            alert("Upload error: " + err);
+        } finally {
+            // ✅ Always reset uploading state — this was the bug
+            console.log('🔓 setIsUploadingThumbnail(false) called');
+            setIsUploadingThumbnail(false);
+        }
     };
 
     const renderTabContent = () => {
@@ -1138,15 +1209,24 @@ export default function Others_Shot() {
                                 const res = await axios.delete(`${ENDPOINTS.DELETE_SHOT_VERSION}/${versionId}`, {
                                     data: { entityId: shotData?.id }
                                 });
-                                setShotVersions(prev => prev.filter(v => v.id !== versionId));
+                                removeVersionFromState(versionId);
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
                                     setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
                                     const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                    localStorage.setItem('selectedShot', JSON.stringify({ 
-                                        ...currentStored, 
+                                    localStorage.setItem('selectedShot', JSON.stringify({
+                                        ...currentStored,
                                         file_url: newThumb,
-                                        thumbnail: newThumb   // ← เพิ่มบรรทัดนี้
+                                        thumbnail: newThumb
+                                    }));
+                                } else {
+                                    // ถ้าไม่มี newThumbnail = ลบหมดแล้ว → clear thumbnail
+                                    setShotData(prev => (prev ? { ...prev, thumbnail: '' } : prev) as ShotData);
+                                    const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                    localStorage.setItem('selectedShot', JSON.stringify({
+                                        ...currentStored,
+                                        file_url: '',
+                                        thumbnail: ''
                                     }));
                                 }
                             } catch {
@@ -1163,7 +1243,7 @@ export default function Others_Shot() {
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
                         formatDateThai={formatDate}
-                        onAssetUpdate={fetchShotAssets} 
+                        onAssetUpdate={fetchShotAssets}
                     />
                 );
 
@@ -1329,17 +1409,15 @@ export default function Others_Shot() {
                                         </div>
                                     )}
 
-                                    {/* Hover Controls */}
+                                    {/* Hover Controls - shown when thumbnail EXISTS */}
                                     {shotData.thumbnail && (
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-20">
                                             <div className="flex gap-3">
                                                 <button
-                                                    // เปลี่ยนจากเดิมที่ navigate('/Others_Video') เป็น:
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-                                                            // Save ข้อมูลลง localStorage ก่อน navigate
                                                             localStorage.setItem("selectedVideo", JSON.stringify({
                                                                 videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
                                                                 shotCode: shotData.shotCode,
@@ -1373,58 +1451,7 @@ export default function Others_Shot() {
                                                         disabled={thumbnailDisabled}
                                                         onChange={async (e) => {
                                                             if (!e.target.files?.[0]) return;
-                                                            setIsUploadingThumbnail(true);
-
-                                                            const file = e.target.files[0];
-                                                            console.log('📁 File selected:', file.name, file.size, file.type);
-
-                                                            if (file.size > 100 * 1024 * 1024) {
-                                                                alert(`ไฟล์ใหญ่เกิน 100MB (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-                                                                return;
-                                                            }
-
-                                                            const formData = new FormData();
-                                                            formData.append("shotId", shotData.id.toString());
-                                                            formData.append("file", file);
-                                                            formData.append("fileName", file.name);
-                                                            formData.append("oldImageUrl", shotData.thumbnail || "");
-                                                            formData.append("type", file.type.split('/')[0]);
-
-                                                            try {
-                                                                const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                                                                    method: "POST",
-                                                                    body: formData,
-                                                                });
-
-                                                                const data = await res.json();
-                                                                console.log('📥 Upload response:', res.status, data); // ← ดูตรงนี้
-
-                                                                if (res.ok) {
-                                                                    // ✅ server ส่งกลับ { files: [...] } ไม่ใช่ { file: {...} }
-                                                                    const newFileUrl = data?.files?.[0]?.fileUrl;
-
-                                                                    console.log('✅ newFileUrl:', newFileUrl);
-
-                                                                    if (!newFileUrl) {
-                                                                        alert('ไม่ได้รับ URL กลับมา');
-                                                                        return;
-                                                                    }
-
-                                                                    setShotData(prev => ({ ...prev, thumbnail: '' }));
-                                                                    setTimeout(() => {
-                                                                        setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
-                                                                    }, 50);
-
-                                                                    const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                                    localStorage.setItem("selectedShot", JSON.stringify({ ...stored, thumbnail: newFileUrl }));
-                                                                } else {
-                                                                    console.error('❌ Upload failed:', data);
-                                                                    alert("Upload failed: " + (data.error || "Unknown error"));
-                                                                }
-                                                            } catch (err) {
-                                                                console.error("❌ Upload error:", err);
-                                                                alert("Upload error: " + err);
-                                                            }
+                                                            await handleThumbnailUpload(e.target.files[0]);
                                                         }}
                                                     />
                                                 </label>
@@ -1432,9 +1459,9 @@ export default function Others_Shot() {
                                         </div>
                                     )}
 
-                                    {/* Upload zone when no thumbnail */}
+                                    {/* Upload zone when NO thumbnail */}
                                     {!shotData.thumbnail && (
-                                       <input
+                                        <input
                                             type="file"
                                             accept="image/*,video/*"
                                             className={`absolute inset-0 w-full h-full opacity-0 z-30
@@ -1442,60 +1469,19 @@ export default function Others_Shot() {
                                             disabled={thumbnailDisabled}
                                             onChange={async (e) => {
                                                 if (!e.target.files?.[0]) return;
-                                                setIsUploadingThumbnail(true);
-
-                                                const file = e.target.files[0];
-                                                console.log('📁 File selected:', file.name, file.size, file.type);
-
-                                                if (file.size > 100 * 1024 * 1024) {
-                                                    alert(`ไฟล์ใหญ่เกิน 100MB (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-                                                    return;
-                                                }
-
-                                                const formData = new FormData();
-                                                formData.append("shotId", shotData.id.toString());
-                                                formData.append("file", file);
-                                                formData.append("fileName", file.name);
-                                                formData.append("oldImageUrl", shotData.thumbnail || "");
-                                                formData.append("type", file.type.split('/')[0]);
-
-                                                try {
-                                                    const res = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                                                        method: "POST",
-                                                        body: formData,
-                                                    });
-
-                                                    const data = await res.json();
-                                                    console.log('📥 Upload response:', res.status, data); // ← ดูตรงนี้
-
-                                                    if (res.ok) {
-                                                        // ✅ server ส่งกลับ { files: [...] } ไม่ใช่ { file: {...} }
-                                                        const newFileUrl = data?.files?.[0]?.fileUrl;
-
-                                                        console.log('✅ newFileUrl:', newFileUrl);
-
-                                                        if (!newFileUrl) {
-                                                            alert('ไม่ได้รับ URL กลับมา');
-                                                            return;
-                                                        }
-
-                                                        setShotData(prev => ({ ...prev, thumbnail: '' }));
-                                                        setTimeout(() => {
-                                                            setShotData(prev => ({ ...prev, thumbnail: newFileUrl }));
-                                                        }, 50);
-
-                                                        const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-                                                        localStorage.setItem("selectedShot", JSON.stringify({ ...stored, thumbnail: newFileUrl }));
-                                                    } else {
-                                                        console.error('❌ Upload failed:', data);
-                                                        alert("Upload failed: " + (data.error || "Unknown error"));
-                                                    }
-                                                } catch (err) {
-                                                    console.error("❌ Upload error:", err);
-                                                    alert("Upload error: " + err);
-                                                }
+                                                await handleThumbnailUpload(e.target.files[0]);
                                             }}
                                         />
+                                    )}
+
+                                    {/* Uploading overlay */}
+                                    {isUploadingThumbnail && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm z-30">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="w-8 h-8 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                                <p className="text-gray-300 text-sm">Uploading...</p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -1590,7 +1576,7 @@ export default function Others_Shot() {
                                                         </span>
                                                         <span>{config.fullLabel}</span>
                                                     </div>
-                                                    {shotData.status === key && ( // ✅ แสดง checkmark
+                                                    {shotData.status === key && (
                                                         <Check className="w-4 h-4 text-blue-400 ml-auto " />
                                                     )}
                                                 </button>
@@ -1914,8 +1900,6 @@ export default function Others_Shot() {
                                 ⚙️
                             </button>
                         </div>
-
-
 
                         {/* Footer */}
                         <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
@@ -2360,13 +2344,13 @@ export default function Others_Shot() {
                                 className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                             >
                                 <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
-                                <button
+                                <div
                                     onMouseDown={e => e.stopPropagation()}
                                     onClick={() => resetVersionForm()}
                                     className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
                                 >
                                     ✕
-                                </button>
+                                </div>
                             </div>
 
                             {/* Body */}
@@ -2419,9 +2403,9 @@ export default function Others_Shot() {
                                 </div>
 
                                 {/* Version Name + Status */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
                                         <input
                                             type="text"
                                             value={createVersionForm.version_name}
@@ -2429,26 +2413,12 @@ export default function Others_Shot() {
                                             className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
                                         />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
-                                        <select
-                                            value={createVersionForm.status}
-                                            onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
-                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                        >
-                                            <option value="wtg">Waiting</option>
-                                            <option value="ip">In Progress</option>
-                                            <option value="rev">Review</option>
-                                            <option value="apr">Approved</option>
-                                            <option value="rej">Rejected</option>
-                                            <option value="fin">Final</option>
-                                        </select>
-                                    </div>
+                                   
                                 </div>
 
                                 {/* Uploaded By */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By <span className="text-red-400">*</span></label>
                                     <div className="relative">
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
@@ -2458,11 +2428,10 @@ export default function Others_Shot() {
                                                     </span>
                                                 </div>
                                                 <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
-                                                <button
-                                                    type="button"
+                                                <div
                                                     onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                                                    className="text-gray-600 hover:text-red-400 text-xs"
-                                                >✕</button>
+                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer"
+                                                >✕</div>
                                             </div>
                                         ) : (
                                             <input
@@ -2556,14 +2525,15 @@ export default function Others_Shot() {
                                 <button
                                     onClick={() => resetVersionForm()}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
+                                    className="px-4 h-8 rounded-lg flex items-center text-xs text-gray-400 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all disabled:opacity-40"
+
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCreateVersion}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
                                 >
                                     {isCreatingVersion ? (
                                         <>
@@ -2621,7 +2591,7 @@ export default function Others_Shot() {
                                 });
                             }
                         }}
-                        
+
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Version
@@ -2742,16 +2712,21 @@ export default function Others_Shot() {
                                                 `${ENDPOINTS.DELETE_SHOT_VERSION}/${deleteVersionConfirm.versionId}`,
                                                 { data: { entityId: shotData?.id } }
                                             );
-                                            setShotVersions(prev =>
-                                                prev.filter(v => v.id !== deleteVersionConfirm.versionId)
-                                            );
+                                            removeVersionFromState(deleteVersionConfirm.versionId);
                                             const newThumb = res.data.newThumbnail;
                                             if (newThumb) {
                                                 setShotData(prev =>
                                                     (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData
                                                 );
                                                 const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb }));
+                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: newThumb, thumbnail: newThumb }));
+                                            } else {
+                                                // ถ้าไม่มี newThumbnail = ลบหมดแล้ว → clear thumbnail
+                                                setShotData(prev =>
+                                                    (prev ? { ...prev, thumbnail: '' } : prev) as ShotData
+                                                );
+                                                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                                                localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: '', thumbnail: '' }));
                                             }
                                             setDeleteVersionConfirm(null);
                                         } catch {
@@ -2784,8 +2759,8 @@ export default function Others_Shot() {
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
                 onUpdateVersion={updateVersion}
-                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}    // ✅ เพิ่ม
-                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)} // ✅ เพิ่ม
+                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
+                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
             />
 
             {selectedNote && (
@@ -2913,4 +2888,3 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
         <p className="text-gray-200">{value}</p>
     </div>
 );
-

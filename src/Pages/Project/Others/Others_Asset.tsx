@@ -10,6 +10,7 @@ import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
 import VersionTab from "../../../components/VersionTab";
+import ShotAssetTab from "../../../components/Shot_AssetTab";
 
 
 //============================================================================================================================================//
@@ -211,7 +212,10 @@ export default function Others_Asset() {
     const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
     const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingAssetVersions;
-    
+    const [linkedShots, setLinkedShots] = useState<any[]>([]);
+    const [loadingLinkedShots, setLoadingLinkedShots] = useState(false);
+
+
     //============================================================================================================================================//
 
     const [checked, setChecked] = useState<CheckedState>({
@@ -280,6 +284,27 @@ export default function Others_Asset() {
             setVersionContextMenu(null);
         }
     }, [deleteVersionConfirm]);
+
+    useEffect(() => {
+        if (activeTab !== 'Shots' || !AssetID) return;
+
+        const fetchLinkedShots = async () => {
+            setLoadingLinkedShots(true);
+            try {
+                const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
+                    assetId: AssetID,
+                });
+                setLinkedShots(res.data);
+            } catch (err) {
+                console.error('Failed to fetch linked shots:', err);
+                setLinkedShots([]);
+            } finally {
+                setLoadingLinkedShots(false);
+            }
+        };
+
+        fetchLinkedShots();
+    }, [activeTab, AssetID]);
 
     useEffect(() => {
         const closeMenu = () => setVersionContextMenu(null);
@@ -791,6 +816,9 @@ export default function Others_Asset() {
         if (!createVersionForm.version_name.trim()) {
             alert('กรุณาระบุชื่อ Version'); return;
         }
+        if (!selectedUploader) {
+            alert('กรุณาระบุชื่อผู้อัพโหลด'); return;
+        }
         setIsCreatingVersion(true);
         try {
             if (versionFiles.length === 0) {
@@ -889,14 +917,23 @@ export default function Others_Asset() {
             const data = res.data;
             if (Array.isArray(data) && data.length > 0) {
                 setAssetVersions(data);
-                setIsThumbnailLocked(data.length >= 2); 
+                setIsThumbnailLocked(data.length >= 2);
             } else {
                 setAssetVersions([]);
                 setIsThumbnailLocked(false);
             }
-        } finally { 
-            setIsLoadingAssetVersions(false); 
+        } finally {
+            setIsLoadingAssetVersions(false);
         }
+    };
+
+    // เพิ่มหลัง fetchAssetVersions
+    const removeVersionFromState = (versionId: number) => {
+        setAssetVersions(prev => {
+            const updated = prev.filter(v => v.id !== versionId);
+            setIsThumbnailLocked(updated.length >= 2);
+            return updated;
+        });
     };
 
     const handleCreateTask = async () => {
@@ -1022,8 +1059,6 @@ export default function Others_Asset() {
                     <VersionTab
                         versions={assetVersions}
                         isLoadingVersions={isLoadingAssetVersions}
-
-
                         onUpdateVersion={async (versionId, field, value) => {
                             try {
                                 await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, { versionId, field, value });
@@ -1031,20 +1066,31 @@ export default function Others_Asset() {
                                 return true;
                             } catch { alert('ไม่สามารถอัปเดทได้'); return false; }
                         }}
-
                         onDeleteVersion={async (versionId: number) => {
                             try {
                                 const res = await axios.delete(`${ENDPOINTS.DELETE_ASSET_VERSION}/${versionId}`, {
                                     data: { entityId: AssetID }
                                 });
-                                setAssetVersions(prev => prev.filter(v => v.id !== versionId));
+                                removeVersionFromState(versionId);  // ← ใช้ helper เหมือน Shot
                                 const newThumb = res.data.newThumbnail;
                                 if (newThumb) {
-                                    setAssetData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData);
+                                    setAssetData(prev => prev ? { ...prev, thumbnail: newThumb } : prev);
                                     const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                                    localStorage.setItem('selectedAsset', JSON.stringify({ ...currentStored, file_url: newThumb }));
+                                    localStorage.setItem('selectedAsset', JSON.stringify({
+                                        ...currentStored,
+                                        file_url: newThumb,
+                                        thumbnail: newThumb   // ← เพิ่ม thumbnail ด้วยเหมือน Shot
+                                    }));
+                                } else {
+                                    // ลบหมดแล้ว → clear thumbnail
+                                    setAssetData(prev => prev ? { ...prev, thumbnail: '' } : prev);
+                                    const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                                    localStorage.setItem('selectedAsset', JSON.stringify({
+                                        ...currentStored,
+                                        file_url: '',
+                                        thumbnail: ''
+                                    }));
                                 }
-                                await fetchAssetVersions();
                             } catch {
                                 alert('ไม่สามารถลบได้');
                             }
@@ -1053,11 +1099,12 @@ export default function Others_Asset() {
                     />
                 );
 
-            case 'Sub Assets':
+            case 'Shots':
                 return (
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
-                        <p className="text-gray-300">Sub Assets content will be displayed here</p>
-                    </div>
+                    <ShotAssetTab
+                        shots={linkedShots}
+                        loading={loadingLinkedShots}
+                    />
                 );
 
             case 'Publishes':
@@ -1465,7 +1512,7 @@ export default function Others_Asset() {
 
                         {/* Tabs */}
                         <nav className="flex items-center gap-2 border-t border-gray-700/50 pt-4 mt-4 overflow-x-auto pb-1">
-                            {['Asset Info', 'Tasks', 'Notes', 'Versions', 'Sub Assets', 'Publishes'].map((tab) => (
+                            {['Asset Info', 'Tasks', 'Notes', 'Versions', 'Shots', 'Publishes'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -1962,13 +2009,13 @@ export default function Others_Asset() {
                                 className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                             >
                                 <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
-                                <button
+                                <div
                                     onMouseDown={e => e.stopPropagation()}
                                     onClick={() => resetVersionForm()}
                                     className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
                                 >
                                     ✕
-                                </button>
+                                </div>
                             </div>
 
                             {/* Body */}
@@ -2021,9 +2068,9 @@ export default function Others_Asset() {
                                 </div>
 
                                 {/* Version Name + Status */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
                                         <input
                                             type="text"
                                             value={createVersionForm.version_name}
@@ -2031,26 +2078,12 @@ export default function Others_Asset() {
                                             className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
                                         />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</label>
-                                        <select
-                                            value={createVersionForm.status}
-                                            onChange={e => setCreateVersionForm(p => ({ ...p, status: e.target.value }))}
-                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                        >
-                                            <option value="wtg">Waiting</option>
-                                            <option value="ip">In Progress</option>
-                                            <option value="rev">Review</option>
-                                            <option value="apr">Approved</option>
-                                            <option value="rej">Rejected</option>
-                                            <option value="fin">Final</option>
-                                        </select>
-                                    </div>
+                                    
                                 </div>
 
                                 {/* Uploaded By */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By <span className="text-red-400">*</span></label>
                                     <div className="relative">
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
@@ -2060,11 +2093,10 @@ export default function Others_Asset() {
                                                     </span>
                                                 </div>
                                                 <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
-                                                <button
-                                                    type="button"
+                                                <div
                                                     onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                                                    className="text-gray-600 hover:text-red-400 text-xs"
-                                                >✕</button>
+                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer"
+                                                >✕</div>
                                             </div>
                                         ) : (
                                             <input
@@ -2158,14 +2190,15 @@ export default function Others_Asset() {
                                 <button
                                     onClick={() => resetVersionForm()}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-white/6 transition-all disabled:opacity-40"
+                                    className="px-4 h-8 rounded-lg flex items-center text-xs text-gray-400 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all disabled:opacity-40"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCreateVersion}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white  bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
+
                                 >
                                     {isCreatingVersion ? (
                                         <>

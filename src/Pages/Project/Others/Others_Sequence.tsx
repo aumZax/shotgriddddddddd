@@ -7,7 +7,7 @@ import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
-import ShotTab from '../../../components/ShotTab';
+import ShotSequenceTab from '../../../components/Shot_SequenceTab';
 import RightPanel from "../../../components/RightPanel";
 
 //============================================================================================================================================//
@@ -804,7 +804,7 @@ export default function Others_Sequence() {
 
             case 'Shots':
                 return (
-                    <ShotTab
+                    <ShotSequenceTab
                         shots={shots}
                         loadingShots={loadingShots}
                         formatDateThai={formatDateThai}
