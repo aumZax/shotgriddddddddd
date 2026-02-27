@@ -28,6 +28,18 @@ interface Asset {
     thumbnail?: string;
 }
 
+// ⭐ Sequence ที่เชื่อมกับ asset
+interface AssetSequence {
+    id: number;
+    sequence_id: number;
+    sequence_name: string;
+    sequence_description: string;
+    sequence_status: string;
+    sequence_created_at: string;
+    sequence_file_url: string;
+    linked_at: string;
+}
+
 interface Asset_ShotTabProps {
     shotAssets: Asset[];
     loadingAssets: boolean;
@@ -40,18 +52,45 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     loadingAssets,
     onAssetUpdate,
 }) => {
-    const [assets, setAssets]                       = useState<Asset[]>(initialAssets);
-    const [editingAssetId, setEditingAssetId]       = useState<number | null>(null);
-    const [editingAssetName, setEditingAssetName]   = useState('');
-    const [editingDescId, setEditingDescId]         = useState<number | null>(null);
-    const [editingDesc, setEditingDesc]             = useState('');
-    const [showStatusMenu, setShowStatusMenu]       = useState<number | null>(null);
+    const [assets, setAssets]                         = useState<Asset[]>(initialAssets);
+    const [editingAssetId, setEditingAssetId]         = useState<number | null>(null);
+    const [editingAssetName, setEditingAssetName]     = useState('');
+    const [editingDescId, setEditingDescId]           = useState<number | null>(null);
+    const [editingDesc, setEditingDesc]               = useState('');
+    const [showStatusMenu, setShowStatusMenu]         = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
-    const [updating, setUpdating]                   = useState(false);
+    const [updating, setUpdating]                     = useState(false);
+
+    // ⭐ State สำหรับ sequences ของแต่ละ asset (key = asset_id)
+    const [assetSequencesMap, setAssetSequencesMap] = useState<Record<number, AssetSequence[]>>({});
 
     useEffect(() => {
         setAssets(initialAssets);
     }, [initialAssets]);
+
+    // ⭐ ดึง sequences ของทุก asset เมื่อ assets เปลี่ยน
+    useEffect(() => {
+        if (assets.length === 0) return;
+        assets.forEach(asset => {
+            fetchSequencesForAsset(asset.asset_id);
+        });
+    }, [assets.length]);
+
+    // ⭐ ฟังก์ชันดึง sequences ของ asset
+    const fetchSequencesForAsset = async (assetId: number) => {
+        try {
+            const res = await axios.post(ENDPOINTS.GET_ASSET_SEQUENCES_JOIN, { assetId });
+            if (Array.isArray(res.data)) {
+                setAssetSequencesMap(prev => ({ ...prev, [assetId]: res.data }));
+            } else if (res.data && Array.isArray(res.data.data)) {
+                setAssetSequencesMap(prev => ({ ...prev, [assetId]: res.data.data }));
+            } else {
+                setAssetSequencesMap(prev => ({ ...prev, [assetId]: [] }));
+            }
+        } catch {
+            setAssetSequencesMap(prev => ({ ...prev, [assetId]: [] }));
+        }
+    };
 
     // ─── API ────────────────────────────────────────────────────────────────────
     const updateAssetField = async (assetId: number, field: string, value: any) => {
@@ -113,6 +152,13 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
         );
     }
 
+    // ─── Status dot helper ───────────────────────────────────────────────────────
+    const getStatusDot = (status: string) => {
+        if (status === 'fin') return <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50 flex-shrink-0" />;
+        if (status === 'ip')  return <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />;
+        return <div className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />;
+    };
+
     // ─── Table ──────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-4 overflow-visible">
@@ -136,6 +182,8 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-48">Status</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
+                            {/* ⭐ คอลัมน์ Sequences ใหม่ */}
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequences</th>
                         </tr>
                     </thead>
 
@@ -144,6 +192,9 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
                         {assets.map((asset, index) => {
                             const cfg = statusConfig[asset.status as StatusType] ??
                                 { label: asset.status, fullLabel: asset.status, color: 'bg-gray-600', icon: 'dot' };
+
+                            // ⭐ ดึง sequences ของ asset นี้
+                            const sequences = assetSequencesMap[asset.asset_id] ?? [];
 
                             return (
                                 <tr
@@ -276,8 +327,7 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
                                                 ) : (
                                                     <div className={`w-2.5 h-2.5 rounded-full ${cfg.color} shadow-sm flex-shrink-0`} />
                                                 )}
-                                                <span className="text-xs text-gray-300 font-medium truncate">{cfg.label}</span>
-                                            
+                                                <span className="text-xs text-gray-300 font-medium">{cfg.label}</span>
                                             </button>
 
                                             {showStatusMenu === asset.asset_id && (
@@ -345,6 +395,48 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
                                                 {asset.description || (
                                                     <span className="text-gray-600 italic">คลิกเพื่อเพิ่มรายละเอียด...</span>
                                                 )}
+                                            </div>
+                                        )}
+                                    </td>
+
+                                    {/* ⭐ Sequences — แสดงรายชื่อ sequences ที่เชื่อมกับ asset */}
+                                    <td className="px-4 py-4">
+                                        {sequences.length === 0 ? (
+                                            <span className="text-xs text-gray-600 italic">No sequences</span>
+                                        ) : sequences.length <= 2 ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {sequences.map(seq => (
+                                                    <div
+                                                        key={seq.sequence_id}
+                                                        title={seq.sequence_description || seq.sequence_name}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-700/20 rounded-md border border-purple-600/30"
+                                                    >
+                                                        <span className="text-xs text-purple-300 font-medium whitespace-nowrap">
+                                                            {seq.sequence_name}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {/* Badge จำนวน */}
+                                                <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                                                    <span className="text-xs font-semibold text-purple-300">{sequences.length} seqs</span>
+                                                </div>
+                                                {/* แสดงสอง sequence แรก */}
+                                                {sequences.slice(0, 2).map(seq => (
+                                                    <div
+                                                        key={seq.sequence_id}
+                                                        title={seq.sequence_description || seq.sequence_name}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-700/20 rounded-md border border-purple-600/30"
+                                                    >
+                                                        <span className="text-xs text-purple-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                            {seq.sequence_name}
+                                                        </span>
+                                                        {getStatusDot(seq.sequence_status)}
+                                                    </div>
+                                                ))}
+                                                <span className="text-gray-500 text-xs">...</span>
                                             </div>
                                         )}
                                     </td>

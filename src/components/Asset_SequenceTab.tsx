@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Package, Check } from 'lucide-react';
+import { Image, Pencil, Package, Check, Film } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
 
@@ -62,6 +62,8 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const [updating, setUpdating] = useState(false);
 
+    // ⭐ State ควบคุมการ expand shots ของแต่ละ asset (key = asset_id)
+    const [expandedShots, setExpandedShots] = useState<Record<number, boolean>>({});
     // ⭐ State สำหรับ shots ของแต่ละ asset (key = asset_id)
     const [assetShotsMap, setAssetShotsMap] = useState<Record<number, AssetShot[]>>({});
 
@@ -393,51 +395,59 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                     </td>
 
                                     {/* ⭐ Shots — แสดงรายชื่อ shots ที่เชื่อมกับ asset */}
+                                    {/* ⭐ Shots */}
                                     <td className="px-4 py-4">
-                                        {shots.length === 0 ? (
-                                            <span className="text-xs text-gray-600 italic">No shots</span>
-                                        ) : shots.length <= 2 ? (
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {shots.map(shot => (
-                                                    <div
-                                                        key={shot.shot_id}
-                                                        title={shot.shot_description || shot.shot_name}
-                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
-                                                    >
-                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
-                                                            {shot.shot_name}
-                                                        </span>
+                                        {(() => {
+                                            const LIMIT = 3;
+                                            const isExpanded = !!expandedShots[asset.asset_id];
+                                            const visibleShots = isExpanded ? shots : shots.slice(0, LIMIT);
+                                            const hiddenCount = shots.length - LIMIT;
 
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                {/* Badge จำนวน */}
-                                                <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
-                                                    <span className="text-xs font-semibold text-green-300">{shots.length} shots</span>
+                                            if (shots.length === 0) {
+                                                return <span className="text-xs text-gray-600 italic">No shots</span>;
+                                            }
+
+                                            return (
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {visibleShots.map(shot => (
+                                                        <div
+                                                            key={shot.shot_id}
+                                                            title={shot.shot_description || shot.shot_name}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
+                                                        >
+                                                            <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
+                                                                {shot.shot_name}
+                                                            </span>
+                                                            {shot.shot_status === 'fin' && (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50 flex-shrink-0" />
+                                                            )}
+                                                            {shot.shot_status === 'ip' && (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />
+                                                            )}
+                                                        </div>
+                                                    ))}
+
+                                                    {/* ปุ่ม +N / ซ่อน */}
+                                                    {shots.length > LIMIT && (
+                                                        <div
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                setExpandedShots(prev => ({
+                                                                    ...prev,
+                                                                    [asset.asset_id]: !prev[asset.asset_id]
+                                                                }));
+                                                            }}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                                                        >
+                                                            <Film className="w-3 h-3 text-blue-400" />
+                                                            <span className="text-xs font-semibold text-blue-300">
+                                                                {isExpanded ? 'ซ่อน' : `+${hiddenCount}`}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {/* แสดงสอง shot แรก */}
-                                                {shots.slice(0, 2).map(shot => (
-                                                    <div
-                                                        key={shot.shot_id}
-                                                        title={shot.shot_description || shot.shot_name}
-                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-700/40 rounded-md border border-gray-600/30"
-                                                    >
-                                                        <span className="text-xs text-gray-300 font-medium whitespace-nowrap max-w-[80px] truncate">
-                                                            {shot.shot_name}
-                                                        </span>
-                                                        {shot.shot_status === 'fin' && (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50 flex-shrink-0" />
-                                                        )}
-                                                        {shot.shot_status === 'ip' && (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                <span className="text-gray-500 text-xs">...</span>
-                                            </div>
-                                        )}
+                                            );
+                                        })()}
                                     </td>
                                 </tr>
                             );

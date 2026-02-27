@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { Film, Image, Pencil, Check, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Film, Image, Pencil, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 export interface AssetShot {
-    id: number;           // asset_shots.id
+    id: number;
     shot_id: number;
     shot_name: string;
     shot_description: string;
@@ -17,77 +16,101 @@ export interface AssetShot {
     sequence_id?: number;
 }
 
+interface ShotSequenceInfo {
+    sequence_id: number | null;
+    sequence_name: string | null;
+    sequence_status: string | null;
+}
+
 interface ShotAssetTabProps {
     shots: AssetShot[];
     loading: boolean;
     onShotUpdate?: () => void;
 }
 
-// ─── Status Config ─────────────────────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; fullLabel: string; color: string; icon: string }> = {
-    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
-    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
-    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
-    wtc: { label: 'wtc', fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
-    arp: { label: 'arp', fullLabel: 'Approval', color: 'bg-green-600', icon: 'dot' },
-    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
-    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
-    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
-    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
-    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
-    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
-    nef: { label: 'nef', fullLabel: 'Need Fixed', color: 'bg-red-500', icon: 'dot' },
-    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
-    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
-    vnd: { label: 'vnd', fullLabel: 'Vendor', color: 'bg-purple-800', icon: 'dot' },
+    wtg:  { label: 'wtg',  fullLabel: 'Waiting to Start',  color: 'bg-gray-600',   icon: '-'   },
+    ip:   { label: 'ip',   fullLabel: 'In Progress',        color: 'bg-blue-500',   icon: 'dot' },
+    fin:  { label: 'fin',  fullLabel: 'Final',              color: 'bg-green-500',  icon: 'dot' },
+    wtc:  { label: 'wtc',  fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
+    arp:  { label: 'arp',  fullLabel: 'Approval',           color: 'bg-green-600',  icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete',           color: 'bg-blue-600',   icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed',          color: 'bg-purple-500', icon: 'dot' },
+    rts:  { label: 'rts',  fullLabel: 'Ready to Start',     color: 'bg-orange-500', icon: 'dot' },
+    omt:  { label: 'omt',  fullLabel: 'Omit',               color: 'bg-gray-500',   icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered',          color: 'bg-cyan-500',   icon: 'dot' },
+    hld:  { label: 'hld',  fullLabel: 'On Hold',            color: 'bg-orange-600', icon: 'dot' },
+    nef:  { label: 'nef',  fullLabel: 'Need Fixed',         color: 'bg-red-500',    icon: 'dot' },
+    cap:  { label: 'cap',  fullLabel: 'Client Approved',    color: 'bg-green-400',  icon: 'dot' },
+    na:   { label: 'na',   fullLabel: 'N/A',                color: 'bg-gray-400',   icon: '-'   },
+    vnd:  { label: 'vnd',  fullLabel: 'Vendor',             color: 'bg-purple-800', icon: 'dot' },
 };
 
 const getStatus = (status: string) =>
     statusConfig[status] ?? { label: status, fullLabel: status, color: 'bg-gray-600', icon: 'dot' };
 
-// ─── Component ─────────────────────────────────────────────────────────────────
-const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loading, onShotUpdate }) => {
-    const [shots, setShots] = useState<AssetShot[]>(initialShots);
-    const [editingShotId, setEditingShotId] = useState<number | null>(null);
-    const [editingShotName, setEditingShotName] = useState('');
-    const [editingDescId, setEditingDescId] = useState<number | null>(null);
-    const [editingDesc, setEditingDesc] = useState('');
-    const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
-    const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
-    const [updating, setUpdating] = useState(false);
 
-    React.useEffect(() => {
-        setShots(initialShots);
+
+const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loading, onShotUpdate }) => {
+    const [shots, setShots]                             = useState<AssetShot[]>(initialShots);
+    const [editingShotId, setEditingShotId]             = useState<number | null>(null);
+    const [editingShotName, setEditingShotName]         = useState('');
+    const [editingDescId, setEditingDescId]             = useState<number | null>(null);
+    const [editingDesc, setEditingDesc]                 = useState('');
+    const [showStatusMenu, setShowStatusMenu]           = useState<number | null>(null);
+    const [statusMenuPosition, setStatusMenuPosition]   = useState<'top' | 'bottom'>('bottom');
+    const [updating, setUpdating]                       = useState(false);
+
+    // ⭐ State เก็บ sequence ของแต่ละ shot (key = shot_id)
+    const [shotSequenceMap, setShotSequenceMap] = useState<Record<number, ShotSequenceInfo>>({});
+
+    useEffect(() => { setShots(initialShots); }, [initialShots]);
+
+    // ⭐ ดึง sequence ของทุก shot เมื่อ shots เปลี่ยน
+    useEffect(() => {
+        if (initialShots.length === 0) return;
+        initialShots.forEach(shot => fetchSequenceForShot(shot.shot_id));
     }, [initialShots]);
+
+    const fetchSequenceForShot = async (shotId: number) => {
+        try {
+            const res = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, { shotId });
+            const rows = res.data;
+            if (!rows || rows.length === 0) {
+                setShotSequenceMap(prev => ({ ...prev, [shotId]: { sequence_id: null, sequence_name: null, sequence_status: null } }));
+                return;
+            }
+            const firstRow = rows[0];
+            setShotSequenceMap(prev => ({
+                ...prev,
+                [shotId]: {
+                    sequence_id:     firstRow.sequence_id     ?? null,
+                    sequence_name:   firstRow.sequence_name   ?? null,
+                    sequence_status: firstRow.sequence_status ?? null,
+                }
+            }));
+        } catch {
+            setShotSequenceMap(prev => ({ ...prev, [shotId]: { sequence_id: null, sequence_name: null, sequence_status: null } }));
+        }
+    };
 
     // ─── API ────────────────────────────────────────────────────────────────────
     const updateShotField = async (shotId: number, field: string, value: any) => {
         if (updating) return;
         try {
             setUpdating(true);
-
-            // Map frontend field names → database field names
             const fieldMap: Record<string, string> = {
-                shot_name: 'shot_name',
-                shot_status: 'status',
+                shot_name:        'shot_name',
+                shot_status:      'status',
                 shot_description: 'description',
             };
             const dbField = fieldMap[field] ?? field;
-
-            const response = await axios.post(ENDPOINTS.UPDATE_SHOT, {
-                shotId,
-                field: dbField,
-                value,
-            });
-
+            const response = await axios.post(ENDPOINTS.UPDATE_SHOT, { shotId, field: dbField, value });
             if (response.data.message === 'Shot updated successfully' || response.data.success) {
-                setShots(prev =>
-                    prev.map(s => s.shot_id === shotId ? { ...s, [field]: value } : s)
-                );
+                setShots(prev => prev.map(s => s.shot_id === shotId ? { ...s, [field]: value } : s));
                 onShotUpdate?.();
             }
         } catch (error: any) {
-            console.error('❌ Update shot failed:', error);
             alert(`Failed to update shot: ${error.response?.data?.message ?? error.message}`);
             setShots(initialShots);
         } finally {
@@ -95,7 +118,6 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
         }
     };
 
-    // ─── Handlers ───────────────────────────────────────────────────────────────
     const handleUpdateShotName = async (shotId: number, newName: string) => {
         if (!newName.trim()) { alert('Shot name cannot be empty'); setEditingShotId(null); return; }
         await updateShotField(shotId, 'shot_name', newName.trim());
@@ -125,12 +147,12 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
     if (!shots.length) {
         return (
             <div className="text-center py-12">
-                <div className="relative inline-block">
+                <div className="relative">
                     <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-                    <Film className="relative w-20 h-20 text-gray-600 mx-auto mb-4" strokeWidth={1.5} />
+                    <Film className="relative w-24 h-24 text-gray-600 mx-auto mb-4" strokeWidth={1.5} />
                 </div>
-                <p className="text-gray-500 mt-4">No shots linked to this asset</p>
-                <p className="text-xs text-gray-600 mt-1">Shots will appear here when linked via the asset_shots table</p>
+                <div className="text-gray-500 mb-2">No shots linked to this asset</div>
+                <p className="text-sm text-gray-600">Shots will appear here when linked</p>
             </div>
         );
     }
@@ -145,7 +167,7 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                     <thead className="sticky top-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 z-10 backdrop-blur-sm">
                         <tr className="border-b-2 border-blue-500/30">
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-12">#</th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-40">Thumbnail</th>
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">Thumbnail</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
                                     <span>Shot Name</span>
@@ -156,15 +178,18 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                 </div>
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-48">Status</th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-40">Sequence</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
+                            {/* ⭐ Sequence อยู่สุดท้าย เหมือน Asset_ShotTab */}
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</th>
                         </tr>
                     </thead>
 
                     {/* ── Body ── */}
                     <tbody className="divide-y divide-gray-800/50">
                         {shots.map((shot, index) => {
-                            const cfg = getStatus(shot.shot_status);
+                            const cfg    = getStatus(shot.shot_status);
+                            const seqInfo = shotSequenceMap[shot.shot_id];
+
                             return (
                                 <tr
                                     key={`asset-shot-${shot.id}-${index}`}
@@ -186,7 +211,11 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
 
                                             if (isVideo) return (
                                                 <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                    <video src={`${ENDPOINTS.image_url}${url}`} className="w-full h-full object-cover" muted loop autoPlay />
+                                                    <video
+                                                        src={`${ENDPOINTS.image_url}${url}`}
+                                                        className="w-full h-full object-cover"
+                                                        muted loop autoPlay
+                                                    />
                                                     <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1 py-0.5">
                                                         <span className="text-[9px] text-gray-300">▶</span>
                                                     </div>
@@ -195,8 +224,15 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
 
                                             if (isImage) return (
                                                 <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                    <div className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50" style={{ backgroundImage: `url(${ENDPOINTS.image_url}${url})` }} />
-                                                    <img src={`${ENDPOINTS.image_url}${url}`} alt={shot.shot_name} className="relative w-full h-full object-contain" />
+                                                    <div
+                                                        className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
+                                                        style={{ backgroundImage: `url(${ENDPOINTS.image_url}${url})` }}
+                                                    />
+                                                    <img
+                                                        src={`${ENDPOINTS.image_url}${url}`}
+                                                        alt={shot.shot_name}
+                                                        className="relative w-full h-full object-contain"
+                                                    />
                                                 </div>
                                             );
 
@@ -213,7 +249,7 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                     {/* Shot Name — editable */}
                                     <td className="px-4 py-4 w-48">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-green-400 text-lg flex-shrink-0">🎬</span>
+                                            <span className="text-green-400 text-lg flex-shrink-0">✓</span>
 
                                             {editingShotId === shot.shot_id ? (
                                                 <input
@@ -245,7 +281,6 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                                             setEditingShotName(shot.shot_name);
                                                         }}
                                                         className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 transition-all bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-700 rounded-xl flex-shrink-0"
-
                                                         title="แก้ไขชื่อ"
                                                     >
                                                         <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
@@ -275,11 +310,9 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                                 ) : (
                                                     <div className={`w-2.5 h-2.5 rounded-full ${cfg.color} shadow-sm flex-shrink-0`} />
                                                 )}
-                                                <span className="text-xs text-gray-300 font-medium truncate">{cfg.label}</span>
-
+                                                <span className="text-xs text-gray-300 font-medium">{cfg.label}</span>
                                             </button>
 
-                                            {/* Dropdown */}
                                             {showStatusMenu === shot.shot_id && (
                                                 <>
                                                     <div className="fixed inset-0 z-10" onClick={() => setShowStatusMenu(null)} />
@@ -316,23 +349,6 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                         </div>
                                     </td>
 
-                                    {/* Sequence — read only */}
-                                    <td className="px-4 py-4">
-                                        {shot.sequence_name ? (
-                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-800/80 border border-gray-700/60 max-w-[150px]">
-                                                <Layers className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-                                                <span
-                                                    className="text-xs text-purple-300 font-medium truncate"
-                                                    title={shot.sequence_name}
-                                                >
-                                                    {shot.sequence_name}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-gray-600 italic px-2">—</span>
-                                        )}
-                                    </td>
-
                                     {/* Description — editable */}
                                     <td className="px-4 py-4">
                                         {editingDescId === shot.shot_id ? (
@@ -365,6 +381,28 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
                                             </div>
                                         )}
                                     </td>
+
+                                    {/* ⭐ Sequence — อยู่สุดท้าย style เหมือน Asset_ShotTab */}
+                                    <td className="px-4 py-4">
+                                        {!seqInfo ? (
+                                            // กำลังโหลด
+                                            <div className="w-16 h-5 rounded bg-gray-800 animate-pulse" />
+                                        ) : seqInfo.sequence_name ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <div
+                                                    title={seqInfo.sequence_name}
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-700/20 rounded-md border border-purple-600/30"
+                                                >
+                                                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap">
+                                                        {seqInfo.sequence_name}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-600 italic">No sequence</span>
+                                        )}
+                                    </td>
+
                                 </tr>
                             );
                         })}
@@ -375,4 +413,4 @@ const ShotAssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadin
     );
 };
 
-export default ShotAssetTab;
+export default Shot_AssetTab;
