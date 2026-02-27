@@ -9,6 +9,7 @@ import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
 import ShotSequenceTab from '../../../components/Shot_SequenceTab';
 import RightPanel from "../../../components/RightPanel";
+import Asset_SequenceTab from '../../../components/Asset_SequenceTab';
 
 //============================================================================================================================================//
 
@@ -29,6 +30,18 @@ type TaskReviewer = {
     id: number;
     username: string;
 };
+
+interface Asset {
+    id: number;
+    asset_id: number;
+    asset_name: string;
+    status: string;
+    description: string;
+    created_at: string;
+    asset_sequence_id?: number;
+    asset_type?: string;
+    thumbnail?: string;
+}
 
 interface Note {
     id: number;
@@ -143,8 +156,10 @@ export default function Others_Sequence() {
     const [thumbnailLoading, setThumbnailLoading] = useState(true);
     const navigate = useNavigate();
     const [editingField, setEditingField] = useState<null | 'sequence' | 'description'>(null);
+    const [sequenceAssets, setSequenceAssets] = useState<Asset[]>([]);
+    const [loadingAssets, setLoadingAssets] = useState(false);
 
-//============================================================================================================================================//
+    //============================================================================================================================================//
 
     const [SequenceData, setSequenceData] = useState({
         id: 0,
@@ -174,7 +189,7 @@ export default function Others_Sequence() {
         file_url: '',
     });
 
-//============================================================================================================================================//
+    //============================================================================================================================================//
 
     const [deleteNoteConfirm, setDeleteNoteConfirm] = useState<{
         noteId: number;
@@ -188,7 +203,7 @@ export default function Others_Sequence() {
         note: Note;
     } | null>(null);
 
-//============================================================================================================================================//
+    //============================================================================================================================================//
 
     useEffect(() => {
         const fetchPeople = async () => {
@@ -211,6 +226,12 @@ export default function Others_Sequence() {
             fetchNotes();
         }
     }, [activeTab, SequenceData?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'Assets' && sequenceId) {
+            fetchSequenceAssets();
+        }
+    }, [activeTab, sequenceId]);
 
     useEffect(() => {
         if (!sequenceId) return;
@@ -282,7 +303,7 @@ export default function Others_Sequence() {
             setIsPanelOpen(false);
             const t = setTimeout(() => {
                 setIsPanelOpen(true);
-                fetchTaskVersions(selectedTask.id); 
+                fetchTaskVersions(selectedTask.id);
             }, 10);
             return () => clearTimeout(t);
         }
@@ -345,7 +366,7 @@ export default function Others_Sequence() {
         }
     }, []);
 
-//============================================================================================================================================//
+    //============================================================================================================================================//
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsResizing(true);
@@ -780,6 +801,44 @@ export default function Others_Sequence() {
         }
     };
 
+    const fetchSequenceAssets = async () => {
+        if (!sequenceId) return;
+        setLoadingAssets(true);
+        try {
+            const res = await fetch(ENDPOINTS.GET_ASSET_SEQUENCE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sequenceId })
+            });
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+            const result = await res.json();
+
+            if (result.success) {
+                const assets: Asset[] = result.data.map((item: any) => ({
+                    id: item.asset_id,
+                    asset_id: item.asset_id,
+                    asset_name: item.asset_name,
+                    status: item.status,
+                    description: item.description || '',
+                    created_at: item.asset_created_at,
+                    asset_sequence_id: item.asset_sequence_id,
+                    asset_type: item.asset_type,
+                    thumbnail: item.thumbnail
+                }));
+                setSequenceAssets(assets);
+            } else {
+                setSequenceAssets([]);
+            }
+        } catch (error) {
+            console.error('Error fetching sequence assets:', error);
+            setSequenceAssets([]);
+        } finally {
+            setLoadingAssets(false);
+        }
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 'Sequence Info':
@@ -814,20 +873,12 @@ export default function Others_Sequence() {
 
             case 'Assets':
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
-                            <p className="flex items-center gap-3 text-gray-200">
-                                <span className="text-2xl">🎥</span>
-                                <span className="font-medium">Asset Example 1</span>
-                            </p>
-                        </div>
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-xl border border-gray-600/50 hover:border-blue-500/50 transition-all hover:shadow-lg cursor-pointer">
-                            <p className="flex items-center gap-3 text-gray-200">
-                                <span className="text-2xl">🌲</span>
-                                <span className="font-medium">Asset Example 2</span>
-                            </p>
-                        </div>
-                    </div>
+                    <Asset_SequenceTab
+                        sequenceAssets={sequenceAssets}
+                        loadingAssets={loadingAssets}
+                        formatDateThai={formatDateThai}
+                        onAssetUpdate={fetchSequenceAssets}
+                    />
                 );
 
             case 'Notes':
@@ -857,8 +908,8 @@ export default function Others_Sequence() {
                 return null;
         }
     };
-    
-//============================================================================================================================================//
+
+    //============================================================================================================================================//
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"

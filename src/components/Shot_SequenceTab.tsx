@@ -301,17 +301,18 @@ const ShotTab: React.FC<ShotTabProps> = ({
                                                     {shot.shot_name}
                                                 </span>
 
-                                                <button
+                                                <div
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setEditingShotId(shot.shot_id);
                                                         setEditingShotName(shot.shot_name);
                                                     }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
+                                                    className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 transition-all bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-700 rounded-xl flex-shrink-0"
+
                                                     title="แก้ไขชื่อ"
                                                 >
                                                     <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
-                                                </button>
+                                                </div>
                                             </>
                                         )}
                                     </div>

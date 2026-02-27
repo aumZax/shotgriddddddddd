@@ -8,7 +8,7 @@ import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
-import AssetTab from '../../../components/AssetTab';
+import Asset_ShotTab from '../../../components/Asset_ShotTab';
 import RightPanel from "../../../components/RightPanel";
 import { useNavigate } from 'react-router-dom';
 import VersionTab from '../../../components/VersionTab';
@@ -1239,7 +1239,7 @@ export default function Others_Shot() {
 
             case 'Assets':
                 return (
-                    <AssetTab
+                    <Asset_ShotTab
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
                         formatDateThai={formatDate}
