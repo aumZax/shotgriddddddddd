@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -207,7 +208,10 @@ export default function Others_Asset() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
     const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
-
+    const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+    const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
+    const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingAssetVersions;
+    
     //============================================================================================================================================//
 
     const [checked, setChecked] = useState<CheckedState>({
@@ -637,7 +641,6 @@ export default function Others_Asset() {
 
     const updateAssetField = async (
         field: keyof AssetData,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         value: any
     ) => {
         if (!assetData) {
@@ -884,10 +887,16 @@ export default function Others_Asset() {
         try {
             const res = await axios.post(`${ENDPOINTS.GET_ASSET_VERSION}`, { entityType: 'asset', entityId: AssetID });
             const data = res.data;
-            if (Array.isArray(data) && data.length > 0) { setAssetVersions(data); }
-
+            if (Array.isArray(data) && data.length > 0) {
+                setAssetVersions(data);
+                setIsThumbnailLocked(data.length >= 2); 
+            } else {
+                setAssetVersions([]);
+                setIsThumbnailLocked(false);
+            }
+        } finally { 
+            setIsLoadingAssetVersions(false); 
         }
-        finally { setIsLoadingAssetVersions(false); }
     };
 
     const handleCreateTask = async () => {
@@ -1035,6 +1044,7 @@ export default function Others_Asset() {
                                     const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
                                     localStorage.setItem('selectedAsset', JSON.stringify({ ...currentStored, file_url: newThumb }));
                                 }
+                                await fetchAssetVersions();
                             } catch {
                                 alert('ไม่สามารถลบได้');
                             }
@@ -1201,19 +1211,23 @@ export default function Others_Asset() {
                                                     <Eye className="w-4 h-4" />
                                                     View
                                                 </button>
-                                                <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-lg flex items-center gap-2 cursor-pointer text-sm font-medium shadow-lg hover:shadow-emerald-500/50 transition-all duration-200">
+                                                <label className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg transition-all duration-200
+                                                    ${thumbnailDisabled
+                                                        ? 'bg-gray-600 opacity-50 cursor-not-allowed pointer-events-none'
+                                                        : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95 cursor-pointer hover:shadow-emerald-500/50'
+                                                    }`}>
                                                     <Upload className="w-4 h-4" />
-                                                    Change
+                                                    {isUploadingThumbnail ? 'Uploading...' : 'Change'}
                                                     <input
                                                         type="file"
                                                         accept="image/*,video/*"
                                                         className="hidden"
+                                                        disabled={thumbnailDisabled}
                                                         onChange={async (e) => {
                                                             if (!e.target.files?.[0]) return;
-
+                                                            setIsUploadingThumbnail(true);
                                                             const file = e.target.files[0];
                                                             const formData = new FormData();
-
                                                             formData.append("assetId", assetData.id.toString());
                                                             formData.append("file", file);
                                                             formData.append("fileName", file.name);
@@ -1248,6 +1262,8 @@ export default function Others_Asset() {
                                                             } catch (err) {
                                                                 console.error("❌ Upload error:", err);
                                                                 alert("Upload error");
+                                                            } finally {
+                                                                setIsUploadingThumbnail(false);
                                                             }
                                                         }}
                                                     />
@@ -1261,10 +1277,12 @@ export default function Others_Asset() {
                                         <input
                                             type="file"
                                             accept="image/*,video/*"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
+                                            className={`absolute inset-0 w-full h-full opacity-0 z-30
+                                                ${thumbnailDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
+                                            disabled={thumbnailDisabled}
                                             onChange={async (e) => {
                                                 if (!e.target.files?.[0]) return;
-
+                                                setIsUploadingThumbnail(true);
                                                 const file = e.target.files[0];
                                                 const formData = new FormData();
                                                 formData.append("assetId", assetData.id.toString());
@@ -1297,6 +1315,8 @@ export default function Others_Asset() {
                                                     }
                                                 } catch (err) {
                                                     console.error("❌ Upload error:", err);
+                                                } finally {
+                                                    setIsUploadingThumbnail(false);
                                                 }
                                             }}
                                         />
@@ -2323,26 +2343,12 @@ export default function Others_Asset() {
                                     onClick={async (e) => {
                                         e.stopPropagation();
                                         try {
-                                            const res = await axios.delete(
+                                            await axios.delete(
                                                 `${ENDPOINTS.DELETE_ASSET_VERSION}/${deleteVersionConfirm.versionId}`,
                                                 { data: { entityId: AssetID } }
                                             );
-                                            setAssetVersions(prev =>
-                                                prev.filter(v => v.id !== deleteVersionConfirm.versionId)
-                                            );
-                                            const newThumb = res.data.newThumbnail;
-                                            if (newThumb) {
-                                                setAssetData(prev =>
-                                                    (prev ? { ...prev, thumbnail: newThumb } : prev) as AssetData
-                                                );
-                                                const currentStored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                                                localStorage.setItem('selectedAsset', JSON.stringify({
-                                                    ...currentStored,
-                                                    file_url: newThumb,
-                                                    thumbnail: newThumb
-                                                }));
-                                            }
                                             setDeleteVersionConfirm(null);
+                                            await fetchAssetVersions();
                                         } catch {
                                             alert('ไม่สามารถลบได้');
                                         }

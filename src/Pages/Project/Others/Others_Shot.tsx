@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
@@ -129,8 +130,8 @@ type Task = {
     description: string;
     file_url: string;
     assignees: TaskAssignee[];
-    reviewers: TaskReviewer[];
-    pipeline_step: PipelineStep | null;
+    reviewers: TaskReviewer[];     
+    pipeline_step: PipelineStep | null;  
 };
 
 type TaskAssignee = {
@@ -203,7 +204,7 @@ export default function Others_Shot() {
     const [selectedTasks, setSelectedTasks] = useState<string[]>([])
     const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
     const [body, setBody] = useState('');
-    const currentUser = localStorage.getItem('currentUser') || 'Unknown';
+    const currentUser = localStorage.getItem('currentUser') || 'Manager';
     const [noteModalPosition, setNoteModalPosition] = useState({ x: 0, y: 0 });
     const [allPeople, setAllPeople] = useState<Person[]>([]);
     const [query, setQuery] = useState('');
@@ -221,7 +222,7 @@ export default function Others_Shot() {
     const [shotVersions, setShotVersions] = useState<any[]>([]);
     const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
     const [,] = useState<Version | null>(null);
-    const [rightPanelTab, setRightPanelTab] = useState('notes');
+    const [rightPanelTab, setRightPanelTab] = useState('notes'); 
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -241,9 +242,12 @@ export default function Others_Shot() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [subject, setSubject] = useState(shotData?.shotCode ? `Note on ${shotData.shotCode}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
+    const [createVersionForm, setCreateVersionForm] = useState({version_name: '', status: 'wtg', description: '', link: '', task: '',});
     const [isCreatingAsset, setIsCreatingAsset] = useState(false);
-
+    const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+    const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
+    const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingShotVersions;
+        
     //============================================================================================================================================//
 
     const [checked, setChecked] = useState<CheckedState>({
@@ -266,7 +270,7 @@ export default function Others_Shot() {
     const [createAssetForm, setCreateAssetForm] = useState({
         asset_name: '',
         description: '',
-        asset_type: 'Character',
+        asset_type: 'Character', 
     });
 
     //============================================================================================================================================//
@@ -335,14 +339,10 @@ export default function Others_Shot() {
     }, [versionContextMenu]);
 
     useEffect(() => {
-        fetchShotVersions(); // โหลดทันทีตอน mount
-    }, [shotData?.id]);
-
-    useEffect(() => {
         if (activeTab === 'Versions') {
-            fetchShotVersions(); // ยังคง refresh เมื่อกดแถบ Versions
+            fetchShotVersions();
         }
-    }, [activeTab]);
+    }, [activeTab, shotData?.id]);
 
     useEffect(() => {
         if (deleteNoteConfirm) {
@@ -360,9 +360,6 @@ export default function Others_Shot() {
     }, [noteContextMenu]);
 
     useEffect(() => {
-
-        console.log("🔍 shotId:", shotId);
-        console.log("🔍 projectId:", projectId);
 
         if (!shotId || !projectId) {
             console.warn("⚠️ Missing shotId or projectId");
@@ -395,9 +392,9 @@ export default function Others_Shot() {
     }, [selectedTask]);
 
     useEffect(() => {
-        if (activeTab === 'Notes') {
-            fetchNotes();
-        }
+    if (activeTab === 'Notes') {
+        fetchNotes();
+    }
     }, [activeTab, shotData?.id]);
 
     //============================================================================================================================================//
@@ -479,7 +476,13 @@ export default function Others_Shot() {
         try {
             const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
             const data = res.data;
-            if (Array.isArray(data) && data.length > 0) { setShotVersions(data); }
+             if (Array.isArray(data) && data.length > 0) {
+            setShotVersions(data);
+            setIsThumbnailLocked(data.length >= 2); 
+        } else {
+            setShotVersions([]);
+            setIsThumbnailLocked(false);
+        }
 
         }
         finally { setIsLoadingShotVersions(false); }
@@ -489,9 +492,6 @@ export default function Others_Shot() {
         if (isCreatingVersion) return;
         if (!createVersionForm.version_name.trim()) {
             alert('กรุณาระบุชื่อ Version'); return;
-        }
-        if (!selectedUploader) {
-            alert('กรุณาเลือกผู้อัพโหลด (Uploaded By)'); return;
         }
         setIsCreatingVersion(true);
         try {
@@ -536,8 +536,8 @@ export default function Others_Shot() {
                         setShotData(prev => ({ ...prev, thumbnail: fileUrl }));  // ✅ ใช้ได้เพราะอยู่ใน scope เดียวกัน
 
                         const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                        localStorage.setItem('selectedShot', JSON.stringify({
-                            ...currentStored,
+                        localStorage.setItem('selectedShot', JSON.stringify({ 
+                            ...currentStored, 
                             file_url: fileUrl,
                             thumbnail: fileUrl   // ← เพิ่มบรรทัดนี้
                         }));
@@ -768,7 +768,7 @@ export default function Others_Shot() {
 
     const updateShotField = async (
         field: keyof ShotData,
-
+   
         value: any
     ) => {
         const dbField = shotFieldMap[field];
@@ -781,7 +781,7 @@ export default function Others_Shot() {
         try {
             await axios.post(ENDPOINTS.UPDATESHOT, {
                 shotId: shotData.id,
-                field: dbField,
+                field: dbField, 
                 value
             });
 
@@ -853,9 +853,6 @@ export default function Others_Shot() {
             let uploadedFileUrl = null;
 
             const fileToUpload = files[0];
-
-            console.log('📁 Files array:', files);
-            console.log('📁 File to upload:', fileToUpload);
 
             if (fileToUpload) {
                 console.log('📤 Uploading file:', fileToUpload.name);
@@ -1048,32 +1045,32 @@ export default function Others_Shot() {
     };
 
     const handleCreateAsset = async () => {
-        if (isCreatingAsset) return;
-        if (!createAssetForm.asset_name.trim()) {
-            alert('กรุณาระบุชื่อ Asset');
-            return;
-        }
+    if (isCreatingAsset) return;
+    if (!createAssetForm.asset_name.trim()) {
+        alert('กรุณาระบุชื่อ Asset');
+        return;
+    }
 
-        setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
-        try {
-            const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
-                project_id: projectId,
-                shot_id: shotId,
-                asset_name: createAssetForm.asset_name.trim(),
-                description: createAssetForm.description || null,
-                asset_type: createAssetForm.asset_type || null,
-            });
+    setIsCreatingAsset(true);  // ← ต้องมีบรรทัดนี้
+    try {
+        const res = await axios.post(ENDPOINTS.CREATE_SHOT_ASSET, {
+            project_id: projectId,
+            shot_id: shotId,
+            asset_name: createAssetForm.asset_name.trim(),
+            description: createAssetForm.description || null,
+            asset_type: createAssetForm.asset_type || null,
+        });
 
-            if (res.data.success) {
-                setShowCreateShot_Assets(false);
-                setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
-                fetchShotAssets();
-            }
-        } catch (err: any) {
-            alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
-        } finally {
-            setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
+        if (res.data.success) {
+            setShowCreateShot_Assets(false);
+            setCreateAssetForm({ asset_name: '', description: '', asset_type: 'CHR' });
+            fetchShotAssets();
         }
+    } catch (err: any) {
+        alert(err.response?.data?.message || 'ไม่สามารถสร้าง Asset ได้');
+    } finally {
+        setIsCreatingAsset(false);  // ← ต้องมีบรรทัดนี้
+    }
     };
 
     const renderTabContent = () => {
@@ -1146,8 +1143,8 @@ export default function Others_Shot() {
                                 if (newThumb) {
                                     setShotData(prev => (prev ? { ...prev, thumbnail: newThumb } : prev) as ShotData);
                                     const currentStored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                                    localStorage.setItem('selectedShot', JSON.stringify({
-                                        ...currentStored,
+                                    localStorage.setItem('selectedShot', JSON.stringify({ 
+                                        ...currentStored, 
                                         file_url: newThumb,
                                         thumbnail: newThumb   // ← เพิ่มบรรทัดนี้
                                     }));
@@ -1166,7 +1163,7 @@ export default function Others_Shot() {
                         shotAssets={shotAssets}
                         loadingAssets={loadingAssets}
                         formatDateThai={formatDate}
-                        onAssetUpdate={fetchShotAssets}
+                        onAssetUpdate={fetchShotAssets} 
                     />
                 );
 
@@ -1342,14 +1339,7 @@ export default function Others_Shot() {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-                                                            // หา version ล่าสุดที่มี file_url เป็น video
-                                                            const latestVideoVersion = shotVersions.find(v =>
-                                                                v.file_url?.match(/\.(mp4|webm|ogg|mov|avi)$/i)
-                                                            );
-
-                                                            console.log('🎬 latestVideoVersion:', latestVideoVersion);
-                                                            console.log('📦 versionId:', latestVideoVersion?.id);
-
+                                                            // Save ข้อมูลลง localStorage ก่อน navigate
                                                             localStorage.setItem("selectedVideo", JSON.stringify({
                                                                 videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
                                                                 shotCode: shotData.shotCode,
@@ -1358,12 +1348,6 @@ export default function Others_Shot() {
                                                                 description: shotData.description,
                                                                 dueDate: shotData.dueDate,
                                                                 shotId: shotData.id,
-                                                                versionId: latestVideoVersion?.id ?? null,
-                                                                versionName: latestVideoVersion?.version_name ?? null,      // ← เพิ่ม
-                                                                versionStatus: latestVideoVersion?.status ?? null,          // ← เพิ่ม
-                                                                versionUploadedBy: latestVideoVersion?.uploaded_by_name ?? null,
-                                                                versionCreatedAt: latestVideoVersion?.created_at ?? null,
-                                                                versionDescription: latestVideoVersion?.description ?? null,
                                                             }));
                                                             navigate('/Others_Video');
                                                         } else {
@@ -1375,15 +1359,21 @@ export default function Others_Shot() {
                                                     <Eye className="w-4 h-4" />
                                                     View
                                                 </button>
-                                                <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-lg flex items-center gap-2 cursor-pointer text-sm font-medium shadow-lg hover:shadow-emerald-500/50 transition-all duration-200">
+                                                <label className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg transition-all duration-200
+                                                    ${thumbnailDisabled
+                                                        ? 'bg-gray-600 opacity-50 cursor-not-allowed pointer-events-none'
+                                                        : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95 cursor-pointer hover:shadow-emerald-500/50'
+                                                    }`}>
                                                     <Upload className="w-4 h-4" />
-                                                    Change
+                                                    {isUploadingThumbnail ? 'Uploading...' : 'Change'}
                                                     <input
                                                         type="file"
                                                         accept="image/*,video/*"
                                                         className="hidden"
+                                                        disabled={thumbnailDisabled}
                                                         onChange={async (e) => {
                                                             if (!e.target.files?.[0]) return;
+                                                            setIsUploadingThumbnail(true);
 
                                                             const file = e.target.files[0];
                                                             console.log('📁 File selected:', file.name, file.size, file.type);
@@ -1444,12 +1434,15 @@ export default function Others_Shot() {
 
                                     {/* Upload zone when no thumbnail */}
                                     {!shotData.thumbnail && (
-                                        <input
+                                       <input
                                             type="file"
                                             accept="image/*,video/*"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
+                                            className={`absolute inset-0 w-full h-full opacity-0 z-30
+                                                ${thumbnailDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
+                                            disabled={thumbnailDisabled}
                                             onChange={async (e) => {
                                                 if (!e.target.files?.[0]) return;
+                                                setIsUploadingThumbnail(true);
 
                                                 const file = e.target.files[0];
                                                 console.log('📁 File selected:', file.name, file.size, file.type);
@@ -2428,7 +2421,7 @@ export default function Others_Shot() {
                                 {/* Version Name + Status */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span> </label>
+                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name</label>
                                         <input
                                             type="text"
                                             value={createVersionForm.version_name}
@@ -2455,9 +2448,7 @@ export default function Others_Shot() {
 
                                 {/* Uploaded By */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-                                        Uploaded By <span className="text-red-400">*</span>  {/* ✅ เพิ่ม * */}
-                                    </label>
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By</label>
                                     <div className="relative">
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
@@ -2481,8 +2472,7 @@ export default function Others_Shot() {
                                                 onFocus={() => setUploaderOpen(true)}
                                                 onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
                                                 placeholder={currentUser}
-                                                className={`h-8 px-2.5 bg-white/4 border rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors
-                    ${!selectedUploader ? 'border-red-500/50' : 'border-white/8'}`}
+                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
                                             />
                                         )}
                                         {uploaderOpen && !selectedUploader && (
@@ -2631,7 +2621,7 @@ export default function Others_Shot() {
                                 });
                             }
                         }}
-
+                        
                         className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                     >
                         🗑️ Delete Version
