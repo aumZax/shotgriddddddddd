@@ -169,7 +169,7 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
     // ========================================
     if (loadingShots) {
         return (
-            <div className="flex items-center justify-center -mt-40">
+            <div className="flex items-center justify-center -mt-20">
                 <PixelLoadingFrog />
             </div>
         );

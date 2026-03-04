@@ -138,7 +138,7 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     // ─── Loading ────────────────────────────────────────────────────────────────
     if (loadingAssets) {
         return (
-            <div className="flex items-center justify-center -mt-40">
+            <div className="flex items-center justify-center -mt-20">
                 <PixelLoadingFrog />
             </div>
         );

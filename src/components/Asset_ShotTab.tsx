@@ -133,7 +133,7 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     // ─── Loading ────────────────────────────────────────────────────────────────
     if (loadingAssets) {
         return (
-            <div className="flex items-center justify-center -mt-40">
+            <div className="flex items-center justify-center -mt-20">
                 <PixelLoadingFrog />
             </div>
         );
