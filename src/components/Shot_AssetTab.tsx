@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Film, Image, Pencil, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
+import PixelLoadingFrog from './PixelLoadingFrog';
 
 export interface AssetShot {
     id: number;
@@ -29,21 +30,21 @@ interface ShotAssetTabProps {
 }
 
 const statusConfig: Record<string, { label: string; fullLabel: string; color: string; icon: string }> = {
-    wtg:  { label: 'wtg',  fullLabel: 'Waiting to Start',  color: 'bg-gray-600',   icon: '-'   },
-    ip:   { label: 'ip',   fullLabel: 'In Progress',        color: 'bg-blue-500',   icon: 'dot' },
-    fin:  { label: 'fin',  fullLabel: 'Final',              color: 'bg-green-500',  icon: 'dot' },
-    wtc:  { label: 'wtc',  fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
-    arp:  { label: 'arp',  fullLabel: 'Approval',           color: 'bg-green-600',  icon: 'dot' },
-    cmpt: { label: 'cmpt', fullLabel: 'Complete',           color: 'bg-blue-600',   icon: 'dot' },
-    cfrm: { label: 'cfrm', fullLabel: 'Confirmed',          color: 'bg-purple-500', icon: 'dot' },
-    rts:  { label: 'rts',  fullLabel: 'Ready to Start',     color: 'bg-orange-500', icon: 'dot' },
-    omt:  { label: 'omt',  fullLabel: 'Omit',               color: 'bg-gray-500',   icon: 'dot' },
-    dlvr: { label: 'dlvr', fullLabel: 'Delivered',          color: 'bg-cyan-500',   icon: 'dot' },
-    hld:  { label: 'hld',  fullLabel: 'On Hold',            color: 'bg-orange-600', icon: 'dot' },
-    nef:  { label: 'nef',  fullLabel: 'Need Fixed',         color: 'bg-red-500',    icon: 'dot' },
-    cap:  { label: 'cap',  fullLabel: 'Client Approved',    color: 'bg-green-400',  icon: 'dot' },
-    na:   { label: 'na',   fullLabel: 'N/A',                color: 'bg-gray-400',   icon: '-'   },
-    vnd:  { label: 'vnd',  fullLabel: 'Vendor',             color: 'bg-purple-800', icon: 'dot' },
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    wtc: { label: 'wtc', fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
+    arp: { label: 'arp', fullLabel: 'Approval', color: 'bg-green-600', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need Fixed', color: 'bg-red-500', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    vnd: { label: 'vnd', fullLabel: 'Vendor', color: 'bg-purple-800', icon: 'dot' },
 };
 
 const getStatus = (status: string) =>
@@ -52,14 +53,14 @@ const getStatus = (status: string) =>
 
 
 const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loading, onShotUpdate }) => {
-    const [shots, setShots]                             = useState<AssetShot[]>(initialShots);
-    const [editingShotId, setEditingShotId]             = useState<number | null>(null);
-    const [editingShotName, setEditingShotName]         = useState('');
-    const [editingDescId, setEditingDescId]             = useState<number | null>(null);
-    const [editingDesc, setEditingDesc]                 = useState('');
-    const [showStatusMenu, setShowStatusMenu]           = useState<number | null>(null);
-    const [statusMenuPosition, setStatusMenuPosition]   = useState<'top' | 'bottom'>('bottom');
-    const [updating, setUpdating]                       = useState(false);
+    const [shots, setShots] = useState<AssetShot[]>(initialShots);
+    const [editingShotId, setEditingShotId] = useState<number | null>(null);
+    const [editingShotName, setEditingShotName] = useState('');
+    const [editingDescId, setEditingDescId] = useState<number | null>(null);
+    const [editingDesc, setEditingDesc] = useState('');
+    const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
+    const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
+    const [updating, setUpdating] = useState(false);
 
     // ⭐ State เก็บ sequence ของแต่ละ shot (key = shot_id)
     const [shotSequenceMap, setShotSequenceMap] = useState<Record<number, ShotSequenceInfo>>({});
@@ -84,8 +85,8 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
             setShotSequenceMap(prev => ({
                 ...prev,
                 [shotId]: {
-                    sequence_id:     firstRow.sequence_id     ?? null,
-                    sequence_name:   firstRow.sequence_name   ?? null,
+                    sequence_id: firstRow.sequence_id ?? null,
+                    sequence_name: firstRow.sequence_name ?? null,
                     sequence_status: firstRow.sequence_status ?? null,
                 }
             }));
@@ -100,8 +101,8 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
         try {
             setUpdating(true);
             const fieldMap: Record<string, string> = {
-                shot_name:        'shot_name',
-                shot_status:      'status',
+                shot_name: 'shot_name',
+                shot_status: 'status',
                 shot_description: 'description',
             };
             const dbField = fieldMap[field] ?? field;
@@ -137,8 +138,8 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
     // ─── Loading ────────────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="flex items-center justify-center -mt-40">
+                <PixelLoadingFrog />
             </div>
         );
     }
@@ -187,7 +188,7 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
                     {/* ── Body ── */}
                     <tbody className="divide-y divide-gray-800/50">
                         {shots.map((shot, index) => {
-                            const cfg    = getStatus(shot.shot_status);
+                            const cfg = getStatus(shot.shot_status);
                             const seqInfo = shotSequenceMap[shot.shot_id];
 
                             return (

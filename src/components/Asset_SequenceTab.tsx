@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Image, Pencil, Package, Check, Film } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
+import PixelLoadingFrog from './PixelLoadingFrog';
 
 type StatusType = 'wtg' | 'ip' | 'fin' | 'hld' | 'pndng' | 'recd' | 'rts' | 'cmpt';
 
@@ -137,8 +138,8 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     // ─── Loading ────────────────────────────────────────────────────────────────
     if (loadingAssets) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="flex items-center justify-center -mt-40">
+                <PixelLoadingFrog />
             </div>
         );
     }

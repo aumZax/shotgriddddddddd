@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Image, Pencil, Package, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
+import PixelLoadingFrog from './PixelLoadingFrog';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
 const statusConfig = {
-    wtg:   { label: 'wtg',   fullLabel: 'Waiting to Start', color: 'bg-gray-600',   icon: '-'   },
-    ip:    { label: 'ip',    fullLabel: 'In Progress',       color: 'bg-blue-500',   icon: 'dot' },
-    fin:   { label: 'fin',   fullLabel: 'Final',             color: 'bg-green-500',  icon: 'dot' },
-    hld:   { label: 'hld',   fullLabel: 'On Hold',           color: 'bg-orange-600', icon: 'dot' },
-    pndng: { label: 'pndng', fullLabel: 'Pending',           color: 'bg-yellow-400', icon: 'dot' },
-    recd:  { label: 'recd',  fullLabel: 'Received',          color: 'bg-blue-400',   icon: 'dot' },
-    rts:   { label: 'rts',   fullLabel: 'Ready to Start',    color: 'bg-orange-500', icon: 'dot' },
-    cmpt:  { label: 'cmpt',  fullLabel: 'Complete',          color: 'bg-blue-600',   icon: 'dot' },
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    pndng: { label: 'pndng', fullLabel: 'Pending', color: 'bg-yellow-400', icon: 'dot' },
+    recd: { label: 'recd', fullLabel: 'Received', color: 'bg-blue-400', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
 };
 
 interface Asset {
@@ -52,14 +53,14 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     loadingAssets,
     onAssetUpdate,
 }) => {
-    const [assets, setAssets]                         = useState<Asset[]>(initialAssets);
-    const [editingAssetId, setEditingAssetId]         = useState<number | null>(null);
-    const [editingAssetName, setEditingAssetName]     = useState('');
-    const [editingDescId, setEditingDescId]           = useState<number | null>(null);
-    const [editingDesc, setEditingDesc]               = useState('');
-    const [showStatusMenu, setShowStatusMenu]         = useState<number | null>(null);
+    const [assets, setAssets] = useState<Asset[]>(initialAssets);
+    const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
+    const [editingAssetName, setEditingAssetName] = useState('');
+    const [editingDescId, setEditingDescId] = useState<number | null>(null);
+    const [editingDesc, setEditingDesc] = useState('');
+    const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
-    const [updating, setUpdating]                     = useState(false);
+    const [updating, setUpdating] = useState(false);
 
     // ⭐ State สำหรับ sequences ของแต่ละ asset (key = asset_id)
     const [assetSequencesMap, setAssetSequencesMap] = useState<Record<number, AssetSequence[]>>({});
@@ -132,8 +133,8 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     // ─── Loading ────────────────────────────────────────────────────────────────
     if (loadingAssets) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="flex items-center justify-center -mt-40">
+                <PixelLoadingFrog />
             </div>
         );
     }
@@ -155,7 +156,7 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     // ─── Status dot helper ───────────────────────────────────────────────────────
     const getStatusDot = (status: string) => {
         if (status === 'fin') return <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50 flex-shrink-0" />;
-        if (status === 'ip')  return <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />;
+        if (status === 'ip') return <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 flex-shrink-0" />;
         return <div className="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />;
     };
 

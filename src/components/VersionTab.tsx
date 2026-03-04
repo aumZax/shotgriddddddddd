@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
 import ENDPOINTS from '../config';
+import PixelLoadingFrog from './PixelLoadingFrog';
 
 const versionStatusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
@@ -63,7 +64,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
     onDeleteVersion,
     formatDate,
 }) => {
-    
+
     const [previewVersion, setPreviewVersion] = useState<Version | null>(null);
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
@@ -137,8 +138,20 @@ const VersionTab: React.FC<VersionTabProps> = ({
 
     if (isLoadingVersions) {
         return (
-            <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            <div className="flex items-center justify-center -mt-40">
+                <PixelLoadingFrog />
+            </div>
+        );
+    }
+    if (!versions.length) {
+        return (
+            <div className="text-center py-12">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+                    <Film className="relative w-24 h-24 text-gray-600 mx-auto mb-4" strokeWidth={1.5} />
+                </div>
+                <div className="text-gray-500 mb-2">No versions linked to this asset</div>
+                <p className="text-sm text-gray-600">Versions will appear here when created</p>
             </div>
         );
     }
@@ -304,11 +317,10 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                 <tr
                                     key={`ver-${version.id}-${index}`}
                                     onContextMenu={e => handleContextMenu(e, version)}
-                                    className={`group transition-all duration-200 cursor-context-menu ${
-                                        mock
+                                    className={`group transition-all duration-200 cursor-context-menu ${mock
                                             ? 'opacity-55'
                                             : 'hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent'
-                                    }`}
+                                        }`}
                                 >
                                     {/* # */}
                                     <td className="px-4 py-4">
