@@ -4,6 +4,7 @@ import { User, Eye, Users, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import ENDPOINTS from "../../config";
 import axios from "axios";
+import PixelLoadingFrog from "../../components/PixelLoadingFrog";
 
 /* ================= Types ================= */
 interface Person {
@@ -314,9 +315,7 @@ export default function Others_People() {
         {/* ══ Tab: Team Members ══ */}
         {activeTab === "team" && (
           <div className="h-full overflow-x-auto overflow-y-auto">
-            {loadingPeople ? (
-              <div className="text-center text-gray-400 py-10">Loading team members...</div>
-            ) : people.length === 0 ? (
+            {loadingPeople ? <PixelLoadingFrog/> : people.length === 0 ? (
               <div className="text-center text-gray-400 py-10">No team members yet. Click "Add Person" to get started.</div>
             ) : (
               <table className="border-collapse table-fixed" style={{ width: columnWidths.reduce((a, b) => a + b, 0) }}>
