@@ -1296,7 +1296,7 @@ export default function Others_Asset() {
                                                     {isUploadingThumbnail ? 'Uploading...' : 'Change'}
                                                     <input
                                                         type="file"
-                                                        accept="image/*,video/*"
+                                                        accept="image/*"
                                                         className="hidden"
                                                         disabled={thumbnailDisabled}
                                                         onChange={async (e) => {
@@ -1352,7 +1352,7 @@ export default function Others_Asset() {
                                     {!assetData.thumbnail && (
                                         <input
                                             type="file"
-                                            accept="image/*,video/*"
+                                            accept="image/*"
                                             className={`absolute inset-0 w-full h-full opacity-0 z-30
                                                 ${thumbnailDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                                             disabled={thumbnailDisabled}
