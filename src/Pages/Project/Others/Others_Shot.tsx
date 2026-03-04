@@ -242,11 +242,13 @@ export default function Others_Shot() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [subject, setSubject] = useState(shotData?.shotCode ? `Note on ${shotData.shotCode}` : "");
-    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', });
+    const [createVersionForm, setCreateVersionForm] = useState({ version_name: '', status: 'wtg', description: '', link: '', task: '', task_id: null as number | null, });
     const [isCreatingAsset, setIsCreatingAsset] = useState(false);
     const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
     const [isThumbnailLocked, setIsThumbnailLocked] = useState(false);
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingShotVersions;
+    const [taskSearchQuery, setTaskSearchQuery] = useState('');
+    const [taskSearchOpen, setTaskSearchOpen] = useState(false);
 
     //============================================================================================================================================//
 
@@ -337,6 +339,10 @@ export default function Others_Shot() {
             return () => document.removeEventListener("click", closeMenu);
         }
     }, [versionContextMenu]);
+
+    useEffect(() => {
+        fetchShotVersions();
+    }, [shotData?.id]);
 
     useEffect(() => {
         if (activeTab === 'Versions') {
@@ -478,7 +484,7 @@ export default function Others_Shot() {
             const data = res.data;
             if (Array.isArray(data) && data.length > 0) {
                 setShotVersions(data);
-                setIsThumbnailLocked(data.length >= 2);
+                setIsThumbnailLocked(data.length >= 1);
             } else {
                 setShotVersions([]);
                 setIsThumbnailLocked(false);
@@ -493,7 +499,7 @@ export default function Others_Shot() {
     const removeVersionFromState = (versionId: number) => {
         setShotVersions(prev => {
             const updated = prev.filter(v => v.id !== versionId);
-            setIsThumbnailLocked(updated.length >= 2);
+            setIsThumbnailLocked(updated.length >= 1);
             return updated;
         });
     };
@@ -561,7 +567,7 @@ export default function Others_Shot() {
 
             alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
             setShowCreateVersion(false);
-            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
+            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' ,task_id: null,});
             setVersionFiles([]);
             setVersionFilePreviews([]);
             fetchShotVersions();
@@ -588,8 +594,9 @@ export default function Others_Shot() {
                 description: createVersionForm.description || null,
                 link: createVersionForm.link || null,
                 task: createVersionForm.task || null,
+                task_id: createVersionForm.task_id ?? null,
                 file_url: fileUrl,
-                file_id: fileId ?? null,  // ✅ ใช้จาก parameter แทน localStorage
+                file_id: fileId ?? null, 
                 uploaded_by: selectedUploader?.id ?? null,
             })
         });
@@ -613,17 +620,21 @@ export default function Others_Shot() {
             version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
         }));
     };
-
-    const resetVersionForm = () => {
-        setShowCreateVersion(false);
-        setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' });
-        setVersionFiles([]);
-        setVersionFilePreviews([]);
-        setVersionNameFromFile(null);
-        setSelectedUploader(null);
-        setUploaderQuery('');
-        setVersionModalPosition({ x: 0, y: 0 });
-    };
+const resetVersionForm = () => {
+    setShowCreateVersion(false);
+    setCreateVersionForm({ 
+        version_name: '', status: 'wtg', description: '', link: '', task: '',
+        task_id: null  // ← เพิ่ม
+    });
+    setVersionFiles([]);
+    setVersionFilePreviews([]);
+    setVersionNameFromFile(null);
+    setSelectedUploader(null);
+    setUploaderQuery('');
+    setTaskSearchQuery('');   // ← เพิ่ม
+    setTaskSearchOpen(false); // ← เพิ่ม
+    setVersionModalPosition({ x: 0, y: 0 });
+};
 
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -1418,6 +1429,9 @@ export default function Others_Shot() {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                         if (shotData.thumbnail.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
+                                                            // ✅ ดึง version ล่าสุด (index 0 เพราะ sort จากใหม่ไปเก่า)
+                                                            const latestVersion = shotVersions[0] ?? null;
+
                                                             localStorage.setItem("selectedVideo", JSON.stringify({
                                                                 videoUrl: ENDPOINTS.image_url + shotData.thumbnail,
                                                                 shotCode: shotData.shotCode,
@@ -1426,6 +1440,13 @@ export default function Others_Shot() {
                                                                 description: shotData.description,
                                                                 dueDate: shotData.dueDate,
                                                                 shotId: shotData.id,
+                                                                // ✅ เพิ่ม version data
+                                                                versionId: latestVersion?.id ?? null,
+                                                                versionName: latestVersion?.version_name ?? null,
+                                                                versionStatus: latestVersion?.status ?? null,
+                                                                versionUploadedBy: latestVersion?.uploaded_by_name ?? null,
+                                                                versionCreatedAt: latestVersion?.created_at ?? null,
+                                                                versionDescription: latestVersion?.description ?? null,
                                                             }));
                                                             navigate('/Others_Video');
                                                         } else {
@@ -1698,7 +1719,7 @@ export default function Others_Shot() {
                                         <span>+</span>
                                         Add Note
                                     </button>
-                                )}
+                                 )}
 
                                 {activeTab === 'Versions' && (
                                     <button
@@ -2475,15 +2496,97 @@ export default function Others_Shot() {
                                 </div>
 
                                 {/* Task */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
-                                    <input
-                                        type="text"
-                                        value={createVersionForm.task}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, task: e.target.value }))}
-                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                    />
-                                </div>
+<div className="space-y-1">
+    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+    {createVersionForm.task_id ? (() => {
+        const t = tasks.find(t => t.id === createVersionForm.task_id);
+        if (!t) return null;
+        return (
+            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                {t.pipeline_step ? (
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
+                ) : (
+                    <span className="text-sm flex-shrink-0">📋</span>
+                )}
+                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
+                {t.pipeline_step && (
+                    <span
+                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                        style={{
+                            backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
+                            color: t.pipeline_step.color_hex || '#9ca3af',
+                        }}
+                    >{t.pipeline_step.step_code}</span>
+                )}
+                <div
+                    onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
+                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
+                >✕</div>
+            </div>
+        );
+    })() : (
+        <div className="relative">
+            <input
+                type="text"
+                value={taskSearchQuery}
+                onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
+                onFocus={() => setTaskSearchOpen(true)}
+                onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
+                placeholder="Search task..."
+                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+            />
+            {taskSearchOpen && (
+                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                    <div
+                        onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
+                    >
+                        <span className="text-xs text-gray-500 italic">— No task —</span>
+                    </div>
+                    {tasks
+                        .filter(t =>
+                            t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                            (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                        )
+                        .map(task => (
+                            <div
+                                key={task.id}
+                                onMouseDown={() => {
+                                    setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
+                                    setTaskSearchQuery('');
+                                    setTaskSearchOpen(false);
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                            >
+                                {task.pipeline_step ? (
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
+                                ) : (
+                                    <span className="text-xs flex-shrink-0">📋</span>
+                                )}
+                                <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
+                                {task.pipeline_step && (
+                                    <span
+                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                        style={{
+                                            backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
+                                            color: task.pipeline_step.color_hex || '#9ca3af',
+                                        }}
+                                    >{task.pipeline_step.step_code}</span>
+                                )}
+                            </div>
+                        ))
+                    }
+                    {tasks.filter(t =>
+                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                    ).length === 0 && taskSearchQuery && (
+                        <p className="px-3 py-2 text-xs text-gray-500">No tasks found</p>
+                    )}
+                </div>
+            )}
+        </div>
+    )}
+</div>
 
                                 {/* Link + Project — read-only */}
                                 <div className="grid grid-cols-2 gap-3">

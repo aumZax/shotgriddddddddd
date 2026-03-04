@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { User, Eye, Users, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -25,7 +26,7 @@ interface UserData {
 }
 
 interface ProjectViewer {
-  id: number;          // project_viewers.id
+  id: number;     
   user_id: number;
   project_id: number;
   added_at: string;
@@ -38,18 +39,14 @@ type MainTab = "team" | "viewers";
 
 /* ================= Main Component ================= */
 export default function Others_People() {
-  /* ─── auth / project ─── */
+
   const [projectName, setProjectName] = useState("");
   const [projectId, setProjectId] = useState<number | null>(null);
   const [permission, setPermission] = useState<string | null>(null);
   const canManage = ["Admin", "Producer", "Owner"].includes(permission || "");
   const canEdit = ["Admin", "Producer", "Supervisor", "Owner"].includes(permission || "");
   const canEditPerm = ["Admin", "Owner"].includes(permission || "");
-
-  /* ─── tabs ─── */
   const [activeTab, setActiveTab] = useState<MainTab>("team");
-
-  /* ─── team state ─── */
   const [people, setPeople] = useState<Person[]>([]);
   const [loadingPeople, setLoadingPeople] = useState(true);
   const [editingCell, setEditingCell] = useState<{ id: number; field: keyof Person } | null>(null);
@@ -57,28 +54,19 @@ export default function Others_People() {
   const [showCreatePerson, setShowCreatePerson] = useState(false);
   const [showMoreFields, setShowMoreFields] = useState(false);
   const [allUsers, setAllUsers] = useState<UserData[]>([]);
-
-  /* ─── viewers state ─── */
   const [viewers, setViewers] = useState<ProjectViewer[]>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
   const [showAddViewer, setShowAddViewer] = useState(false);
-
-  /* ─── seats ─── */
   const [totalSeats, setTotalSeats] = useState(50);
   const [usedSeats, setUsedSeats] = useState(0);
-
-  /* ─── context menu / delete confirm ─── */
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; peopleId: string; peopleEmail: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; peopleId: string; peopleEmail: string } | null>(null);
   const [deleteViewerConfirm, setDeleteViewerConfirm] = useState<ProjectViewer | null>(null);
-
-  /* ─── column widths ─── */
   const [columnWidths] = useState<number[]>([48, 220, 220, 260, 160, 200]);
-
   const now = new Date();
   const timeString = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: true });
 
-  /* ═══════════ Loaders ═══════════ */
+  
   useEffect(() => {
     try {
       const raw = localStorage.getItem("projectData");
@@ -118,7 +106,7 @@ export default function Others_People() {
 
   const getAllUsers = async () => {
     try {
-      const res = await fetch(ENDPOINTS.GETALLUSERS);
+      const res = await fetch(ENDPOINTS.GETALLVIEWERS);
       const data = await res.json();
       if (Array.isArray(data)) setAllUsers(data);
     } catch { setAllUsers([]); }
@@ -160,7 +148,6 @@ export default function Others_People() {
     finally { setLoadingViewers(false); }
   };
 
-  /* ═══════════ Team Edit ═══════════ */
   const handleCellClick = (id: number, field: keyof Person, val: string) => {
     if (!canEdit) return;
     if (field === "permissionGroup" && !canEditPerm) return;
@@ -579,13 +566,11 @@ export default function Others_People() {
           onAdded={fetchViewers}
         />
       )}
+
     </div>
   );
 }
 
-/* ══════════════════════════════════════════
-   Add Viewer Modal
-══════════════════════════════════════════ */
 function AddViewerModal({
   projectId,
   existingViewerIds,
@@ -749,9 +734,6 @@ function AddViewerModal({
   );
 }
 
-/* ══════════════════════════════════════════
-   Create Person Modal (unchanged logic)
-══════════════════════════════════════════ */
 function CreatePersonModal({
   onClose, onCreated, availableSeats, totalSeats, timeString,
   showMoreFields, setShowMoreFields, defaultProjectName, allUsers,

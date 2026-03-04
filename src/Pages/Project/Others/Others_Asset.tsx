@@ -946,7 +946,7 @@ export default function Others_Asset() {
             const data = res.data;
             if (Array.isArray(data) && data.length > 0) {
                 setAssetVersions(data);
-                setIsThumbnailLocked(data.length >= 2);
+                setIsThumbnailLocked(data.length >= 1);
             } else {
                 setAssetVersions([]);
                 setIsThumbnailLocked(false);
@@ -960,7 +960,7 @@ export default function Others_Asset() {
     const removeVersionFromState = (versionId: number) => {
         setAssetVersions(prev => {
             const updated = prev.filter(v => v.id !== versionId);
-            setIsThumbnailLocked(updated.length >= 2);
+            setIsThumbnailLocked(updated.length >= 1);
             return updated;
         });
     };

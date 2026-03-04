@@ -233,44 +233,7 @@ export default function Others_Sequence() {
         }
     }, [activeTab, sequenceId]);
 
-    useEffect(() => {
-        if (!sequenceId) return;
 
-        const fetchSequenceDetail = async () => {
-            try {
-                setLoadingShots(true);
-                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
-                    sequenceId: sequenceId
-                });
-
-                console.log('✅ Sequence detail:', response.data);
-
-                // กรอง shots ที่ซ้ำออก (เพราะ JOIN กับ assets อาจทำให้ shots ซ้ำ)
-                const uniqueShots = response.data.reduce((acc: Shot[], item: any) => {
-                    if (item.shot_id && !acc.find((s: Shot) => s.shot_id === item.shot_id)) {
-                        acc.push({
-                            shot_id: item.shot_id,
-                            shot_name: item.shot_name,
-                            shot_status: item.shot_status,
-                            shot_description: item.shot_description,
-                            shot_created_at: item.shot_created_at,
-                            shot_thumbnail: item.shot_thumbnail
-                        });
-                    }
-                    return acc;
-                }, []);
-
-                setShots(uniqueShots);
-            } catch (error) {
-                console.error('❌ Failed to fetch sequence detail:', error);
-                setShots([]);
-            } finally {
-                setLoadingShots(false);
-            }
-        };
-
-        fetchSequenceDetail();
-    }, [sequenceId]);
 
     useEffect(() => {
         if (SequenceData?.sequence) {
@@ -316,16 +279,29 @@ export default function Others_Sequence() {
             try {
                 setLoadingShots(true);
 
-                const response = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, {
-                    sequenceId: sequenceId
-                });
+                // ดึงทั้ง 2 endpoint พร้อมกัน
+                const [seqRes, allShotsRes] = await Promise.all([
+                    axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, { sequenceId }),
+                    axios.post(ENDPOINTS.GET_ALL_PROJECT_SHOTS, { projectId })
+                ]);
 
-                console.log('✅ Sequence detail:', response.data);
+                // สร้าง map: shot_id → file_url
+                const fileUrlMap: Record<number, string> = {};
+                if (Array.isArray(allShotsRes.data)) {
+                    allShotsRes.data.forEach((s: any) => {
+                        if (s.id && s.file_url) {
+                            fileUrlMap[s.id] = s.file_url;
+                        }
+                    });
+                }
 
-                // ใช้ helper function เดียวกัน
-                const uniqueShots = filterUniqueShots(response.data);
+                // merge file_url เข้าไปใน shot
+                const uniqueShots = filterUniqueShots(seqRes.data).map(shot => ({
+                    ...shot,
+                    shot_thumbnail: shot.shot_thumbnail || fileUrlMap[shot.shot_id] || undefined
+                }));
+
                 setShots(uniqueShots);
-
             } catch (error) {
                 console.error('❌ Failed to fetch sequence detail:', error);
                 setShots([]);
@@ -805,28 +781,44 @@ export default function Others_Sequence() {
         if (!sequenceId) return;
         setLoadingAssets(true);
         try {
+            // 1. ดึง assets ที่ link กับ sequence
             const res = await fetch(ENDPOINTS.GET_ASSET_SEQUENCE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sequenceId })
             });
-
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
             const result = await res.json();
 
-            if (result.success) {
-                const assets: Asset[] = result.data.map((item: any) => ({
-                    id: item.asset_id,
-                    asset_id: item.asset_id,
-                    asset_name: item.asset_name,
-                    status: item.status,
-                    description: item.description || '',
-                    created_at: item.asset_created_at,
-                    asset_sequence_id: item.asset_sequence_id,
-                    asset_type: item.asset_type,
-                    thumbnail: item.thumbnail
-                }));
+            if (result.success && result.data.length > 0) {
+                // 2. ดึง full asset data จาก project (มี file_url, type)
+                const fullRes = await fetch(ENDPOINTS.ASSETLIST, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId })
+                });
+                const fullData = await fullRes.json();
+
+                // flat array จาก grouped
+                const allAssets: any[] = Array.isArray(fullData)
+                    ? fullData.flatMap((g: any) => g.assets || [])
+                    : [];
+
+                const assets: Asset[] = result.data.map((item: any) => {
+                    const full = allAssets.find((a: any) => a.id === item.asset_id);
+                    return {
+                        id: item.asset_id,
+                        asset_id: item.asset_id,
+                        asset_name: item.asset_name,
+                        status: item.status,
+                        description: item.description || '',
+                        created_at: item.asset_created_at,
+                        asset_sequence_id: item.asset_sequence_id,
+                        asset_type: full?.type || null,      // ✅ จาก assetlist
+                        thumbnail: full?.file_url || null,   // ✅ จาก assetlist
+                    };
+                });
+
                 setSequenceAssets(assets);
             } else {
                 setSequenceAssets([]);

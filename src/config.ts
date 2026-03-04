@@ -2,7 +2,7 @@
 const BASE_URL = "https://eds-scientist-clarke-acids.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
-
+// maxaaaaa
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
 
@@ -22,7 +22,6 @@ const ENDPOINTS = {
   UPLOAD: `${BASE_URL}/upload`,
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
-  UPLOAD_AVATAR: `${BASE_URL}/upload/avatar`,
   image_url: "https://eds-scientist-clarke-acids.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
@@ -149,6 +148,9 @@ const ENDPOINTS = {
   VIDEO_COMMENTS_CREATE: `${BASE_URL}/video-comments`,
   VIDEO_COMMENTS_LIST: `${BASE_URL}/video-comments/list`,
   VIDEO_COMMENTS_UPDATE: `${BASE_URL}/video-comments/update`,
+
+    UPLOAD_AVARTAR: `${BASE_URL}/upload/avatar`,
+  GETALLVIEWERS: `${BASE_URL}/getallviewers`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

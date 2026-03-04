@@ -180,7 +180,7 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-48">Status</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
                             {/* ⭐ Sequence อยู่สุดท้าย เหมือน Asset_ShotTab */}
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence</th>
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequence Name</th>
                         </tr>
                     </thead>
 

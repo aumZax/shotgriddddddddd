@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Package, Check, Film } from 'lucide-react';
+import { Image, Pencil, Package, Check, Film, ExternalLink } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 type StatusType = 'wtg' | 'ip' | 'fin' | 'hld' | 'pndng' | 'recd' | 'rts' | 'cmpt';
 
@@ -27,6 +28,7 @@ interface Asset {
     asset_sequence_id?: number;
     asset_type?: string;
     thumbnail?: string;
+    file_url?: string;  // ✅ เพิ่มตรงนี้
 }
 
 // ⭐ เพิ่ม interface สำหรับ Shot ที่เชื่อมกับ asset
@@ -61,6 +63,8 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const [updating, setUpdating] = useState(false);
+
+    const navigate = useNavigate();
 
     // ⭐ State ควบคุมการ expand shots ของแต่ละ asset (key = asset_id)
     const [expandedShots, setExpandedShots] = useState<Record<number, boolean>>({});
@@ -175,11 +179,14 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                     <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 font-semibold">{assets.length}</span>
                                 </div>
                             </th>
+                            {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Link</th> */}
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-48">Status</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
                             {/* ⭐ คอลัมน์ Shots ใหม่ */}
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Shots</th>
+
+
                         </tr>
                     </thead>
 
@@ -207,7 +214,7 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                     {/* Thumbnail — รองรับ video */}
                                     <td className="px-4 py-3">
                                         {(() => {
-                                            const url = asset.thumbnail;
+                                            const url = asset.thumbnail || asset.file_url;
                                             const isVideo = url && /\.(mp4|webm|ogg|mov|avi)$/i.test(url);
                                             const isImage = url && !isVideo;
 
@@ -271,7 +278,7 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                             ) : (
                                                 <>
                                                     <span
-                                                        className="text-blue-400 font-medium truncate max-w-[150px] hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-2 transition-colors cursor-pointer"
+                                                        className="text-slate-50 font-medium truncate max-w-[150px] hover:text-blue-300 underline decoration-blue-400/30 hover:decoration-blue-300 underline-offset-2 transition-colors cursor-pointer"
                                                         title={asset.asset_name}
                                                     >
                                                         {asset.asset_name}
@@ -292,6 +299,36 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                             )}
                                         </div>
                                     </td>
+
+
+                                    {/* ⭐ Column LINK */}
+                                    {/* <td className="px-4 py-4">
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+
+                                                // เซ็ต selectedAsset ใน localStorage ให้ตรงกับโครงสร้างที่ Others_Asset อ่านได้
+                                                localStorage.setItem("selectedAsset", JSON.stringify({
+                                                    id: asset.asset_id,
+                                                    asset_name: asset.asset_name,
+                                                    description: asset.description || '',
+                                                    status: asset.status || 'wtg',
+                                                    file_url: asset.thumbnail || asset.file_url || '', 
+                                                    sequence: asset.asset_type || '',
+                                                    shot_name: '',
+                                                }));
+
+                                                navigate('/Project_Assets/Others_Asset');
+                                            }}
+                                            className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-400/50 transition-all group/link"
+                                            title={`เปิด ${asset.asset_name}`}
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover/link:text-blue-300 transition-colors" />
+                                            <span className="text-xs font-medium text-blue-300 group-hover/link:text-blue-200 whitespace-nowrap">
+                                                Open
+                                            </span>
+                                        </div>
+                                    </td> */}
 
                                     {/* Type — badge only */}
                                     <td className="px-4 py-4">
@@ -322,7 +359,7 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                                 ) : (
                                                     <div className={`w-2.5 h-2.5 rounded-full ${cfg.color} shadow-sm flex-shrink-0`} />
                                                 )}
-                                                <span className="text-xs text-gray-300 font-medium truncate">{cfg.label}</span>
+                                                <span className="text-xs text-gray-300 font-medium">{cfg.label}</span>
                                             </button>
 
                                             {showStatusMenu === asset.asset_id && (

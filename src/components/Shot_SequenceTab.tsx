@@ -1,26 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Film, Check, Box } from 'lucide-react';
+import { Image, Pencil, Film, Check, Box, ExternalLink } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
 const statusConfig = {
-    wtg:  { label: 'wtg',  fullLabel: 'Waiting to Start',  color: 'bg-gray-600',   icon: '-'   },
-    ip:   { label: 'ip',   fullLabel: 'In Progress',        color: 'bg-blue-500',   icon: 'dot' },
-    fin:  { label: 'fin',  fullLabel: 'Final',              color: 'bg-green-500',  icon: 'dot' },
-    wtc:  { label: 'wtc',  fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
-    arp:  { label: 'arp',  fullLabel: 'Approval',           color: 'bg-green-600',  icon: 'dot' },
-    cmpt: { label: 'cmpt', fullLabel: 'Complete',           color: 'bg-blue-600',   icon: 'dot' },
-    cfrm: { label: 'cfrm', fullLabel: 'Confirmed',          color: 'bg-purple-500', icon: 'dot' },
-    rts:  { label: 'rts',  fullLabel: 'Ready to Start',     color: 'bg-orange-500', icon: 'dot' },
-    omt:  { label: 'omt',  fullLabel: 'Omit',               color: 'bg-gray-500',   icon: 'dot' },
-    dlvr: { label: 'dlvr', fullLabel: 'Delivered',          color: 'bg-cyan-500',   icon: 'dot' },
-    hld:  { label: 'hld',  fullLabel: 'On Hold',            color: 'bg-orange-600', icon: 'dot' },
-    nef:  { label: 'nef',  fullLabel: 'Need fixed',         color: 'bg-red-500',    icon: 'dot' },
-    cap:  { label: 'cap',  fullLabel: 'Client Approved',    color: 'bg-green-400',  icon: 'dot' },
-    na:   { label: 'na',   fullLabel: 'N/A',                color: 'bg-gray-400',   icon: '-'   },
-    vnd:  { label: 'vnd',  fullLabel: 'Vendor',             color: 'bg-purple-800', icon: 'dot' },
+    wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
+    ip: { label: 'ip', fullLabel: 'In Progress', color: 'bg-blue-500', icon: 'dot' },
+    fin: { label: 'fin', fullLabel: 'Final', color: 'bg-green-500', icon: 'dot' },
+    wtc: { label: 'wtc', fullLabel: 'Waiting for Client', color: 'bg-yellow-500', icon: 'dot' },
+    arp: { label: 'arp', fullLabel: 'Approval', color: 'bg-green-600', icon: 'dot' },
+    cmpt: { label: 'cmpt', fullLabel: 'Complete', color: 'bg-blue-600', icon: 'dot' },
+    cfrm: { label: 'cfrm', fullLabel: 'Confirmed', color: 'bg-purple-500', icon: 'dot' },
+    rts: { label: 'rts', fullLabel: 'Ready to Start', color: 'bg-orange-500', icon: 'dot' },
+    omt: { label: 'omt', fullLabel: 'Omit', color: 'bg-gray-500', icon: 'dot' },
+    dlvr: { label: 'dlvr', fullLabel: 'Delivered', color: 'bg-cyan-500', icon: 'dot' },
+    hld: { label: 'hld', fullLabel: 'On Hold', color: 'bg-orange-600', icon: 'dot' },
+    nef: { label: 'nef', fullLabel: 'Need fixed', color: 'bg-red-500', icon: 'dot' },
+    cap: { label: 'cap', fullLabel: 'Client Approved', color: 'bg-green-400', icon: 'dot' },
+    na: { label: 'na', fullLabel: 'N/A', color: 'bg-gray-400', icon: '-' },
+    vnd: { label: 'vnd', fullLabel: 'Vendor', color: 'bg-purple-800', icon: 'dot' },
 };
 
 interface Shot {
@@ -30,6 +31,8 @@ interface Shot {
     shot_description: string;
     shot_created_at: string;
     shot_thumbnail?: string;
+    file_url?: string;  // ← เพิ่ม
+    sequence_name?: string;
 }
 
 // Asset ที่เชื่อมกับ shot (จาก GET_ASSET_SHOT)
@@ -54,14 +57,15 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
     loadingShots,
     onShotUpdate
 }) => {
-    const [shots, setShots]                             = useState<Shot[]>(initialShots);
-    const [editingShotId, setEditingShotId]             = useState<number | null>(null);
-    const [editingShotName, setEditingShotName]         = useState('');
-    const [editingDescId, setEditingDescId]             = useState<number | null>(null);
-    const [editingDesc, setEditingDesc]                 = useState('');
-    const [showStatusMenu, setShowStatusMenu]           = useState<number | null>(null);
-    const [statusMenuPosition, setStatusMenuPosition]   = useState<'top' | 'bottom'>('bottom');
-    const [updating, setUpdating]                       = useState(false);
+    const navigate = useNavigate();
+    const [shots, setShots] = useState<Shot[]>(initialShots);
+    const [editingShotId, setEditingShotId] = useState<number | null>(null);
+    const [editingShotName, setEditingShotName] = useState('');
+    const [editingDescId, setEditingDescId] = useState<number | null>(null);
+    const [editingDesc, setEditingDesc] = useState('');
+    const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
+    const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
+    const [updating, setUpdating] = useState(false);
 
     // ⭐ State เก็บ assets ของแต่ละ shot (key = shot_id) — เหมือน allShotAssets ใน ProjectShot
     const [allShotAssets, setAllShotAssets] = useState<Record<number, ShotAsset[]>>({});
@@ -94,11 +98,11 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
             const result = await res.json();
             if (result.success) {
                 const assets: ShotAsset[] = result.data.map((item: any) => ({
-                    id:            item.asset_id,
-                    asset_id:      item.asset_id,
-                    asset_name:    item.asset_name,
-                    status:        item.status,
-                    description:   item.description || '',
+                    id: item.asset_id,
+                    asset_id: item.asset_id,
+                    asset_name: item.asset_name,
+                    status: item.status,
+                    description: item.description || '',
                     asset_shot_id: item.asset_shot_id,
                 }));
                 setAllShotAssets(prev => ({ ...prev, [shotId]: assets }));
@@ -113,10 +117,10 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
     // ========================================
     const mapFieldToDatabase = (frontendField: string): string => {
         const fieldMap: Record<string, string> = {
-            shot_name:        'shot_name',
-            shot_status:      'status',
+            shot_name: 'shot_name',
+            shot_status: 'status',
             shot_description: 'description',
-            shot_thumbnail:   'file_url',
+            shot_thumbnail: 'file_url',
         };
         return fieldMap[frontendField] || frontendField;
     };
@@ -211,6 +215,8 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
                                     <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 font-semibold">{shots.length}</span>
                                 </div>
                             </th>
+                            {/* <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">link</th> */}
+
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">Status</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
                             {/* ⭐ คอลัมน์ Assets — เหมือน ProjectShot */}
@@ -241,41 +247,43 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
 
                                     {/* Thumbnail */}
                                     <td className="px-4 py-3">
-                                        {shot.shot_thumbnail ? (
-                                            (() => {
-                                                const isVideo = /\.(mp4|webm|ogg|mov|avi)$/i.test(shot.shot_thumbnail!);
-                                                return isVideo ? (
-                                                    <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                        <video
-                                                            src={`${ENDPOINTS.image_url}${shot.shot_thumbnail}`}
-                                                            className="w-full h-full object-cover"
-                                                            muted loop autoPlay
-                                                        />
-                                                        <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1 py-0.5">
-                                                            <span className="text-[9px] text-gray-300">▶</span>
+                                        {(() => {
+                                            const thumbnail = shot.shot_thumbnail || shot.file_url;
+                                            if (!thumbnail) {
+                                                return (
+                                                    <div className="w-20 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
+                                                            <Image className="w-5 h-5 text-gray-600" />
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
-                                                        <div
-                                                            className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
-                                                            style={{ backgroundImage: `url(${ENDPOINTS.image_url}${shot.shot_thumbnail})` }}
-                                                        />
-                                                        <img
-                                                            src={`${ENDPOINTS.image_url}${shot.shot_thumbnail}`}
-                                                            alt={shot.shot_name}
-                                                            className="relative w-full h-full object-contain"
-                                                        />
-                                                    </div>
                                                 );
-                                            })()
-                                        ) : (
-                                            <div className="w-20 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700">
-                                                <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
-                                                    <Image className="w-5 h-5 text-gray-600" />
+                                            }
+                                            const isVideo = /\.(mp4|webm|ogg|mov|avi)$/i.test(thumbnail);
+                                            return isVideo ? (
+                                                <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
+                                                    <video
+                                                        src={`${ENDPOINTS.image_url}${thumbnail}`}
+                                                        className="w-full h-full object-cover"
+                                                        muted loop autoPlay
+                                                    />
+                                                    <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1 py-0.5">
+                                                        <span className="text-[9px] text-gray-300">▶</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <div className="relative w-20 h-16 rounded-lg overflow-hidden ring-1 ring-gray-700 group-hover:ring-blue-500/50 transition-all">
+                                                    <div
+                                                        className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
+                                                        style={{ backgroundImage: `url(${ENDPOINTS.image_url}${thumbnail})` }}
+                                                    />
+                                                    <img
+                                                        src={`${ENDPOINTS.image_url}${thumbnail}`}
+                                                        alt={shot.shot_name}
+                                                        className="relative w-full h-full object-contain"
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
 
                                     {/* Shot Name */}
@@ -320,6 +328,32 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
                                             )}
                                         </div>
                                     </td>
+
+                                    {/* LINK */}
+                                    {/* <td className="px-4 py-4">
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                localStorage.setItem("selectedShot", JSON.stringify({
+                                                    id: shot.shot_id,
+                                                    shot_name: shot.shot_name,
+                                                    description: shot.shot_description || '',
+                                                    status: shot.shot_status || 'wtg',
+                                                    file_url: shot.shot_thumbnail || '',
+                                                    thumbnail: shot.shot_thumbnail || '',   // ← เพิ่มบรรทัดนี้
+                                                    sequence: shot.sequence_name || '',
+                                                }));
+                                                navigate('/Project_Shot/Others_Shot');
+                                            }}
+                                            className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-400/50 transition-all group/link"
+                                            title={`เปิด ${shot.shot_name}`}
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover/link:text-blue-300 transition-colors" />
+                                            <span className="text-xs font-medium text-blue-300 group-hover/link:text-blue-200 whitespace-nowrap">
+                                                Open
+                                            </span>
+                                        </div>
+                                    </td> */}
 
                                     {/* Status */}
                                     <td className="px-4 py-4">

@@ -183,7 +183,7 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider w-48">Status</th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</th>
                             {/* ⭐ คอลัมน์ Sequences ใหม่ */}
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequences</th>
+                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sequences Name</th>
                         </tr>
                     </thead>
 
