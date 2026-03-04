@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Package, Check, Film, ExternalLink } from 'lucide-react';
+import { Image, Pencil, Package, Check, Film } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 type StatusType = 'wtg' | 'ip' | 'fin' | 'hld' | 'pndng' | 'recd' | 'rts' | 'cmpt';
 
@@ -64,7 +63,6 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const [updating, setUpdating] = useState(false);
 
-    const navigate = useNavigate();
 
     // ⭐ State ควบคุมการ expand shots ของแต่ละ asset (key = asset_id)
     const [expandedShots, setExpandedShots] = useState<Record<number, boolean>>({});

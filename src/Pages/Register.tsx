@@ -78,7 +78,7 @@ export default function Register() {
 
       // เรียก API upload
       const uploadResponse = await axios.post(
-        ENDPOINTS.UPLOAD_AVATAR,
+        ENDPOINTS.UPLOAD_AVARTAR,
         formData,
         {
           headers: {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Film, Check, Box, ExternalLink } from 'lucide-react';
+import { Image, Pencil, Film, Check, Box } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -57,7 +56,6 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
     loadingShots,
     onShotUpdate
 }) => {
-    const navigate = useNavigate();
     const [shots, setShots] = useState<Shot[]>(initialShots);
     const [editingShotId, setEditingShotId] = useState<number | null>(null);
     const [editingShotName, setEditingShotName] = useState('');
