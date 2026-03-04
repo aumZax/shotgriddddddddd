@@ -7,6 +7,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
 import { createPortal } from 'react-dom';
+import PixelLoadingFrog from "../../components/PixelLoadingFrog";
 
 
 type StatusType = keyof typeof statusConfig;
@@ -1249,10 +1250,8 @@ export default function Project_Tasks() {
                                 {isLoadingSequences ? (
                                     <tr>
                                         <td colSpan={10} className="px-4 py-16">
-                                            <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                                                <p className="text-gray-400 text-sm">Loading sequences...</p>
-                                            </div>
+                                            <PixelLoadingFrog />
+
                                         </td>
                                     </tr>
                                 ) : taskGroups.length === 0 ? (
@@ -1544,7 +1543,7 @@ export default function Project_Tasks() {
                                                             <div className="relative" ref={pipelineDropdownRef}>
                                                                 <button
                                                                     onClick={(e) => {
-                                                                    e.stopPropagation();
+                                                                        e.stopPropagation();
 
                                                                         if (editingPipelineTaskId === task.id) {
                                                                             setEditingPipelineTaskId(null);
@@ -1781,7 +1780,7 @@ export default function Project_Tasks() {
                                                                             {/* Backdrop */}
                                                                             <div
                                                                                 className="fixed inset-0 z-10"
-                                                                                onClick={(e) => {e.stopPropagation(); setShowStatusMenu(null)}}
+                                                                                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(null) }}
                                                                             />
 
                                                                             {/* Menu */}
@@ -1834,7 +1833,7 @@ export default function Project_Tasks() {
                                                                 {/* ปุ่มแสดงรายชื่อ + เปิด Dropdown */}
                                                                 <button
                                                                     onClick={(e) => {
-                                                                    e.stopPropagation();
+                                                                        e.stopPropagation();
                                                                         if (editingAssigneeTaskId === task.id) {
                                                                             setEditingAssigneeTaskId(null);
                                                                         } else {
@@ -2028,7 +2027,7 @@ export default function Project_Tasks() {
                                                             <div className="relative" ref={reviewerDropdownRef}>
                                                                 <button
                                                                     onClick={(e) => {
-                                                                    e.stopPropagation();
+                                                                        e.stopPropagation();
 
                                                                         if (editingReviewerTaskId === task.id) {
                                                                             setEditingReviewerTaskId(null);
@@ -2254,7 +2253,7 @@ export default function Project_Tasks() {
                                                                 </div>
                                                             ) : (
                                                                 <div
-                                                                     onClick={(e) => { e.stopPropagation(); setEditingStartDateTaskId(task.id); }}
+                                                                    onClick={(e) => { e.stopPropagation(); setEditingStartDateTaskId(task.id); }}
                                                                     className="group/date flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-800/50 rounded px-2 py-1 transition-colors"
                                                                 >
                                                                     {task.start_date ? (

@@ -5,6 +5,7 @@ import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../../config";
+import PixelLoadingFrog from '../../components/PixelLoadingFrog';
 
 type StatusType = keyof typeof statusConfig;
 
@@ -955,12 +956,7 @@ export default function ProjectShot() {
             <div className="h-22"></div>
 
             <main className="flex-1 overflow-y-auto">
-                {isLoadingShots && (
-                    <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                        <p className="text-gray-400 text-sm">Loading shots...</p>
-                    </div>
-                )}
+                {isLoadingShots && <PixelLoadingFrog />}
 
                 {shotsError && !isLoadingShots && (
                     <div className="flex items-center justify-center h-64">

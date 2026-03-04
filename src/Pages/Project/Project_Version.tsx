@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import PixelLoadingFrog from "../../components/PixelLoadingFrog";
 
 // ===================== Types =====================
 type StatusType = keyof typeof statusConfig;
@@ -497,10 +498,7 @@ export default function Project_Version() {
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={8} className="px-4 py-16">
-                                        <div className="flex flex-col items-center justify-center min-h-[300px]">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4" />
-                                            <p className="text-gray-400 text-sm">Loading versions...</p>
-                                        </div>
+                                        <PixelLoadingFrog/>
                                     </td>
                                 </tr>
                             ) : filteredGroups.length === 0 ? (

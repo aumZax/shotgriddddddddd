@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box, Check } from 'lucide-react';
 import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
+import PixelLoadingFrog from '../../components/PixelLoadingFrog';
 
 
 type StatusType = keyof typeof statusConfig;
@@ -35,7 +37,7 @@ interface Asset {
     asset_name: string;
     description: string;
     status: StatusType;
-    file_url: string;  // ✅ ใช้แค่ file_url
+    file_url: string;
 }
 
 
@@ -80,8 +82,6 @@ interface Shot {
 
 
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ⭐ เพิ่ม Interface เหล่านี้
 interface SequenceDetailForAsset {
     id: number;
     sequence_name: string;
@@ -100,7 +100,7 @@ interface ShotDetailForAsset {
 }
 
 interface AssetSequence {
-    id: number; // ID of the asset-sequence link
+    id: number; 
     sequence_id: number;
     sequence_name: string;
     sequence_description: string;
@@ -123,7 +123,7 @@ interface AssetDetail {
 
 
 interface AssetShot {
-    id: number; // ID ของ asset_shots link
+    id: number; 
     shot_id: number;
     shot_name: string;
     shot_description: string;
@@ -132,12 +132,13 @@ interface AssetShot {
     shot_file_url: string;
     linked_at: string;
 }
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 export default function Project_Assets() {
-    const navigate = useNavigate();
 
+    const navigate = useNavigate();
     const [showCreateAsset, setShowCreateAsset] = useState(false);
     const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
     const [assetData, setAssetData] = useState<Category[]>([]);
@@ -156,8 +157,6 @@ export default function Project_Assets() {
     const [showAssetTypeDropdown, setShowAssetTypeDropdown] = useState(false);
     const [assetType, setAssetType] = useState('');
     const [newAssetType, setNewAssetType] = useState('');
-
-    // Form states for creating new asset
     const [newAssetName, setNewAssetName] = useState('');
     const [newAssetDescription, setNewAssetDescription] = useState('');
     const [newAssetTaskTemplate, setNewAssetTaskTemplate] = useState('');
@@ -166,21 +165,22 @@ export default function Project_Assets() {
     const [showShotDropdown, setShowShotDropdown] = useState(false);
     const [sequenceInput, setSequenceInput] = useState('');
     const [shotInput, setShotInput] = useState('');
-
-    // Asset detail panel states
     const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
     const [isLoadingAssetDetail, setIsLoadingAssetDetail] = useState(false);
     const [assetSequences, setAssetSequences] = useState<AssetSequence[]>([]);
     const [showAddSequenceDropdown, setShowAddSequenceDropdown] = useState(false);
     const [addSequenceInput, setAddSequenceInput] = useState('');
-
     const [searchText, setSearchText] = useState("");
-
     const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]);
     const [assetShots, setAssetShots] = useState<AssetShot[]>([]);
     const [showAddShotDropdown, setShowAddShotDropdown] = useState(false);
     const [addShotInput, setAddShotInput] = useState('');
-
+    const [allAssetShots, setAllAssetShots] = useState<Record<string, AssetShot[]>>({});
+    const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<Asset | null>(null);
+    const [showAssetDetailPanel, setShowAssetDetailPanel] = useState(false);
+    const [assetModalPosition, setAssetModalPosition] = useState({ x: 0, y: 0 });
+    const [isAssetDragging, setIsAssetDragging] = useState(false);
+    const assetDragStart = useRef({ x: 0, y: 0 });
 
     const taskTemplates = [
         "Automotive - Concept",
@@ -209,17 +209,54 @@ export default function Project_Assets() {
     ];
 
 
-    // 2. แก้ไข useEffect สำหรับโหลด shots ตอน mount
+    const [expandedItem, setExpandedItem] = useState<{
+        type: "sequence" | "shot";
+        id: number;
+    } | null>(null);
+
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        asset: Asset;
+    } | null>(null);
+
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        assetId: string;
+        asset_name: string;
+    } | null>(null);
+
+
+    useEffect(() => {
+        const closeMenu = () => setContextMenu(null);
+
+        if (contextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [contextMenu]);
+
+    useEffect(() => {
+        const closeDropdown = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // ตรวจสอบว่าไม่ได้คลิกใน dropdown หรือ input
+            if (!target.closest('.relative')) {
+                setShowAddSequenceDropdown(false);
+            }
+        };
+
+        if (showAddSequenceDropdown) {
+            document.addEventListener("mousedown", closeDropdown);
+            return () => document.removeEventListener("mousedown", closeDropdown);
+        }
+    }, [showAddSequenceDropdown]);
+
     useEffect(() => {
         fetchAssets();
         fetchSequences();
         fetchAllProjectShots();
     }, []);
 
-
-
-
-    // Close dropdown when clicking outside
     useEffect(() => {
         const closeDropdown = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
@@ -233,6 +270,39 @@ export default function Project_Assets() {
             return () => document.removeEventListener("mousedown", closeDropdown);
         }
     }, [showAddShotDropdown]);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isAssetDragging) return;
+            setAssetModalPosition({
+                x: e.clientX - assetDragStart.current.x,
+                y: e.clientY - assetDragStart.current.y,
+            });
+        };
+
+        const handleMouseUp = () => setIsAssetDragging(false);
+
+        if (isAssetDragging) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isAssetDragging]);
+
+    useEffect(() => {
+        if (assetData.length > 0) {
+            assetData.forEach(category => {
+                category.assets.forEach(asset => {
+                    fetchShotsForAsset(asset.id);
+                });
+            });
+        }
+    }, [assetData.length]);
+
 
     const fetchAssets = async () => {
         const projectId = localStorage.getItem('projectId');
@@ -280,8 +350,6 @@ export default function Project_Assets() {
         })
     })).filter(category => category.assets.length > 0);
 
-
-    // frontend: Project_Assets.tsx
     const fetchAllProjectShots = async () => {
         try {
             const projectData = getProjectData();
@@ -320,7 +388,7 @@ export default function Project_Assets() {
             setAllProjectShots([]);
         }
     };
-    // ใช้ console.log ดูโครงสร้างข้อมูล
+   
     const fetchAssetShots = async (assetId: string) => {
         try {
             console.log('🟡 Fetching asset shots for assetId:', assetId);
@@ -353,7 +421,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ⭐ เพิ่ม shot ให้ asset
     const handleAddShotToAsset = async (shotId: number) => {
         if (!selectedAssetForDetail) return;
 
@@ -381,8 +448,6 @@ export default function Project_Assets() {
         }
     };
 
-
-    // ⭐ ลบ shot จาก asset
     const handleRemoveShotFromAsset = async (assetShotId: number) => {
         if (!selectedAssetForDetail) return;
 
@@ -411,7 +476,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ⭐ กรอง shots ที่ยังไม่ได้เพิ่ม
     const filteredAddShots = allProjectShots.filter(shot =>
         shot.shot_name.toLowerCase().includes(addShotInput.toLowerCase()) &&
         !assetShots.some((assetShot: AssetShot) => assetShot.shot_id === shot.id)
@@ -535,6 +599,7 @@ export default function Project_Assets() {
     const filteredShots = shots.filter(shot =>
         shot.shot_name.toLowerCase().includes(shotInput.toLowerCase())
     );
+
     const filteredAssetTypes = type_assets.filter(type =>
         type.toLowerCase().includes(assetType.toLowerCase())
     );
@@ -630,10 +695,10 @@ export default function Project_Assets() {
         return selectedAsset?.categoryIndex === categoryIndex &&
             selectedAsset?.assetIndex === assetIndex;
     };
+
     const filteredTemplates = taskTemplates.filter(template =>
         template.toLowerCase().includes(taskTemplate.toLowerCase())
     );
-
 
     const handleSequenceSelect = (sequence: Sequence) => {
         setSelectedSequence(sequence);
@@ -741,6 +806,7 @@ export default function Project_Assets() {
             alert('Failed to create asset');
         }
     };
+
     const syncSelectedAssetThumbnail = (categories: AssetCategory[]) => {
         const stored = localStorage.getItem("selectedAsset");
         if (!stored) return;
@@ -772,15 +838,6 @@ export default function Project_Assets() {
         }
     };
 
-
-    // เมนูคลิกขวา ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    const [contextMenu, setContextMenu] = useState<{
-        visible: boolean;
-        x: number;
-        y: number;
-        asset: Asset;
-    } | null>(null);
-
     const handleContextMenu = (
         e: React.MouseEvent,
         asset: Asset
@@ -795,18 +852,7 @@ export default function Project_Assets() {
             asset
         });
     };
-    // จัดการการขยายรายละเอียดของ Asset/Shot ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<Asset | null>(null);
-    const [showAssetDetailPanel, setShowAssetDetailPanel] = useState(false);
 
-    const [expandedItem, setExpandedItem] = useState<{
-        type: "sequence" | "shot";
-        id: number;
-    } | null>(null);
-
-    // ⭐ เพิ่มแทนที่
-
-    // ⭐ ฟังก์ชันดึงข้อมูล asset detail
     const fetchAssetDetail = async (assetId: string) => {
         setIsLoadingAssetDetail(true);
 
@@ -863,7 +909,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ⭐ ฟังก์ชันดึง sequences ที่เชื่อมกับ asset
     const fetchAssetSequences = async (assetId: string) => {
         try {
             const res = await axios.post(ENDPOINTS.GET_ASSET_SEQUENCES_JOIN, { assetId });
@@ -875,7 +920,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ⭐ ฟังก์ชันเพิ่ม sequence ให้ asset
     const handleAddSequenceToAsset = async (sequenceId: number) => {
         if (!selectedAssetForDetail) return;
 
@@ -903,7 +947,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ⭐ ฟังก์ชันลบ sequence จาก asset
     const handleRemoveSequenceFromAsset = async (assetSequenceId: number) => {
         if (!selectedAssetForDetail) return;
 
@@ -934,43 +977,6 @@ export default function Project_Assets() {
             console.error('Error removing sequence from asset:', err);
         }
     };
-
-    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-    useEffect(() => {
-        const closeMenu = () => setContextMenu(null);
-
-        if (contextMenu) {
-            document.addEventListener("click", closeMenu);
-            return () => document.removeEventListener("click", closeMenu);
-        }
-    }, [contextMenu]);
-
-    // Close add sequence dropdown when clicking outside
-    useEffect(() => {
-        const closeDropdown = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            // ตรวจสอบว่าไม่ได้คลิกใน dropdown หรือ input
-            if (!target.closest('.relative')) {
-                setShowAddSequenceDropdown(false);
-            }
-        };
-
-        if (showAddSequenceDropdown) {
-            document.addEventListener("mousedown", closeDropdown);
-            return () => document.removeEventListener("mousedown", closeDropdown);
-        }
-    }, [showAddSequenceDropdown]);
-
-
-
-
-    // ยืนยันการลบ sequence ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    const [deleteConfirm, setDeleteConfirm] = useState<{
-        assetId: string;
-        asset_name: string;
-    } | null>(null);
 
     const handleDeleteAsset = async (assetId: string) => {
         try {
@@ -1010,13 +1016,6 @@ export default function Project_Assets() {
         }
     };
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ขยับ create ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    const [assetModalPosition, setAssetModalPosition] = useState({ x: 0, y: 0 });
-    const [isAssetDragging, setIsAssetDragging] = useState(false);
-    const assetDragStart = useRef({ x: 0, y: 0 });
-
-
     const handleAssetMouseDown = (e: React.MouseEvent) => {
         setIsAssetDragging(true);
         assetDragStart.current = {
@@ -1024,29 +1023,6 @@ export default function Project_Assets() {
             y: e.clientY - assetModalPosition.y,
         };
     };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isAssetDragging) return;
-            setAssetModalPosition({
-                x: e.clientX - assetDragStart.current.x,
-                y: e.clientY - assetDragStart.current.y,
-            });
-        };
-
-        const handleMouseUp = () => setIsAssetDragging(false);
-
-        if (isAssetDragging) {
-            window.addEventListener("mousemove", handleMouseMove);
-            window.addEventListener("mouseup", handleMouseUp);
-        }
-
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("mouseup", handleMouseUp);
-        };
-    }, [isAssetDragging]);
-
 
     const handleAssetModalClose = () => {
         setShowCreateAsset(false);
@@ -1070,10 +1046,6 @@ export default function Project_Assets() {
         setShowShotDropdown(false);
     };
 
-    // เพิ่ม state ใหม่
-    const [allAssetShots, setAllAssetShots] = useState<Record<string, AssetShot[]>>({});
-
-    // เพิ่มฟังก์ชันดึง shots สำหรับ asset เฉพาะ
     const fetchShotsForAsset = async (assetId: string) => {
         try {
             const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId });
@@ -1087,18 +1059,6 @@ export default function Project_Assets() {
             console.error('Error fetching shots for asset:', assetId, error);
         }
     };
-
-    // เรียกใช้ในตอนโหลดข้อมูล assets
-    useEffect(() => {
-        if (assetData.length > 0) {
-            assetData.forEach(category => {
-                category.assets.forEach(asset => {
-                    fetchShotsForAsset(asset.id);
-                });
-            });
-        }
-    }, [assetData.length]);
-
 
 
     return (
@@ -1145,12 +1105,9 @@ export default function Project_Assets() {
             <div className="h-22"></div>
 
             <main className="flex-1 overflow-y-auto">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                        <p className="text-gray-400 text-sm">Loading assets...</p>
-                    </div>
-                ) : assetData.length === 0 ? (
+                {isLoading 
+                ? <PixelLoadingFrog /> 
+                 : assetData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="text-center space-y-4">
                             <Image className="w-24 h-24 text-gray-600 mx-auto" />
@@ -1296,12 +1253,31 @@ export default function Project_Assets() {
                                                                 </div>
 
                                                                 {/* Type */}
-                                                                <div className="w-44 flex-shrink-0 px-2 py-1 rounded cursor-text border-r border-gray-700/50 pr-4">
-                                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                                                        <span className="text-xs text-purple-300 font-medium whitespace-nowrap truncate" title={category.category}>
-                                                                            {category.category}
-                                                                        </span>
-                                                                    </div>
+                                                                <div
+                                                                    className="w-44 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <select
+                                                                        value={asset.status ? category.category : ''}
+                                                                        defaultValue={category.category}
+                                                                        onChange={async (e) => {
+                                                                            const newType = e.target.value;
+                                                                            await axios.post(ENDPOINTS.UPDATEASSET, {
+                                                                                assetId: asset.id,
+                                                                                field: 'type',
+                                                                                value: newType
+                                                                            });
+                                                                            fetchAssets();
+                                                                        }}
+                                                                        className="w-full bg-purple-500/10 border border-purple-500/20 rounded-md px-2 py-1 text-xs text-purple-300 font-medium cursor-pointer focus:outline-none focus:border-purple-400 hover:bg-purple-500/20 transition-colors"
+                                                                    >
+                                                                        <option value="No Type" className="bg-gray-800 text-gray-400">No type</option>
+                                                                        {type_assets.map(t => (
+                                                                            <option key={t} value={t} className="bg-gray-800 text-gray-200">
+                                                                                {t}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
                                                                 </div>
 
                                                                 {/* Status */}
@@ -1473,12 +1449,14 @@ export default function Project_Assets() {
                     onClick={() => setShowStatusMenu(null)}
                 ></div>
             )}
+
             {showTemplateDropdown && (
                 <div
                     className="fixed inset-0 z-40"
                     onClick={() => setShowTemplateDropdown(false)}
                 ></div>
             )}
+
             {showAssetTypeDropdown && (
                 <div
                     className="fixed inset-0 z-40"
@@ -2127,9 +2105,6 @@ export default function Project_Assets() {
                                             )}
                                         </div>
                                     </div>
-
-
-
                                 </>
                             )}
                         </div>
@@ -2153,7 +2128,7 @@ export default function Project_Assets() {
 
                                 <div>
                                     <h3 className="text-lg font-semibold text-zinc-100">
-                                        Delete Sequence
+                                        Delete Asset
                                     </h3>
                                     <p className="text-sm text-zinc-400">
                                         This action cannot be undone.
