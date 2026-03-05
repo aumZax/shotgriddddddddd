@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../config";
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronDown, LoaderCircle, Trash2 } from 'lucide-react';
 import PixelLoadingSkeleton from '../components/PixelLoadingSkeleton';
 
 interface Project {
@@ -48,6 +48,8 @@ export default function Home() {
     const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
     const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
     const [permission, setPermission] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
 
     const canDeleteProject = ["Owner", "Admin"].includes(permission ?? "");
 
@@ -251,6 +253,8 @@ export default function Home() {
         }
 
         try {
+            setDeleting(true);
+
             const res = await fetch(ENDPOINTS.DELETEPROJECT, {
                 method: "DELETE",
                 headers: {
@@ -275,6 +279,8 @@ export default function Home() {
         } catch (error) {
             console.error("❌ Network error:", error);
             alert("Server error");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -859,7 +865,7 @@ export default function Home() {
 
             <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">
                 {loadingProjects ? (
-                   <PixelLoadingSkeleton/>
+                    <PixelLoadingSkeleton />
                 ) : projectData.length === 0 ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="text-gray-600 text-xl">No projects yet. Create your first project!</div>
@@ -917,7 +923,7 @@ export default function Home() {
                                 if (!contextMenu) return;
                                 openDeleteConfirm(contextMenu.projectId);
                             }}
-                            className="w-full px-4 py-2 text-left text-red-600 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
+                            className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
                         >
                             <Trash2 className="w-5 h-5 text-slate-50" />
 
@@ -958,16 +964,24 @@ export default function Home() {
                                 <div className="flex justify-end gap-3">
                                     <button
                                         onClick={() => setDeleteConfirm(null)}
-                                        className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
-                                    >
+                                        className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600">
                                         Cancel
                                     </button>
 
                                     <button
                                         onClick={() => handleDeleteProject(deleteConfirm.projectId)}
+                                        disabled={deleting}
                                         className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                     >
-                                        Delete Project
+                                        {deleting ? (
+                                            <div className="flex items-center gap-2">
+                                                <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                                Deleting...
+                                            </div>
+                                        ) : (
+                                            'Delete Asset'
+                                        )}
                                     </button>
                                 </div>
                             </div>

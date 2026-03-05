@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Package, Check, Film } from 'lucide-react';
+import { Image, Pencil, Package, Check, Film, Trash2, LoaderCircle } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
 import PixelLoadingSkeleton from './PixelLoadingSkeleton';
@@ -63,7 +63,41 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
     const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
     const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const [updating, setUpdating] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        assetId: number;
+        assetName: string;
+    } | null>(null);
+
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        assetId: number;
+        assetName: string;
+    } | null>(null);
+
+    useEffect(() => {
+        const closeMenu = () => setContextMenu(null);
+        if (contextMenu) {
+            document.addEventListener('click', closeMenu);
+            return () => document.removeEventListener('click', closeMenu);
+        }
+    }, [contextMenu]);
+    const handleDeleteAsset = async (assetId: number) => {
+        try {
+            setDeleting(true);
+            await axios.delete(ENDPOINTS.DELETE_ASSET, { data: { assetId } });
+            setAssets(prev => prev.filter(a => a.asset_id !== assetId));
+            onAssetUpdate?.();
+            setDeleteConfirm(null);
+        } catch (err) {
+            console.error('Delete asset failed:', err);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     // ⭐ State ควบคุมการ expand shots ของแต่ละ asset (key = asset_id)
     const [expandedShots, setExpandedShots] = useState<Record<number, boolean>>({});
@@ -202,7 +236,19 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                 <tr
                                     key={`asset-${asset.id}-${index}`}
                                     className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setContextMenu({
+                                            visible: true,
+                                            x: e.clientX,
+                                            y: e.clientY,
+                                            assetId: asset.asset_id,
+                                            assetName: asset.asset_name,
+                                        });
+                                    }}
                                 >
+
                                     {/* # */}
                                     <td className="px-4 py-4">
                                         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 text-gray-400 text-sm font-medium group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
@@ -329,13 +375,21 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                                         </div>
                                     </td> */}
 
-                                    {/* Type — badge only */}
+                                    {/* Type — แก้จาก badge เป็น dropdown */}
                                     <td className="px-4 py-4">
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                            <span className="text-xs font-medium text-purple-300 whitespace-nowrap">
-                                                {asset.asset_type || 'No Type'}
-                                            </span>
-                                        </div>
+                                        <select
+                                            value={asset.asset_type || ''}
+                                            onChange={async (e) => {
+                                                await updateAssetField(asset.asset_id, 'type', e.target.value);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-purple-500/10 border border-purple-500/20 rounded-md px-2 py-1 text-xs text-purple-300 font-medium cursor-pointer focus:outline-none focus:border-purple-400 hover:bg-purple-500/20 transition-colors"
+                                        >
+                                            <option value="" className="bg-gray-800 text-gray-400">No Type</option>
+                                            {['Character', 'Environment', 'Prop', 'FX', 'Graphic', 'Matte Painting', 'Vehicle', 'Weapon', 'Model', 'Theme', 'Zone', 'Part'].map(t => (
+                                                <option key={t} value={t} className="bg-gray-800 text-gray-200">{t}</option>
+                                            ))}
+                                        </select>
                                     </td>
 
                                     {/* Status — dropdown */}
@@ -491,6 +545,70 @@ const Asset_SequenceTab: React.FC<Asset_SequenceTabProps> = ({
                     </tbody>
                 </table>
             </div>
+
+
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div
+                    className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setDeleteConfirm({ assetId: contextMenu.assetId, assetName: contextMenu.assetName });
+                            setContextMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
+                    >
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                        Delete Asset
+                    </button>
+                </div>
+            )}
+
+            {/* Delete Confirm Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
+                    <div className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-6">
+                        <div className="flex items-start gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                <span className="text-3xl">⚠️</span>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-zinc-100">Delete Asset</h3>
+                                <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                            </div>
+                        </div>
+                        <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                            <p className="text-zinc-300 mb-1">Are you sure you want to delete?</p>
+                            <p className="font-semibold text-zinc-100 truncate">"{deleteConfirm.assetName}"</p>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteAsset(deleteConfirm.assetId)}
+                                disabled={deleting}
+                                className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
+                            >
+                                {deleting ? (
+                                    <div className="flex items-center gap-2">
+                                        <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                        Deleting...
+                                    </div>
+                                ) : (
+                                    'Delete Asset'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

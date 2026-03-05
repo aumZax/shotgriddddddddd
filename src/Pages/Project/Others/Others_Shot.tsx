@@ -249,7 +249,7 @@ export default function Others_Shot() {
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingShotVersions;
     const [taskSearchQuery, setTaskSearchQuery] = useState('');
     const [taskSearchOpen, setTaskSearchOpen] = useState(false);
-const [loadingTasks, setLoadingTasks] = useState(false);
+    const [loadingTasks, setLoadingTasks] = useState(false);
 
 
     //============================================================================================================================================//
@@ -387,9 +387,9 @@ const [loadingTasks, setLoadingTasks] = useState(false);
             })
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
-            })  .finally(() => {
-            setLoadingTasks(false); // ⭐ เพิ่ม
-        });
+            }).finally(() => {
+                setLoadingTasks(false); // ⭐ เพิ่ม
+            });
     }, [shotId, projectId]);
 
     useEffect(() => {
@@ -573,7 +573,7 @@ const [loadingTasks, setLoadingTasks] = useState(false);
 
             alert(`สร้าง ${versionFiles.length || 1} Version สำเร็จ!`);
             setShowCreateVersion(false);
-            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '' ,task_id: null,});
+            setCreateVersionForm({ version_name: '', status: 'wtg', description: '', link: '', task: '', task_id: null, });
             setVersionFiles([]);
             setVersionFilePreviews([]);
             fetchShotVersions();
@@ -602,7 +602,7 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                 task: createVersionForm.task || null,
                 task_id: createVersionForm.task_id ?? null,
                 file_url: fileUrl,
-                file_id: fileId ?? null, 
+                file_id: fileId ?? null,
                 uploaded_by: selectedUploader?.id ?? null,
             })
         });
@@ -626,21 +626,21 @@ const [loadingTasks, setLoadingTasks] = useState(false);
             version_name: p.version_name || files[0].name.replace(/\.[^/.]+$/, '')
         }));
     };
-const resetVersionForm = () => {
-    setShowCreateVersion(false);
-    setCreateVersionForm({ 
-        version_name: '', status: 'wtg', description: '', link: '', task: '',
-        task_id: null  // ← เพิ่ม
-    });
-    setVersionFiles([]);
-    setVersionFilePreviews([]);
-    setVersionNameFromFile(null);
-    setSelectedUploader(null);
-    setUploaderQuery('');
-    setTaskSearchQuery('');   // ← เพิ่ม
-    setTaskSearchOpen(false); // ← เพิ่ม
-    setVersionModalPosition({ x: 0, y: 0 });
-};
+    const resetVersionForm = () => {
+        setShowCreateVersion(false);
+        setCreateVersionForm({
+            version_name: '', status: 'wtg', description: '', link: '', task: '',
+            task_id: null  // ← เพิ่ม
+        });
+        setVersionFiles([]);
+        setVersionFilePreviews([]);
+        setVersionNameFromFile(null);
+        setSelectedUploader(null);
+        setUploaderQuery('');
+        setTaskSearchQuery('');   // ← เพิ่ม
+        setTaskSearchOpen(false); // ← เพิ่ม
+        setVersionModalPosition({ x: 0, y: 0 });
+    };
 
     const handleStatusClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -1727,7 +1727,7 @@ const resetVersionForm = () => {
                                         <span>+</span>
                                         Add Note
                                     </button>
-                                 )}
+                                )}
 
                                 {activeTab === 'Versions' && (
                                     <button
@@ -2442,7 +2442,7 @@ const resetVersionForm = () => {
                                             className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
                                         />
                                     </div>
-                                   
+
                                 </div>
 
                                 {/* Uploaded By */}
@@ -2504,97 +2504,97 @@ const resetVersionForm = () => {
                                 </div>
 
                                 {/* Task */}
-<div className="space-y-1">
-    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
-    {createVersionForm.task_id ? (() => {
-        const t = tasks.find(t => t.id === createVersionForm.task_id);
-        if (!t) return null;
-        return (
-            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
-                {t.pipeline_step ? (
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
-                ) : (
-                    <span className="text-sm flex-shrink-0">📋</span>
-                )}
-                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
-                {t.pipeline_step && (
-                    <span
-                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-                        style={{
-                            backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
-                            color: t.pipeline_step.color_hex || '#9ca3af',
-                        }}
-                    >{t.pipeline_step.step_code}</span>
-                )}
-                <div
-                    onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
-                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
-                >✕</div>
-            </div>
-        );
-    })() : (
-        <div className="relative">
-            <input
-                type="text"
-                value={taskSearchQuery}
-                onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
-                onFocus={() => setTaskSearchOpen(true)}
-                onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
-                placeholder="Search task..."
-                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
-            />
-            {taskSearchOpen && (
-                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
-                    <div
-                        onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
-                    >
-                        <span className="text-xs text-gray-500 italic">— No task —</span>
-                    </div>
-                    {tasks
-                        .filter(t =>
-                            t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
-                            (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
-                        )
-                        .map(task => (
-                            <div
-                                key={task.id}
-                                onMouseDown={() => {
-                                    setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
-                                    setTaskSearchQuery('');
-                                    setTaskSearchOpen(false);
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
-                            >
-                                {task.pipeline_step ? (
-                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
-                                ) : (
-                                    <span className="text-xs flex-shrink-0">📋</span>
-                                )}
-                                <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
-                                {task.pipeline_step && (
-                                    <span
-                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-                                        style={{
-                                            backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
-                                            color: task.pipeline_step.color_hex || '#9ca3af',
-                                        }}
-                                    >{task.pipeline_step.step_code}</span>
-                                )}
-                            </div>
-                        ))
-                    }
-                    {tasks.filter(t =>
-                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
-                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
-                    ).length === 0 && taskSearchQuery && (
-                        <p className="px-3 py-2 text-xs text-gray-500">No tasks found</p>
-                    )}
-                </div>
-            )}
-        </div>
-    )}
-</div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+                                    {createVersionForm.task_id ? (() => {
+                                        const t = tasks.find(t => t.id === createVersionForm.task_id);
+                                        if (!t) return null;
+                                        return (
+                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                                {t.pipeline_step ? (
+                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
+                                                ) : (
+                                                    <span className="text-sm flex-shrink-0">📋</span>
+                                                )}
+                                                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
+                                                {t.pipeline_step && (
+                                                    <span
+                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                        style={{
+                                                            backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
+                                                            color: t.pipeline_step.color_hex || '#9ca3af',
+                                                        }}
+                                                    >{t.pipeline_step.step_code}</span>
+                                                )}
+                                                <div
+                                                    onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
+                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
+                                                >✕</div>
+                                            </div>
+                                        );
+                                    })() : (
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={taskSearchQuery}
+                                                onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
+                                                onFocus={() => setTaskSearchOpen(true)}
+                                                onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
+                                                placeholder="Search task..."
+                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                            />
+                                            {taskSearchOpen && (
+                                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                                                    <div
+                                                        onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
+                                                    >
+                                                        <span className="text-xs text-gray-500 italic">— No task —</span>
+                                                    </div>
+                                                    {tasks
+                                                        .filter(t =>
+                                                            t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                            (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                        )
+                                                        .map(task => (
+                                                            <div
+                                                                key={task.id}
+                                                                onMouseDown={() => {
+                                                                    setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
+                                                                    setTaskSearchQuery('');
+                                                                    setTaskSearchOpen(false);
+                                                                }}
+                                                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                            >
+                                                                {task.pipeline_step ? (
+                                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
+                                                                ) : (
+                                                                    <span className="text-xs flex-shrink-0">📋</span>
+                                                                )}
+                                                                <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
+                                                                {task.pipeline_step && (
+                                                                    <span
+                                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                                        style={{
+                                                                            backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
+                                                                            color: task.pipeline_step.color_hex || '#9ca3af',
+                                                                        }}
+                                                                    >{task.pipeline_step.step_code}</span>
+                                                                )}
+                                                            </div>
+                                                        ))
+                                                    }
+                                                    {tasks.filter(t =>
+                                                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                    ).length === 0 && taskSearchQuery && (
+                                                            <p className="px-3 py-2 text-xs text-gray-500">No tasks found</p>
+                                                        )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Link + Project — read-only */}
                                 <div className="grid grid-cols-2 gap-3">
@@ -2752,7 +2752,7 @@ const resetVersionForm = () => {
                                         e.stopPropagation();
                                         setDeleteNoteConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
@@ -2810,7 +2810,7 @@ const resetVersionForm = () => {
                                         e.stopPropagation();
                                         setDeleteVersionConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>

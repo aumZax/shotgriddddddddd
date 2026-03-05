@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import { Check, FolderClosed, Image, Lock, Video } from 'lucide-react';
+import { Check, FolderClosed, Image, LoaderCircle, Lock, Video } from 'lucide-react';
 
 
 import ENDPOINTS from "../../config";
@@ -102,6 +102,8 @@ export default function Project_Sequence() {
     const [allProjectShots, setAllProjectShots] = useState<Shot[]>([]); // Shots ทั้งหมดในโปรเจค
     const [showShotDropdown, setShowShotDropdown] = useState(false);
     const [shotSearchText, setShotSearchText] = useState("");
+    const [deleting, setDeleting] = useState(false);
+
 
     const [expandedItem, setExpandedItem] = useState<{
         type: "asset" | "shot";
@@ -697,6 +699,8 @@ export default function Project_Sequence() {
 
     const handleDeleteSequence = async (sequenceId: number) => {
         try {
+            setDeleting(true);
+
             await axios.delete(ENDPOINTS.DELETE_SEQUENCE, {
                 data: { sequenceId },
             });
@@ -719,6 +723,8 @@ export default function Project_Sequence() {
 
         } catch (err) {
             console.error("❌ Delete sequence failed:", err);
+        } finally {
+            setDeleting(false);
         }
     };
     // +++++++++++++++++++++++++++++ ขยับ create  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1668,7 +1674,7 @@ export default function Project_Sequence() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-                        onClick={() => setDeleteConfirm(null)}
+                        onClick={() => !deleting && setDeleteConfirm(null)}
                     />
 
                     <div className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl animate-in fade-in zoom-in-95">
@@ -1700,7 +1706,7 @@ export default function Project_Sequence() {
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setDeleteConfirm(null)}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
@@ -1709,9 +1715,18 @@ export default function Project_Sequence() {
                                     onClick={() =>
                                         handleDeleteSequence(deleteConfirm.sequenceId)
                                     }
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={deleting}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                 >
-                                    Delete Sequence
+                                    {deleting ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Sequence'
+                                    )}
                                 </button>
                             </div>
                         </div>

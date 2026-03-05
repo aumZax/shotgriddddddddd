@@ -158,7 +158,19 @@ export default function Others_Sequence() {
     const [editingField, setEditingField] = useState<null | 'sequence' | 'description'>(null);
     const [sequenceAssets, setSequenceAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
-const [loadingTasks, setLoadingTasks] = useState(false);
+    const [loadingTasks, setLoadingTasks] = useState(false);
+
+
+
+    // Add Shot modal
+    const [showCreateShot, setShowCreateShot] = useState(false);
+    const [isCreatingShot, setIsCreatingShot] = useState(false);
+    const [createShotForm, setCreateShotForm] = useState({ shot_name: '', description: '' });
+
+    // Add Asset modal  
+    const [showCreateAsset, setShowCreateAsset] = useState(false);
+    const [isCreatingAsset, setIsCreatingAsset] = useState(false);
+    const [createAssetForm, setCreateAssetForm] = useState({ asset_name: '', asset_type: 'Character', description: '' });
     //============================================================================================================================================//
 
     const [SequenceData, setSequenceData] = useState({
@@ -260,8 +272,8 @@ const [loadingTasks, setLoadingTasks] = useState(false);
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
             }).finally(() => {
-            setLoadingTasks(false); // ⭐ เพิ่ม
-        });
+                setLoadingTasks(false); // ⭐ เพิ่ม
+            });
     }, [sequenceId, projectId]);
 
     useEffect(() => {
@@ -906,6 +918,74 @@ const [loadingTasks, setLoadingTasks] = useState(false);
     };
 
     //============================================================================================================================================//
+    const handleCreateShot = async () => {
+        if (!createShotForm.shot_name.trim() || isCreatingShot) return;
+        setIsCreatingShot(true);
+        try {
+            // สร้าง shot ใหม่
+            const res = await axios.post(ENDPOINTS.CREATESHOT, {
+                projectId,
+                shotName: createShotForm.shot_name.trim(),
+                description: createShotForm.description || null,
+                status: 'wtg',
+                sequenceId,  // auto-link กับ sequence นี้
+            });
+
+            const newShotId = res.data.shotId;
+
+            // link shot กับ sequence
+            await fetch(ENDPOINTS.ADD_SHOT_TO_SEQUENCE, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sequenceId, shotId: newShotId })
+            });
+
+            // refresh
+            await handleShotUpdate();
+            setShowCreateShot(false);
+            setCreateShotForm({ shot_name: '', description: '' });
+        } catch (err) {
+            console.error(err);
+            alert('Failed to create shot');
+        } finally {
+            setIsCreatingShot(false);
+        }
+    };
+
+    // แก้ handleCreateAsset
+    const handleCreateAsset = async () => {
+        if (!createAssetForm.asset_name.trim() || isCreatingAsset) return;
+        setIsCreatingAsset(true);
+        try {
+            const res = await axios.post(ENDPOINTS.CREATEASSETS, {
+                projectId,
+                assetName: createAssetForm.asset_name.trim(),
+                description: createAssetForm.description || null,
+                type: createAssetForm.asset_type,
+                status: 'wtg',
+            });
+
+            const newAssetId = res.data.assetId;
+
+            await fetch(ENDPOINTS.ADD_ASSET_TO_SEQUENCE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sequenceId, assetId: newAssetId })
+            });
+
+            await fetchSequenceAssets(); // ✅ ไม่ส่ง argument
+            setShowCreateAsset(false);
+            setCreateAssetForm({ asset_name: '', asset_type: 'Character', description: '' });
+        } catch (err) {
+            console.error(err);
+            alert('Failed to create asset');
+        } finally {
+            setIsCreatingAsset(false);
+        }
+    };
+
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1269,6 +1349,25 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                     >
                                         <span>+</span>
                                         Add Note
+                                    </button>
+                                )}
+
+                                {activeTab === 'Shots' && (
+                                    <button
+                                        onClick={() => setShowCreateShot(true)}
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
+                                    >
+                                        <span>+</span> Create Shot
+                                    </button>
+                                )}
+
+                                {activeTab === 'Assets' && (
+                                    <button
+                                        onClick={() => setShowCreateAsset(true)}
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
+
+                                    >
+                                        <span>+</span> Create Asset
                                     </button>
                                 )}
                             </div>
@@ -1917,6 +2016,186 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                     />
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Shot Modal */}
+            {showCreateShot && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !isCreatingShot && setShowCreateShot(false)}
+                    />
+                    <div className="relative w-full max-w-lg bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
+
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-100">Create Shot</h2>
+                                <p className="text-xs text-blue-300/60 mt-0.5">
+                                    Linked to: <span className="text-blue-300 font-medium">{SequenceData.sequence}</span>
+                                </p>
+                            </div>
+                            <div onClick={() => !isCreatingShot && setShowCreateShot(false)} className="cursor-pointer text-gray-500 hover:text-gray-200 text-xl leading-none">×</div>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Shot Name <span className="text-red-400">*</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. SH010"
+                                    value={createShotForm.shot_name}
+                                    onChange={(e) => setCreateShotForm(p => ({ ...p, shot_name: e.target.value }))}
+                                    autoFocus
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Link to Sequence</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="text-blue-500/60">📁</span>
+                                    <span>{SequenceData.sequence}</span>
+                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                        auto-linked
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Project</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                    {projectData?.projectName || 'Unknown Project'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">Description</label>
+                                <textarea
+                                    placeholder="Optional..."
+                                    value={createShotForm.description}
+                                    onChange={(e) => setCreateShotForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/20 flex items-center justify-between">
+                            <button onClick={() => setShowCreateShot(false)} disabled={isCreatingShot}
+                                className="flex items-center px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button onClick={handleCreateShot} disabled={isCreatingShot || !createShotForm.shot_name.trim()}
+                                className="px-5 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-white text-sm rounded-lg font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                {isCreatingShot ? (
+                                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Creating...</span></>
+                                ) : 'Create Shot'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Asset Modal */}
+            {showCreateAsset && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !isCreatingAsset && setShowCreateAsset(false)}
+                    />
+                    <div className="relative w-full max-w-lg bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
+
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-100">Create Asset</h2>
+                                <p className="text-xs text-blue-300/60 mt-0.5">
+                                    Linked to: <span className="text-blue-300 font-medium">{SequenceData.sequence}</span>
+                                </p>
+                            </div>
+                            <div onClick={() => !isCreatingAsset && setShowCreateAsset(false)} className="cursor-pointer text-gray-500 hover:text-gray-200 text-xl leading-none">×</div>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Asset Name <span className="text-red-400">*</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Hero_Character"
+                                    value={createAssetForm.asset_name}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_name: e.target.value }))}
+                                    autoFocus
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Asset Type</label>
+                                <select
+                                    value={createAssetForm.asset_type}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_type: e.target.value }))}
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="Character">Character</option>
+                                    <option value="Environment">Environment</option>
+                                    <option value="Prop">Prop</option>
+                                    <option value="FX">FX</option>
+                                    <option value="Graphic">Graphic</option>
+                                    <option value="Matte Painting">Matte Painting</option>
+                                    <option value="Vehicle">Vehicle</option>
+                                    <option value="Weapon">Weapon</option>
+                                    <option value="Model">Model</option>
+                                    <option value="Theme">Theme</option>
+                                    <option value="Zone">Zone</option>
+                                    <option value="Part">Part</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Link to Sequence</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="text-green-500/60">📁</span>
+                                    <span>{SequenceData.sequence}</span>
+                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                        auto-linked
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Project</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                    {projectData?.projectName || 'Unknown Project'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">Description</label>
+                                <textarea
+                                    placeholder="Optional..."
+                                    value={createAssetForm.description}
+                                    onChange={(e) => setCreateAssetForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/20 flex items-center justify-between">
+                            <button onClick={() => setShowCreateAsset(false)} disabled={isCreatingAsset}
+                                className="flex items-centerpx-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button onClick={handleCreateAsset} disabled={isCreatingAsset || !createAssetForm.asset_name.trim()}
+                                className="px-5 h-9 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white text-sm rounded-lg font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                {isCreatingAsset ? (
+                                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Creating...</span></>
+                                ) : 'Create Asset'}
+                            </button>
                         </div>
                     </div>
                 </div>

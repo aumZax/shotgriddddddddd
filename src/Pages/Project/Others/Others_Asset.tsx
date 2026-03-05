@@ -210,8 +210,18 @@ export default function Others_Asset() {
     const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
-const [loadingTasks, setLoadingTasks] = useState(false);
+    const [loadingTasks, setLoadingTasks] = useState(false);
 
+
+    const [showAddShot, setShowAddShot] = useState(false);
+    const [isAddingShot, setIsAddingShot] = useState(false);
+
+    const [createShotForm, setCreateShotForm] = useState({
+        shot_name: '',
+        description: '',
+        status: 'wtg',
+    });
+    const [isCreatingShot, setIsCreatingShot] = useState(false);
 
     // ── createVersionForm: เพิ่ม task_id เพื่อเก็บ id ของ task ที่เลือก ──
     const [createVersionForm, setCreateVersionForm] = useState({
@@ -305,12 +315,9 @@ const [loadingTasks, setLoadingTasks] = useState(false);
         const fetchLinkedShots = async () => {
             setLoadingLinkedShots(true);
             try {
-                const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, {
-                    assetId: AssetID,
-                });
+                const res = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId: AssetID });
                 setLinkedShots(res.data);
             } catch (err) {
-                console.error('Failed to fetch linked shots:', err);
                 setLinkedShots([]);
             } finally {
                 setLoadingLinkedShots(false);
@@ -377,7 +384,7 @@ const [loadingTasks, setLoadingTasks] = useState(false);
             console.warn("⚠️ Missing AssetID or projectId");
             return;
         }
-    setLoadingTasks(true); // ⭐ เพิ่ม
+        setLoadingTasks(true); // ⭐ เพิ่ม
         axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
             project_id: projectId,
             entity_type: "asset",
@@ -1143,6 +1150,8 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                     />
                 );
 
+
+
             case 'Publishes':
                 return (
                     <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-xl border border-gray-600/50 shadow-lg">
@@ -1169,6 +1178,44 @@ const [loadingTasks, setLoadingTasks] = useState(false);
             </div>
         );
     }
+
+
+
+    const handleCreateShot = async () => {
+        if (!createShotForm.shot_name.trim() || isCreatingShot) return;
+        setIsCreatingShot(true);
+        try {
+            // สร้าง shot ใหม่ linked กับ project
+            const res = await axios.post(ENDPOINTS.CREATESHOT, {
+                projectId,
+                shotName: createShotForm.shot_name.trim(),
+                description: createShotForm.description || null,
+                status: createShotForm.status,
+            });
+
+            const newShotId = res.data.shotId;
+
+            // auto-link shot กับ asset นี้
+            await axios.post(ENDPOINTS.ADD_ASSET_TO_SHOT, {
+                shotId: newShotId,
+                assetId: AssetID,
+            });
+
+            // refresh linked shots
+            const updated = await axios.post(ENDPOINTS.GET_ASSET_SHOTS_JOIN, { assetId: AssetID });
+            setLinkedShots(updated.data);
+
+            setShowAddShot(false);
+            setCreateShotForm({ shot_name: '', description: '', status: 'wtg' });
+        } catch (err) {
+            alert('Failed to create shot');
+        } finally {
+            setIsCreatingShot(false);
+        }
+    };
+
+
+
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1598,6 +1645,14 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                         className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
                                     >
                                         <span>+</span> Add Version
+                                    </button>
+                                )}
+                                {activeTab === 'Shots' && (
+                                    <button
+                                        onClick={() => setShowAddShot(true)}
+                                        className="px-3 py-1.5 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
+                                    >
+                                        <span>+</span> Add Shot
                                     </button>
                                 )}
                             </div>
@@ -2060,7 +2115,7 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                         className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
                                             ? 'border-blue-500/60 bg-blue-500/8'
                                             : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
-                                        }`}
+                                            }`}
                                     >
                                         <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
                                             {versionFiles.length > 0 ? (
@@ -2246,8 +2301,8 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                                         t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
                                                         (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
                                                     ).length === 0 && taskSearchQuery && (
-                                                        <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
-                                                    )}
+                                                            <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
+                                                        )}
                                                 </div>
                                             )}
                                         </div>
@@ -2634,6 +2689,106 @@ const [loadingTasks, setLoadingTasks] = useState(false);
                                     />
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showAddShot && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !isCreatingShot && setShowAddShot(false)}
+                    />
+                    <div className="relative w-full max-w-lg bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden">
+
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-100">Create Shot</h2>
+                                <p className="text-xs text-blue-300/60 mt-0.5">
+                                    Linked to: <span className="text-blue-300 font-medium">{assetData?.asset_name}</span>
+                                </p>
+                            </div>
+                            <div
+                                onClick={() => !isCreatingShot && setShowAddShot(false)}
+                                className="cursor-pointer text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors"
+                            >×</div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-4">
+
+                            {/* Shot Name */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">
+                                    Shot Name <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. SH010"
+                                    value={createShotForm.shot_name}
+                                    onChange={(e) => setCreateShotForm(p => ({ ...p, shot_name: e.target.value }))}
+                                    autoFocus
+                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
+                                />
+                            </div>
+
+                            {/* Link to Asset (read-only) */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Link to Asset</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="text-blue-500/60">📦</span>
+                                    <span>{assetData?.asset_name}</span>
+                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                        auto-linked
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Project (read-only) */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
+                                <label className="text-sm text-gray-300 text-right">Project</label>
+                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                    {projectData?.projectName || 'Unknown Project'}
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="grid grid-cols-[130px_1fr] gap-4 items-start">
+                                <label className="text-sm text-gray-300 text-right pt-2">Description</label>
+                                <textarea
+                                    placeholder="Optional description..."
+                                    value={createShotForm.description}
+                                    onChange={(e) => setCreateShotForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={3}
+                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/20 flex items-center justify-between">
+                            <button
+                                onClick={() => setShowAddShot(false)}
+                                disabled={isCreatingShot}
+                                className="px-4 h-9 flex items-center bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateShot}
+                                disabled={isCreatingShot || !createShotForm.shot_name.trim()}
+                                className="px-5 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-white text-sm rounded-lg font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                            >
+                                {isCreatingShot ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Creating...</span>
+                                    </>
+                                ) : 'Create Shot'}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Pencil, Film, Check, Box } from 'lucide-react';
+import { Image, Pencil, Film, Check, Box, Trash2, LoaderCircle } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
 import PixelLoadingSkeleton from './PixelLoadingSkeleton';
@@ -71,6 +71,40 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
 
     // ⭐ State ควบคุมการ expand assets ของแต่ละ shot (key = shot_id)
     const [expandedAssets, setExpandedAssets] = useState<Record<number, boolean>>({});
+
+    const [deleting, setDeleting] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{
+        x: number;
+        y: number;
+        shotId: number;
+        shotName: string;
+    } | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        shotId: number;
+        shotName: string;
+    } | null>(null);
+
+    useEffect(() => {
+        const closeMenu = () => setContextMenu(null);
+        if (contextMenu) {
+            document.addEventListener('click', closeMenu);
+            return () => document.removeEventListener('click', closeMenu);
+        }
+    }, [contextMenu]);
+
+    const handleDeleteShot = async (shotId: number) => {
+        try {
+            setDeleting(true);
+            await axios.delete(ENDPOINTS.DELETE_SHOT, { data: { shotId } });
+            setShots(prev => prev.filter(s => s.shot_id !== shotId));
+            onShotUpdate?.();
+            setDeleteConfirm(null);
+        } catch (err) {
+            console.error('Delete shot failed:', err);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     // ========================================
     // SYNC PROPS
@@ -236,6 +270,16 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
                                 <tr
                                     key={`shot-${shot.shot_id}-${index}`}
                                     className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setContextMenu({
+                                            x: e.clientX,
+                                            y: e.clientY,
+                                            shotId: shot.shot_id,
+                                            shotName: shot.shot_name,
+                                        });
+                                    }}
                                 >
                                     {/* # */}
                                     <td className="px-4 py-4">
@@ -507,6 +551,75 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
                     </tbody>
                 </table>
             </div>
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div
+                    className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[160px]"
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setDeleteConfirm({ shotId: contextMenu.shotId, shotName: contextMenu.shotName });
+                            setContextMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-400 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600 rounded-lg"
+                    >
+                        <Trash2 className="w-5 h-5 text-slate-50" />
+                        Delete Shot
+                    </button>
+                </div>
+            )}
+
+            {/* Delete Confirm Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                        onClick={() => !deleting && setDeleteConfirm(null)}
+                    />
+                    <div className="relative w-full max-w-md mx-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl p-6">
+                        <div className="flex items-start gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                                <span className="text-3xl">⚠️</span>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-zinc-100">Delete Shot</h3>
+                                <p className="text-sm text-zinc-400">This action cannot be undone.</p>
+                            </div>
+                        </div>
+                        <div className="rounded-lg bg-zinc-800 p-4 mb-6 border border-zinc-700">
+                            <p className="text-zinc-300 mb-1">Are you sure you want to delete?</p>
+                            <p className="font-semibold text-zinc-100 truncate">"{deleteConfirm.shotName}"</p>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteConfirm(null)}
+                                disabled={deleting}
+                                className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteShot(deleteConfirm.shotId)}
+                                disabled={deleting}
+                                className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
+                            >
+                                {deleting ? (
+                                    <div className="flex items-center gap-2">
+                                        <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                        Deleting...
+                                    </div>
+                                ) : (
+                                    'Delete Shot'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

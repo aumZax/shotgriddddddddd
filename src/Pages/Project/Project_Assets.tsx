@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box, Check, LoaderCircle } from 'lucide-react';
 import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
@@ -181,6 +181,7 @@ export default function Project_Assets() {
     const [assetModalPosition, setAssetModalPosition] = useState({ x: 0, y: 0 });
     const [isAssetDragging, setIsAssetDragging] = useState(false);
     const assetDragStart = useRef({ x: 0, y: 0 });
+    const [deleting, setDeleting] = useState(false);
 
     const taskTemplates = [
         "Automotive - Concept",
@@ -980,6 +981,8 @@ export default function Project_Assets() {
 
     const handleDeleteAsset = async (assetId: string) => {
         try {
+            setDeleting(true);
+
             await axios.delete(ENDPOINTS.DELETE_ASSET, {
                 data: { assetId },
             });
@@ -1013,6 +1016,8 @@ export default function Project_Assets() {
 
         } catch (err) {
             console.error("❌ Delete asset failed:", err);
+        }finally {
+            setDeleting(false);
         }
     };
 
@@ -2148,7 +2153,7 @@ export default function Project_Assets() {
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setDeleteConfirm(null)}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
@@ -2157,9 +2162,18 @@ export default function Project_Assets() {
                                     onClick={() =>
                                         handleDeleteAsset(deleteConfirm.assetId)
                                     }
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                     disabled={deleting}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                 >
-                                    Delete Asset
+                                    {deleting ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Asset'
+                                    )}
                                 </button>
                             </div>
                         </div>
