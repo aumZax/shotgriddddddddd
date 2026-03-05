@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search } from 'lucide-react';
+import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search, NotebookText } from 'lucide-react';
 import ENDPOINTS from '../config';
+import PixelLoadingFrog from './PixelLoadingFrog';
 
 interface Note {
     id: number;
@@ -297,6 +298,28 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
         </span>
     );
 
+    if (loadingNotes) {
+        return (
+            <div className="flex items-center justify-center -mt-20">
+                <PixelLoadingFrog />
+            </div>
+        );
+    }
+
+
+    if (notes.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+                    <NotebookText className="relative w-24 h-24 text-gray-600 mx-auto mb-4" strokeWidth={1.5} />
+                </div>
+                <div className="text-gray-500 mb-2">No notes yet</div>
+                <p className="text-sm text-gray-600">Notes will appear here when created</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-3">
             <div className="overflow-x-auto rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 shadow-2xl">
@@ -328,11 +351,7 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800/50">
-                        {loadingNotes ? (
-                            <tr><td colSpan={9} className="py-24 text-center"><div className="flex flex-col items-center gap-4"><div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /><p className="text-sm text-gray-500">กำลังโหลด...</p></div></td></tr>
-                        ) : !notes.length ? (
-                            <tr><td colSpan={9} className="py-24 text-center"><div className="flex flex-col items-center gap-3"><FileText className="w-16 h-16 text-gray-700" strokeWidth={1.5} /><p className="text-gray-500">ยังไม่มีบันทึก</p></div></td></tr>
-                        ) : notes.map((note, idx) => (
+                        {notes.map((note, idx) => (
                             <tr
                                 key={note.id}
                                 onClick={() => handleNoteClick(note)}

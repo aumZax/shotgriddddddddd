@@ -210,6 +210,8 @@ export default function Others_Asset() {
     const [versionNameFromFile, setVersionNameFromFile] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
+const [loadingTasks, setLoadingTasks] = useState(false);
+
 
     // ── createVersionForm: เพิ่ม task_id เพื่อเก็บ id ของ task ที่เลือก ──
     const [createVersionForm, setCreateVersionForm] = useState({
@@ -375,7 +377,7 @@ export default function Others_Asset() {
             console.warn("⚠️ Missing AssetID or projectId");
             return;
         }
-
+    setLoadingTasks(true); // ⭐ เพิ่ม
         axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
             project_id: projectId,
             entity_type: "asset",
@@ -387,6 +389,9 @@ export default function Others_Asset() {
             })
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
+            })
+            .finally(() => {
+                setLoadingTasks(false); // ⭐ เพิ่ม
             });
     }, [AssetID, projectId]);
 
@@ -1056,6 +1061,8 @@ export default function Others_Asset() {
                 return (
                     <TaskTab
                         tasks={tasks}
+                        loadingTasks={loadingTasks} // ⭐ เพิ่ม
+
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                     />
                 );

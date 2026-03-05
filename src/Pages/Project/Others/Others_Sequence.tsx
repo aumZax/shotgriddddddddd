@@ -158,7 +158,7 @@ export default function Others_Sequence() {
     const [editingField, setEditingField] = useState<null | 'sequence' | 'description'>(null);
     const [sequenceAssets, setSequenceAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
-
+const [loadingTasks, setLoadingTasks] = useState(false);
     //============================================================================================================================================//
 
     const [SequenceData, setSequenceData] = useState({
@@ -247,6 +247,7 @@ export default function Others_Sequence() {
             return;
         }
 
+        setLoadingTasks(true); // ⭐ เพิ่ม
         axios.post<Task[]>(ENDPOINTS.SEQUENCE_TASK, {
             project_id: projectId,
             entity_type: "sequence",
@@ -258,7 +259,9 @@ export default function Others_Sequence() {
             })
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
-            });
+            }).finally(() => {
+            setLoadingTasks(false); // ⭐ เพิ่ม
+        });
     }, [sequenceId, projectId]);
 
     useEffect(() => {
@@ -849,6 +852,7 @@ export default function Others_Sequence() {
                 return (
                     <TaskTab
                         tasks={tasks}
+                        loadingTasks={loadingTasks} // ⭐ เพิ่ม
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                     />
                 );

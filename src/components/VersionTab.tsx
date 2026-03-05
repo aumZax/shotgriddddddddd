@@ -150,7 +150,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
                     <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
                     <Film className="relative w-24 h-24 text-gray-600 mx-auto mb-4" strokeWidth={1.5} />
                 </div>
-                <div className="text-gray-500 mb-2">No versions linked to this asset</div>
+                <div className="text-gray-500 mb-2">No versions yet</div>
                 <p className="text-sm text-gray-600">Versions will appear here when created</p>
             </div>
         );

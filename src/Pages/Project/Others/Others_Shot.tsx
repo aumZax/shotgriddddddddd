@@ -249,6 +249,8 @@ export default function Others_Shot() {
     const thumbnailDisabled = isCreatingVersion || isUploadingThumbnail || isThumbnailLocked || isLoadingShotVersions;
     const [taskSearchQuery, setTaskSearchQuery] = useState('');
     const [taskSearchOpen, setTaskSearchOpen] = useState(false);
+const [loadingTasks, setLoadingTasks] = useState(false);
+
 
     //============================================================================================================================================//
 
@@ -372,6 +374,8 @@ export default function Others_Shot() {
             return;
         }
 
+        setLoadingTasks(true); // ⭐ เพิ่ม
+
         axios.post<Task[]>(ENDPOINTS.SHOT_TASK, {
             project_id: projectId,
             entity_type: "shot",
@@ -383,7 +387,9 @@ export default function Others_Shot() {
             })
             .catch(err => {
                 console.error("❌ โหลด task ไม่สำเร็จ", err);
-            });
+            })  .finally(() => {
+            setLoadingTasks(false); // ⭐ เพิ่ม
+        });
     }, [shotId, projectId]);
 
     useEffect(() => {
@@ -1175,6 +1181,8 @@ const resetVersionForm = () => {
                 return (
                     <TaskTab
                         tasks={tasks}
+                        loadingTasks={loadingTasks} // ⭐ เพิ่ม
+
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                     />
                 );
