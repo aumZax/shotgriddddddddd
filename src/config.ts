@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "https://eds-scientist-clarke-acids.trycloudflare.com";
+const BASE_URL = "https://demo-newest-spyware-styles.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
 // maxaaaaa
@@ -22,7 +22,7 @@ const ENDPOINTS = {
   UPLOAD: `${BASE_URL}/upload`,
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
-  image_url: "https://eds-scientist-clarke-acids.trycloudflare.com/",
+  image_url: "https://demo-newest-spyware-styles.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
