@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Film, Image, Pencil, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 export interface AssetShot {
     id: number;
@@ -139,7 +139,7 @@ const Shot_AssetTab: React.FC<ShotAssetTabProps> = ({ shots: initialShots, loadi
     if (loading) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }

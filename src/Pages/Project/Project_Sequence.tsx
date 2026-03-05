@@ -8,7 +8,7 @@ import { Check, FolderClosed, Image, Lock, Video } from 'lucide-react';
 
 import ENDPOINTS from "../../config";
 import axios from 'axios';
-import PixelLoadingFrog from '../../components/PixelLoadingFrog';
+import PixelLoadingFrog from '../../components/PixelLoadingSkeleton';
 
 
 

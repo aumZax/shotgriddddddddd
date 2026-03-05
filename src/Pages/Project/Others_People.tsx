@@ -4,7 +4,7 @@ import { User, Eye, Users, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import ENDPOINTS from "../../config";
 import axios from "axios";
-import PixelLoadingFrog from "../../components/PixelLoadingFrog";
+import PixelLoadingFrog from "../../components/PixelLoadingSkeleton";
 
 /* ================= Types ================= */
 interface Person {

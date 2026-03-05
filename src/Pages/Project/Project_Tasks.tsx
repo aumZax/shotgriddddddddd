@@ -7,7 +7,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
 import { createPortal } from 'react-dom';
-import PixelLoadingFrog from "../../components/PixelLoadingFrog";
+import PixelLoadingFrog from "../../components/PixelLoadingSkeleton";
 
 
 type StatusType = keyof typeof statusConfig;

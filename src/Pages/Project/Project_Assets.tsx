@@ -5,7 +5,7 @@ import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import PixelLoadingFrog from '../../components/PixelLoadingFrog';
+import PixelLoadingFrog from '../../components/PixelLoadingSkeleton';
 
 
 type StatusType = keyof typeof statusConfig;

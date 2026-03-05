@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search, NotebookText } from 'lucide-react';
 import ENDPOINTS from '../config';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 interface Note {
     id: number;
@@ -301,7 +301,7 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
     if (loadingNotes) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image, Pencil, Film, Check, Box } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -170,7 +170,7 @@ const Shot_SequenceTab: React.FC<ShotTabProps> = ({
     if (loadingShots) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }

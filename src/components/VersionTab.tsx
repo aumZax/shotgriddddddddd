@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
 import ENDPOINTS from '../config';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 const versionStatusConfig = {
     wtg: { label: 'wtg', fullLabel: 'Waiting to Start', color: 'bg-gray-600', icon: '-' },
@@ -139,7 +139,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
     if (isLoadingVersions) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }

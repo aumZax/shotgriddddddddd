@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../config";
 import { ChevronDown, Trash2 } from 'lucide-react';
-import PixelLoadingSkeleton from '../components/PixelLoadingFrog';
+import PixelLoadingSkeleton from '../components/PixelLoadingSkeleton';
 
 interface Project {
     id: string;

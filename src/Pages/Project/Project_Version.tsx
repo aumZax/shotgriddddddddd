@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import PixelLoadingFrog from "../../components/PixelLoadingFrog";
+import PixelLoadingFrog from "../../components/PixelLoadingSkeleton";
 
 // ===================== Types =====================
 type StatusType = keyof typeof statusConfig;

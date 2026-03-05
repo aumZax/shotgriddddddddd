@@ -5,7 +5,7 @@ import { Calendar, Check, ClipboardList, Clock, Pencil, Users, X, UserPlus, Tras
 import axios from 'axios';
 import ENDPOINTS from '../config';
 import { createPortal } from 'react-dom';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 
 type StatusType = keyof typeof statusConfig;
@@ -507,7 +507,7 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
     if (loadingTasks) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image, Pencil, Package, Check } from 'lucide-react';
 import ENDPOINTS from '../config';
 import axios from 'axios';
-import PixelLoadingFrog from './PixelLoadingFrog';
+import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -134,7 +134,7 @@ const Asset_ShotTab: React.FC<Asset_ShotTabProps> = ({
     if (loadingAssets) {
         return (
             <div className="flex items-center justify-center -mt-20">
-                <PixelLoadingFrog />
+                <PixelLoadingSkeleton />
             </div>
         );
     }
