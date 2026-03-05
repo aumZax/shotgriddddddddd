@@ -214,7 +214,6 @@ export default function Others_Asset() {
 
 
     const [showAddShot, setShowAddShot] = useState(false);
-    const [isAddingShot, setIsAddingShot] = useState(false);
 
     const [createShotForm, setCreateShotForm] = useState({
         shot_name: '',
