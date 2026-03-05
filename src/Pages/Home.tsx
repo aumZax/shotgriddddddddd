@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../config";
 import { ChevronDown, Trash2 } from 'lucide-react';
+import PixelLoadingSkeleton from '../components/PixelLoadingFrog';
 
 interface Project {
     id: string;
@@ -858,12 +859,7 @@ export default function Home() {
 
             <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">
                 {loadingProjects ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="text-gray-400 text-xl flex items-center gap-3">
-                            <div className="w-8 h-8 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin"></div>
-                            Loading projects...
-                        </div>
-                    </div>
+                   <PixelLoadingSkeleton/>
                 ) : projectData.length === 0 ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="text-gray-600 text-xl">No projects yet. Create your first project!</div>
