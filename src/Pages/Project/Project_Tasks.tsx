@@ -7,7 +7,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import RightPanel from "../../components/RightPanel";
 import { createPortal } from 'react-dom';
-import PixelLoadingFrog from "../../components/PixelLoadingSkeleton";
+import PixelLoadingSkeleton from "../../components/PixelLoadingSkeleton";
 
 
 type StatusType = keyof typeof statusConfig;
@@ -1250,7 +1250,7 @@ export default function Project_Tasks() {
                                 {isLoadingSequences ? (
                                     <tr>
                                         <td colSpan={10} className="px-4 py-16">
-                                            <PixelLoadingFrog />
+                                            <PixelLoadingSkeleton />
 
                                         </td>
                                     </tr>

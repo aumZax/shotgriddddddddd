@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import PixelLoadingFrog from "../../components/PixelLoadingSkeleton";
+import PixelLoadingSkeleton from "../../components/PixelLoadingSkeleton";
 
 // ===================== Types =====================
 type StatusType = keyof typeof statusConfig;
@@ -498,7 +498,7 @@ export default function Project_Version() {
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={8} className="px-4 py-16">
-                                        <PixelLoadingFrog/>
+                                        <PixelLoadingSkeleton/>
                                     </td>
                                 </tr>
                             ) : filteredGroups.length === 0 ? (

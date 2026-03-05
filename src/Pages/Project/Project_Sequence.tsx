@@ -8,7 +8,7 @@ import { Check, FolderClosed, Image, Lock, Video } from 'lucide-react';
 
 import ENDPOINTS from "../../config";
 import axios from 'axios';
-import PixelLoadingFrog from '../../components/PixelLoadingSkeleton';
+import PixelLoadingSkeleton from '../../components/PixelLoadingSkeleton';
 
 
 
@@ -837,7 +837,7 @@ export default function Project_Sequence() {
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto">
                 {isLoadingSequences ? (
-                    <PixelLoadingFrog />
+                    <PixelLoadingSkeleton />
 
                 ) : sequences.length === 0 ? (
                     /* Empty State */

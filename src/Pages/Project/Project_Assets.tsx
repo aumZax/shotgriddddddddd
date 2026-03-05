@@ -5,7 +5,7 @@ import ENDPOINTS from '../../config';
 import axios from 'axios';
 import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
-import PixelLoadingFrog from '../../components/PixelLoadingSkeleton';
+import PixelLoadingSkeleton from '../../components/PixelLoadingSkeleton';
 
 
 type StatusType = keyof typeof statusConfig;
@@ -1106,7 +1106,7 @@ export default function Project_Assets() {
 
             <main className="flex-1 overflow-y-auto">
                 {isLoading 
-                ? <PixelLoadingFrog /> 
+                ? <PixelLoadingSkeleton /> 
                  : assetData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="text-center space-y-4">
