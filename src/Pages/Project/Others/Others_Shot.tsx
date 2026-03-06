@@ -694,34 +694,7 @@ export default function Others_Shot() {
             !selectedPeople.some((selected: Person) => selected.id === person.id)
     );
 
-    const handletaskChange = (type: FilterType) => {
-        if (type === 'All') {
-            const newValue = !checked.All;
-
-            const updated: CheckedState = {
-                All: newValue,
-                ART: newValue,
-                MDL: newValue,
-                RIG: newValue,
-                TXT: newValue,
-            };
-
-            setChecked(updated);
-        } else {
-            const updated: CheckedState = {
-                ...checked,
-                [type]: !checked[type],
-            };
-
-            const allChecked = types.every((t) =>
-                t === type ? !checked[type] : checked[t]
-            );
-
-            updated.All = allChecked;
-            setChecked(updated);
-        }
-    };
-
+  
     const handleNoteContextMenu = (
         e: React.MouseEvent,
         note: Note

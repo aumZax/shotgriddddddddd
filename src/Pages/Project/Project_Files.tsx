@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import {
   Film, FileVideo, Tag, Search, SlidersHorizontal,
   LayoutGrid, List, ChevronDown, ChevronLeft, ChevronRight,
-  Plus, MoreHorizontal, Check, Eye, AlertCircle, Loader2,
+  Plus, MoreHorizontal, Check, Eye, AlertCircle,
 } from 'lucide-react';
 import Navbar_Project from "../../components/Navbar_Project";
 import axios from "axios";
@@ -59,10 +59,7 @@ const VERSION_STATUS_LABEL: Record<string, string> = {
   app: 'Approved',
 };
 
-const SOURCE_CLASS = {
-  asset: 'bg-violet-500/10 border border-violet-500/30 text-violet-400',
-  shot:  'bg-sky-500/10 border border-sky-500/30 text-sky-400',
-};
+
 
 function mapFile(raw: any): ProjectFile {
   const name: string = raw.file_name ?? raw.name ?? 'Untitled';
@@ -130,26 +127,11 @@ function FileIcon({ ext }: { ext: string }) {
   );
 }
 
-function ThumbCell({ thumb }: { thumb: string | null }) {
-  if (thumb) {
-    return (
-      <img
-        src={thumb} alt="thumb"
-        className="w-11 h-7 rounded object-cover border border-gray-600"
-        onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-      />
-    );
-  }
-  return (
-    <div className="w-11 h-7 rounded bg-gray-900 border border-gray-700 flex items-center justify-center">
-      <FileVideo size={12} className="text-gray-600" />
-    </div>
-  );
-}
+
 
 function Divider() { return <div className="w-px h-5 bg-gray-700 mx-0.5" />; }
 
-function VideoThumb({ src, ext }: { src: string; ext: string }) {
+function VideoThumb({ src }: { src: string }) {
   const cacheBusted = src.includes('?') ? `${src}&_cb=1` : `${src}?_cb=1`;
 
   return (
@@ -195,10 +177,6 @@ function Th({ children, onClick, sortable }: {
       {children}
     </th>
   );
-}
-
-function Td({ children }: { children?: React.ReactNode }) {
-  return <td className="px-2.5 py-1 align-middle">{children}</td>;
 }
 
 function PagBtn({ children, onClick, disabled, active }: {
@@ -515,7 +493,7 @@ export default function ProjectFiles() {
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                         );
 
-                        if (src && isVideo) return <VideoThumb src={src} ext={ext} />;
+                        if (src && isVideo) return <VideoThumb src={src} />;
 
                         return (
                           <div className="h-14 w-[104px] rounded bg-[#15181c] border border-gray-700 flex flex-col items-center justify-center gap-1">

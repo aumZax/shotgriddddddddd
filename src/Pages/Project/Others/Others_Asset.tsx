@@ -694,33 +694,6 @@ export default function Others_Asset() {
         if (showStatusMenu) setShowStatusMenu(false);
     };
 
-    const handletaskChange = (type: FilterType) => {
-        if (type === 'All') {
-            const newValue = !checked.All;
-
-            const updated: CheckedState = {
-                All: newValue,
-                ART: newValue,
-                MDL: newValue,
-                RIG: newValue,
-                TXT: newValue,
-            };
-
-            setChecked(updated);
-        } else {
-            const updated: CheckedState = {
-                ...checked,
-                [type]: !checked[type],
-            };
-
-            const allChecked = types.every((t) =>
-                t === type ? !checked[type] : checked[t]
-            );
-
-            updated.All = allChecked;
-            setChecked(updated);
-        }
-    };
 
     const updateAssetField = async (
         field: keyof AssetData,
