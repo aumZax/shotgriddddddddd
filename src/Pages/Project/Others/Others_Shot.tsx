@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Check, Eye, Image, Upload, User, X, } from 'lucide-react';
+import { Check, Eye, Image, LoaderCircle, Upload, User, X, } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -250,6 +250,9 @@ export default function Others_Shot() {
     const [taskSearchQuery, setTaskSearchQuery] = useState('');
     const [taskSearchOpen, setTaskSearchOpen] = useState(false);
     const [loadingTasks, setLoadingTasks] = useState(false);
+    const [deletingNote, setDeletingNote] = useState(false);
+    
+
 
 
     //============================================================================================================================================//
@@ -833,6 +836,8 @@ export default function Others_Shot() {
 
     const handleDeleteNote = async (noteId: number) => {
         try {
+            setDeletingNote(true);
+
             const response = await axios.delete(`${ENDPOINTS.DELETE_NOTE}/${noteId}`);
 
             if (response.status !== 200 && response.status !== 204) {
@@ -848,6 +853,10 @@ export default function Others_Shot() {
         } catch (err) {
             console.error("❌ DELETE FAILED:", err);
             alert(err instanceof Error ? err.message : "Failed to delete note");
+            fetchNotes();
+        } finally {
+            setDeletingNote(false);
+            setDeleteNoteConfirm(null);
             fetchNotes();
         }
     };
@@ -2761,13 +2770,21 @@ export default function Others_Shot() {
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteNote(deleteNoteConfirm.noteId);
-                                        alert('ลบสำเร็จแล้ว');
-                                        setDeleteNoteConfirm(null);
-                                        fetchNotes();
+
+
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={deletingNote}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                 >
-                                    Delete Note
+                                    {deletingNote ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Note'
+                                    )}
                                 </button>
                             </div>
                         </div>
