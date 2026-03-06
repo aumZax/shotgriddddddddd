@@ -882,9 +882,9 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                 <Package className="w-5 h-5 text-blue-400" />
                                 <span className="text-white font-semibold text-base">Add New Version</span>
                             </div>
-                            <button onClick={() => setShowAddVersionModal(false)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors">
+                            <div onClick={() => setShowAddVersionModal(false)} className="cursor-pointer p-1.5 hover:bg-gray-700 rounded-lg transition-colors">
                                 <X className="w-4 h-4 text-gray-400 hover:text-white" />
-                            </button>
+                            </div>
                         </div>
                         <div className="p-5 space-y-4">
                             <div className="space-y-1.5">
@@ -1053,14 +1053,14 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-700/50 bg-[#1a1d24]">
                             <button
                                 onClick={() => setShowAddVersionModal(false)}
-                                className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-all"
+                                className="px-4 py-2 text-sm text-slate-50 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 rounded-lg transition-all"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleAddVersion}
                                 disabled={isUploadingVersion || !addVersionForm.version_name.trim()}
-                                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg text-white text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all"
+                                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-gray-800 disabled:to-gray-800 disabled:cursor-not-allowed rounded-lg text-white text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all"
                             >
                                 {isUploadingVersion ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
