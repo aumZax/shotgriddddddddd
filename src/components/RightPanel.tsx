@@ -122,6 +122,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
     const [versionFile, setVersionFile] = React.useState<File | null>(null);
     const [versionFilePreview, setVersionFilePreview] = React.useState<string>('');
     const [isDragging, setIsDragging] = React.useState(false);
+    const [uploaderDropdownPos, setUploaderDropdownPos] = React.useState({ top: 0, left: 0, width: 0 });
+    const uploaderInputRef = React.useRef<HTMLDivElement>(null);
 
     const [addVersionForm, setAddVersionForm] = React.useState({
         version_name: '',
@@ -987,11 +989,12 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                 </div>
 
                                 {/* Uploaded By — searchable */}
+                                {/* Uploaded By — searchable */}
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                                         Uploaded By <span className="text-red-400">*</span>
                                     </label>
-                                    <div className="relative">
+                                    <div className="relative" ref={uploaderInputRef}>
                                         {selectedUploader ? (
                                             <div className="flex items-center gap-2 h-9 px-3 bg-[#1a1d24] border border-gray-700/50 rounded-lg">
                                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
@@ -1011,40 +1014,21 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                                 placeholder="ค้นหาชื่อ..."
                                                 value={uploaderQuery}
                                                 onChange={(e) => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
-                                                onFocus={() => setUploaderOpen(true)}
+                                                onFocus={() => {
+                                                    // คำนวณ position ตอน focus
+                                                    if (uploaderInputRef.current) {
+                                                        const rect = uploaderInputRef.current.getBoundingClientRect();
+                                                        setUploaderDropdownPos({
+                                                            top: rect.bottom + 4,
+                                                            left: rect.left,
+                                                            width: rect.width,
+                                                        });
+                                                    }
+                                                    setUploaderOpen(true);
+                                                }}
                                                 onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
                                                 className="w-full h-9 px-3 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all"
                                             />
-                                        )}
-                                        {uploaderOpen && !selectedUploader && (
-                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                                                {allPeople
-                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
-                                                    .map(person => (
-                                                        <div
-                                                            key={person.id}
-                                                            onMouseDown={() => {
-                                                                setSelectedUploader({ id: person.id, name: person.name });
-                                                                setUploaderOpen(false);
-                                                            }}
-                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
-                                                        >
-                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                                <span className="text-white text-[9px] font-semibold">
-                                                                    {person.name[0].toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-xs text-gray-200">{person.name}</p>
-                                                                <p className="text-[10px] text-gray-500">{person.email}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                }
-                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
-                                                    <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ</p>
-                                                )}
-                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -1071,6 +1055,48 @@ const RightPanel: React.FC<RightPanelProps> = ({
                             </button>
                         </div>
                     </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Uploader Dropdown Portal — แยกออกนอก modal เพื่อพ้น overflow:hidden */}
+            {uploaderOpen && !selectedUploader && showAddVersionModal && createPortal(
+                <div
+                    className="fixed bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-40 overflow-y-auto"
+                    style={{
+                        top: uploaderDropdownPos.top,
+                        left: uploaderDropdownPos.left,
+                        width: uploaderDropdownPos.width,
+                        zIndex: 99999,
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                >
+                    {allPeople
+                        .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                        .map(person => (
+                            <div
+                                key={person.id}
+                                onMouseDown={() => {
+                                    setSelectedUploader({ id: person.id, name: person.name });
+                                    setUploaderOpen(false);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                            >
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-[9px] font-semibold">
+                                        {person.name[0].toUpperCase()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-200">{person.name}</p>
+                                    <p className="text-[10px] text-gray-500">{person.email}</p>
+                                </div>
+                            </div>
+                        ))
+                    }
+                    {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                        <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ</p>
+                    )}
                 </div>,
                 document.body
             )}
