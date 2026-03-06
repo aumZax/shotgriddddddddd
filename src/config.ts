@@ -151,6 +151,9 @@ const ENDPOINTS = {
 
     UPLOAD_AVARTAR: `${BASE_URL}/upload/avatar`,
   GETALLVIEWERS: `${BASE_URL}/getallviewers`,
+
+  ALL_PROJECT_FILES: `${BASE_URL}/all-project-files`,
+  GET_NOTE_TASKS: `${BASE_URL}/get-note-tasks`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 

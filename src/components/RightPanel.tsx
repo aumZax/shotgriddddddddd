@@ -8,7 +8,7 @@ import ENDPOINTS from '../config';
 type StatusType = keyof typeof statusConfig;
 
 const statusConfig = {
-   wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600", icon: '-' },
+    wtg: { label: "wtg", fullLabel: "Waiting to Start", color: "bg-gray-600", icon: '-' },
     ip: { label: "ip", fullLabel: "In Progress", color: "bg-blue-500", icon: 'dot' },
     fin: { label: "fin", fullLabel: "Final", color: "bg-green-500", icon: 'dot' },
     na: { label: "na", fullLabel: "N/A", color: "bg-gray-400", icon: '-' },
@@ -114,14 +114,23 @@ const RightPanel: React.FC<RightPanelProps> = ({
     const [userSearchTerm, setUserSearchTerm] = React.useState<string>('');
     const [showAddVersionModal, setShowAddVersionModal] = React.useState(false);
     const [isUploadingVersion, setIsUploadingVersion] = React.useState(false);
+    const isVideo = (url?: string) => !!url?.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+    const [allPeople, setAllPeople] = React.useState<{ id: number; name: string; email: string }[]>([]);
+    const [uploaderQuery, setUploaderQuery] = React.useState('');
+    const [uploaderOpen, setUploaderOpen] = React.useState(false);
+    const [selectedUploader, setSelectedUploader] = React.useState<{ id: number; name: string } | null>(null);
+    const [versionFile, setVersionFile] = React.useState<File | null>(null);
+    const [versionFilePreview, setVersionFilePreview] = React.useState<string>('');
+    const [isDragging, setIsDragging] = React.useState(false);
+
     const [addVersionForm, setAddVersionForm] = React.useState({
         version_name: '',
         description: '',
-        file_url: '',
         status: 'wtg' as StatusType,
-        uploaded_by: 0,
         file_size: 0,
     });
+
+
 
     const [contextMenu, setContextMenu] = React.useState<{
         visible: boolean;
@@ -136,6 +145,13 @@ const RightPanel: React.FC<RightPanelProps> = ({
     } | null>(null);
 
     const [isDeletingVersion, setIsDeletingVersion] = React.useState(false);
+
+    React.useEffect(() => {
+        fetch(ENDPOINTS.GETALLPEOPLE)
+            .then(r => r.json())
+            .then(data => setAllPeople(data))
+            .catch(console.error);
+    }, []);
 
 
     // Close context menu only if click is outside of it
@@ -192,24 +208,56 @@ const RightPanel: React.FC<RightPanelProps> = ({
     // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
     const handleAddVersion = async () => {
         if (!selectedTask || !addVersionForm.version_name.trim()) return;
+        if (!selectedUploader) {
+            alert('กรุณาระบุผู้อัปโหลด');
+            return;
+        }
         setIsUploadingVersion(true);
         try {
+            let fileUrl: string | undefined = undefined;
+            let fileId: string | undefined = undefined;
+
+            // ถ้ามีไฟล์ → อัพโหลดก่อน
+            if (versionFile) {
+                const formData = new FormData();
+                formData.append('file', versionFile);
+                formData.append('taskId', selectedTask.id.toString());
+                formData.append('fileName', versionFile.name);
+                formData.append('type', 'version');
+
+                const uploadRes = await fetch(ENDPOINTS.UPLOAD_ASSET, {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!uploadRes.ok) throw new Error('Upload failed');
+                const uploadData = await uploadRes.json();
+                fileUrl = uploadData.file.fileUrl;
+                fileId = uploadData.file.id?.toString();
+            }
+
             await axios.post(`${ENDPOINTS.ADD_VERSION_TASK}`, {
-                task_id: selectedTask.id,        // ✅ ส่งแค่นี้พอ
+                task_id: selectedTask.id,
                 version_name: addVersionForm.version_name.trim(),
                 description: addVersionForm.description.trim() || undefined,
-                file_url: addVersionForm.file_url.trim() || undefined,
+                file_url: fileUrl,
+                file_id: fileId,
                 status: addVersionForm.status,
-                uploaded_by: addVersionForm.uploaded_by || undefined,
-                file_size: addVersionForm.file_size || undefined,
-                // ❌ ลบ entity_type, entity_id ออก (backend จัดการเอง)
+                uploaded_by: selectedUploader.id,
+                file_size: versionFile?.size || undefined,
             });
 
             setShowAddVersionModal(false);
-            setAddVersionForm({ version_name: '', description: '', file_url: '', status: 'wtg', uploaded_by: 0, file_size: 0 });
+
+            setAddVersionForm({ version_name: '', description: '', status: 'wtg', file_size: 0 });
+            setVersionFile(null);
+            setVersionFilePreview('');
+
+            setSelectedUploader(null);
+            setUploaderQuery('');
             onAddVersionSuccess?.();
         } catch (err) {
             console.error('❌ Add version error:', err);
+            alert('ไม่สามารถสร้าง version ได้');
         } finally {
             setIsUploadingVersion(false);
         }
@@ -491,15 +539,23 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                                         {/* รูปภาพ */}
                                                         <div className="relative w-48 h-32 flex-shrink-0 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden rounded-lg">
                                                             {version.file_url ? (
-                                                                <img
-                                                                    src={version.file_url}
-                                                                    alt={`Version ${version.version_number}`}
-                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                    onError={(e) => {
-                                                                        e.currentTarget.style.display = 'none';
-                                                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                                    }}
-                                                                />
+                                                                isVideo(version.file_url) ? (
+                                                                    <video
+                                                                        src={ENDPOINTS.image_url + version.file_url}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        muted
+                                                                    />
+                                                                ) : (
+                                                                    <img
+                                                                        src={ENDPOINTS.image_url + version.file_url}
+                                                                        alt={`Version ${version.version_number}`}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                        }}
+                                                                    />
+                                                                )
                                                             ) : null}
                                                             <div className={`${version.file_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700`}>
                                                                 <div className="w-10 h-10 rounded-full bg-gray-700/50 flex items-center justify-center">
@@ -694,8 +750,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                                                                             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
                                                                                         >
                                                                                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow ${version.uploaded_by === user.id
-                                                                                                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50'
-                                                                                                    : 'bg-slate-600 text-slate-200'
+                                                                                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50'
+                                                                                                : 'bg-slate-600 text-slate-200'
                                                                                                 }`}>
                                                                                                 {user.username[0].toUpperCase()}
                                                                                             </div>
@@ -843,15 +899,58 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                     className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                                 />
                             </div>
+                            {/* แทน File URL input เดิม */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">File URL</label>
-                                <input
-                                    type="text"
-                                    placeholder="https://... (optional)"
-                                    value={addVersionForm.file_url}
-                                    onChange={(e) => setAddVersionForm(f => ({ ...f, file_url: e.target.value }))}
-                                    className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                                />
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">File</label>
+                                <div
+                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        const file = e.dataTransfer.files?.[0];
+                                        if (!file) return;
+                                        setVersionFile(file);
+                                        setVersionFilePreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : '');
+                                        setAddVersionForm(f => ({ ...f, version_name: f.version_name || file.name.replace(/\.[^/.]+$/, '') }));
+                                    }}
+                                    className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging ? 'border-blue-500/60 bg-blue-500/8' : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
+                                        }`}
+                                >
+                                    <label className="flex flex-col items-center justify-center py-4 px-4 cursor-pointer w-full">
+                                        {versionFile ? (
+                                            <div className="w-full flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
+                                                {versionFilePreview ? (
+                                                    <img src={versionFilePreview} className="w-8 h-8 object-cover rounded flex-shrink-0" />
+                                                ) : (
+                                                    <span className="text-base flex-shrink-0">🎬</span>
+                                                )}
+                                                <span className="text-xs text-gray-300 truncate flex-1">{versionFile.name}</span>
+                                                <div
+                                                    onClick={(e) => { e.preventDefault(); setVersionFile(null); setVersionFilePreview(''); }}
+                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
+                                                >✕</div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+                                                <span className="text-2xl text-gray-600">📎</span>
+                                                <p className="text-xs text-gray-500">Drop file or click to browse</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setVersionFile(file);
+                                                setVersionFilePreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : '');
+                                                setAddVersionForm(f => ({ ...f, version_name: f.version_name || file.name.replace(/\.[^/.]+$/, '') }));
+                                            }}
+                                        />
+                                    </label>
+                                </div>
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Description</label>
@@ -863,20 +962,91 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                     className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all resize-none"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-
+                            {/* แทนที่ <div className="grid grid-cols-2 gap-3"> เดิมทั้งหมด */}
+                            <div className="space-y-3">
+                                {/* Linked Task — read only */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Uploaded By</label>
-                                    <select
-                                        value={addVersionForm.uploaded_by}
-                                        onChange={(e) => setAddVersionForm(f => ({ ...f, uploaded_by: Number(e.target.value) }))}
-                                        className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all cursor-pointer"
-                                    >
-                                        <option value={0}>— Select user —</option>
-                                        {projectUsers.map(u => (
-                                            <option key={u.id} value={u.id}>{u.username}</option>
-                                        ))}
-                                    </select>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                        Linked Task
+                                    </label>
+                                    <div className="flex items-center gap-2 h-9 px-3 bg-[#0d1117] border border-white/5 rounded-lg text-gray-500 text-sm select-none">
+                                        {selectedTask.pipeline_step ? (
+                                            <span
+                                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                                style={{ backgroundColor: selectedTask.pipeline_step.color_hex }}
+                                            />
+                                        ) : (
+                                            <span className="text-xs flex-shrink-0">📋</span>
+                                        )}
+                                        <span className="truncate">{selectedTask.task_name}</span>
+                                        <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex-shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                                            auto
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Uploaded By — searchable */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                        Uploaded By <span className="text-red-400">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        {selectedUploader ? (
+                                            <div className="flex items-center gap-2 h-9 px-3 bg-[#1a1d24] border border-gray-700/50 rounded-lg">
+                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-white text-[9px] font-semibold">
+                                                        {selectedUploader.name[0].toUpperCase()}
+                                                    </span>
+                                                </div>
+                                                <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
+                                                <div
+                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                                    className="text-gray-500 hover:text-red-400 text-xs cursor-pointer"
+                                                >✕</div>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                placeholder="ค้นหาชื่อ..."
+                                                value={uploaderQuery}
+                                                onChange={(e) => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                                onFocus={() => setUploaderOpen(true)}
+                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                                className="w-full h-9 px-3 bg-[#1a1d24] border border-gray-700/50 rounded-lg text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all"
+                                            />
+                                        )}
+                                        {uploaderOpen && !selectedUploader && (
+                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                                                {allPeople
+                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                                    .map(person => (
+                                                        <div
+                                                            key={person.id}
+                                                            onMouseDown={() => {
+                                                                setSelectedUploader({ id: person.id, name: person.name });
+                                                                setUploaderOpen(false);
+                                                            }}
+                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                        >
+                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-white text-[9px] font-semibold">
+                                                                    {person.name[0].toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs text-gray-200">{person.name}</p>
+                                                                <p className="text-[10px] text-gray-500">{person.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                                    <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

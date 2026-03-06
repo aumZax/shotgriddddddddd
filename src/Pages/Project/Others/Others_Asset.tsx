@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, } from 'react';
@@ -188,7 +189,9 @@ export default function Others_Asset() {
     const [uploading, setUploading] = useState(false);
     const [, setSelectedFile] = useState<File | null>(null);
     const [openAssignedDropdown, setOpenAssignedDropdown] = useState<string | number | null>(null);
-    const [selectedTasks, setSelectedTasks] = useState<string[]>([])
+    const [modalTasks, setModalTasks] = useState<{ id: number; task_name: string; pipeline_step_name: string | null }[]>([]);
+    const [loadingModalTasks, setLoadingModalTasks] = useState(false);
+    const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
@@ -325,6 +328,38 @@ export default function Others_Asset() {
 
         fetchLinkedShots();
     }, [activeTab, AssetID]);
+
+    useEffect(() => {
+        if (!showCreateAsset_Note || !AssetID || !projectId) return;
+
+        const fetchModalTasks = async () => {
+            setLoadingModalTasks(true);
+            try {
+                const res = await fetch(
+                    `${ENDPOINTS.GET_NOTE_TASKS}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entity_type: 'asset',
+                        entity_id: AssetID,
+                        project_id: projectId
+                    })
+                }
+                );
+                const data = await res.json();
+                setModalTasks(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error('[fetchModalTasks]', err);
+                setModalTasks([]);
+            } finally {
+                setLoadingModalTasks(false);
+            }
+        };
+
+        fetchModalTasks();
+    }, [showCreateAsset_Note, AssetID, projectId]);
 
     useEffect(() => {
         const closeMenu = () => setVersionContextMenu(null);
@@ -590,7 +625,7 @@ export default function Others_Asset() {
                 author: currentUser,
                 status: 'opn',
                 visibility: type ?? null,
-                tasks: (selectedTasks && selectedTasks.length > 0) ? selectedTasks : null,
+                tasks: selectedTasks.length > 0 ? selectedTasks : null,
                 assignedPeople: (selectedPeople && selectedPeople.length > 0)
                     ? selectedPeople.map((person: Person) => person.id)
                     : null
@@ -815,7 +850,6 @@ export default function Others_Asset() {
             minute: "2-digit"
         });
     };
-
     const updateVersion = async (versionId: number, field: string, value: any) => {
         try {
             await axios.post(`${ENDPOINTS.UPDATE_VERSION}`, {
@@ -828,13 +862,24 @@ export default function Others_Asset() {
                 prev.map(v => {
                     if (v.id === versionId) {
                         if (field === 'uploaded_by') {
-                            return { ...v, uploaded_by: value };
+                            const user = allPeople.find(p => p.id === value);
+                            return {
+                                ...v,
+                                uploaded_by: value,
+                                uploaded_by_name: user?.name
+                            };
                         }
                         return { ...v, [field]: value };
                     }
                     return v;
                 })
             );
+
+            // รีเฟรชจาก server เพื่อให้ข้อมูลล่าสุด
+            if (selectedTask) {
+                await fetchTaskVersions(selectedTask.id);
+            }
+
             return true;
         } catch (err) {
             console.error('Update version error:', err);
@@ -1752,19 +1797,7 @@ export default function Others_Asset() {
                                 />
                             </div>
 
-                            {/* File URL */}
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    File URL:
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="https://example.com/image.jpg"
-                                    value={createTaskForm.file_url}
-                                    onChange={(e) => handleFormChange('file_url', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
-                            </div>
+                         
                         </div>
 
                         {/* Footer */}
@@ -1772,7 +1805,7 @@ export default function Others_Asset() {
                             <button
                                 onClick={() => setShowCreateAsset_Task(false)}
                                 disabled={isCreatingTask}
-                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded-l flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
@@ -1868,21 +1901,46 @@ export default function Others_Asset() {
                                     <label className="block text-xs font-medium text-gray-300">
                                         📄 Tasks
                                     </label>
-                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg">
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-                                            {(['All', 'ART', 'MDL', 'RIG', 'TXT'] as FilterType[]).map((t) => (
-                                                <label key={t} className="flex items-center gap-1.5 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={checked[t]}
-                                                        onChange={() => handletaskChange(t)}
-                                                        className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
-                                                    />
-                                                    <span className="text-xs text-gray-300">{t}</span>
-                                                </label>
-                                            ))}
-                                        </div>
+                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
+                                        {loadingModalTasks ? (
+                                            <div className="flex items-center justify-center py-2 gap-2 text-gray-500 text-xs">
+                                                <div className="w-3 h-3 border border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                                                กำลังโหลด...
+                                            </div>
+                                        ) : modalTasks.length === 0 ? (
+                                            <p className="text-xs text-gray-600 italic">ไม่มี task สำหรับ asset นี้</p>
+                                        ) : (
+                                            <div className="flex flex-col gap-1.5">
+                                                {modalTasks.map((task) => (
+                                                    <label key={task.id} className="flex items-center gap-2 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedTasks.includes(task.id)}
+                                                            onChange={() =>
+                                                                setSelectedTasks((prev) =>
+                                                                    prev.includes(task.id)
+                                                                        ? prev.filter((id) => id !== task.id)
+                                                                        : [...prev, task.id]
+                                                                )
+                                                            }
+                                                            className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
+                                                        />
+                                                        <span className="text-xs text-gray-300 group-hover:text-white transition-colors truncate flex-1">
+                                                            {task.task_name}
+                                                        </span>
+                                                        {task.pipeline_step_name && (
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded text-blue-300/70 bg-blue-500/10 border border-blue-500/20 flex-shrink-0">
+                                                                {task.pipeline_step_name}
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
+                                    {selectedTasks.length > 0 && (
+                                        <p className="text-[10px] text-blue-400">เลือกแล้ว {selectedTasks.length} task</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -2563,7 +2621,7 @@ export default function Others_Asset() {
                 activeTab={rightPanelActiveTab}
                 taskVersions={taskVersions}
                 isLoadingVersions={isLoadingVersions}
-                projectUsers={[]}
+                projectUsers={allPeople.map(p => ({ id: p.id, username: p.name }))}
                 onClose={() => {
                     setIsPanelOpen(false);
                     setTimeout(() => setSelectedTask(null), 300);

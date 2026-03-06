@@ -28,6 +28,7 @@ import Others_Asset from "./Pages/Project/Others/Others_Asset";
 import Others_Sequence from "./Pages/Project/Others/Others_Sequence";
 import Others_Video from "./Pages/Project/Others/Others_Video";
 import Project_Version from "./Pages/Project/Project_Version";
+import Project_Files from "./Pages/Project/Project_Files";
 
 import Profile from "./Pages/Profile";
 
@@ -54,6 +55,7 @@ const PROJECT_PAGES = [
   { label: "Tasks", path: "/Project_Tasks", icon: CheckSquare },
   { label: "Version", path: "/Project_Version", icon: GitBranch },
   { label: "People", path: "/Others_People", icon: Users },
+  
 ];
 
 
@@ -595,6 +597,7 @@ export default function App() {
         <Route path="/people-list" element={<PeopleList />} />
 
         <Route path="/Others_People" element={<Others_People />} />
+        <Route path="/Project_Files" element={<Project_Files />} />
 
         <Route path="/media" element={<div className="pt-20">Media Page</div>} />
         <Route path="/people" element={<div>People Page</div>} />
