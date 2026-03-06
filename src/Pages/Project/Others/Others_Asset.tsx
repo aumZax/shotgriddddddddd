@@ -193,7 +193,6 @@ export default function Others_Asset() {
     const [loadingModalTasks, setLoadingModalTasks] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-    const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
@@ -244,13 +243,7 @@ export default function Others_Asset() {
 
     //============================================================================================================================================//
 
-    const [checked, setChecked] = useState<CheckedState>({
-        All: false,
-        ART: false,
-        MDL: false,
-        RIG: false,
-        TXT: false,
-    });
+ 
 
     const [createTaskForm, setCreateTaskForm] = useState({
         task_name: '',

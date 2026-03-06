@@ -213,7 +213,6 @@ export default function Others_Shot() {
     const [allPeople, setAllPeople] = useState<Person[]>([]);
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(true);
-    const types: FilterType[] = ['ART', 'MDL', 'RIG', 'TXT'];
     const [shotAssets, setShotAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
     const shotId = JSON.parse(localStorage.getItem("selectedShot") || "{}").id;
@@ -258,13 +257,7 @@ export default function Others_Shot() {
 
     //============================================================================================================================================//
 
-    const [checked, setChecked] = useState<CheckedState>({
-        All: false,
-        ART: false,
-        MDL: false,
-        RIG: false,
-        TXT: false,
-    });
+
 
     const [createTaskForm, setCreateTaskForm] = useState({
         task_name: '',
