@@ -36,8 +36,6 @@ const statusConfig = {
 };
 
 type StatusType = keyof typeof statusConfig;
-type FilterType = 'All' | 'ART' | 'MDL' | 'RIG' | 'TXT';
-type CheckedState = Record<FilterType, boolean>;
 type NoteType = 'Client' | 'Internal';
 
 
