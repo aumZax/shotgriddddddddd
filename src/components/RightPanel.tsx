@@ -148,6 +148,24 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
     const [isDeletingVersion, setIsDeletingVersion] = React.useState(false);
 
+
+    const [taskNotes, setTaskNotes] = React.useState<any[]>([]);
+    const [isLoadingNotes, setIsLoadingNotes] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!selectedTask) return;
+        setIsLoadingNotes(true);
+        fetch(ENDPOINTS.GET_TASK_NOTES_RIGHTPANEL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ taskId: selectedTask.id }),
+        })
+            .then(r => r.json())
+            .then(data => setTaskNotes(Array.isArray(data) ? data : []))
+            .catch(console.error)
+            .finally(() => setIsLoadingNotes(false));
+    }, [selectedTask?.id]);
+
     React.useEffect(() => {
         fetch(ENDPOINTS.GETALLPEOPLE)
             .then(r => r.json())
@@ -470,32 +488,87 @@ const RightPanel: React.FC<RightPanelProps> = ({
                     {/* Content Area */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
                         {activeTab === 'notes' && (
-                            <div className="space-y-4">
-                                <input
-                                    type="text"
-                                    placeholder="Write a note..."
-                                    className="w-full px-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all shadow-lg backdrop-blur-sm"
-                                />
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input
-                                        type="text"
-                                        placeholder="Type to filter"
-                                        className="px-4 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all shadow-lg backdrop-blur-sm"
-                                    />
-                                    <select className="px-4 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all cursor-pointer shadow-lg backdrop-blur-sm">
-                                        <option>Any label</option>
-                                    </select>
-                                    <select className="px-4 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all cursor-pointer shadow-lg backdrop-blur-sm">
-                                        <option>Any time</option>
-                                    </select>
-                                    <select className="px-4 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all cursor-pointer shadow-lg backdrop-blur-sm">
-                                        <option>Any note</option>
-                                    </select>
-                                </div>
-                                <div className="flex flex-col items-center justify-center py-20 text-slate-500 bg-slate-900/40 rounded-2xl border-2 border-dashed border-slate-700/60 shadow-xl backdrop-blur-sm">
-                                    <FileText className="w-20 h-20 mb-4 text-slate-600 drop-shadow-lg" strokeWidth={1.5} />
-                                    <p className="text-sm font-semibold tracking-wide">No notes</p>
-                                </div>
+                            <div className="space-y-3">
+                                {isLoadingNotes ? (
+                                    <div className="flex justify-center py-10">
+                                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                ) : taskNotes.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-slate-500 bg-slate-900/40 rounded-2xl border-2 border-dashed border-slate-700/60">
+                                        <FileText className="w-16 h-16 mb-3 text-slate-600" strokeWidth={1.5} />
+                                        <p className="text-sm font-semibold">No notes linked to this task</p>
+                                    </div>
+                                ) : (
+                                    taskNotes.map(note => {
+                                        const isUnread = note.read_status !== 'read';
+                                        const handleNoteClick = async () => {
+                                            const newStatus = isUnread ? 'read' : 'unread';
+                                            setTaskNotes(prev =>
+                                                prev.map(n => n.id === note.id ? { ...n, read_status: newStatus } : n)
+                                            );
+                                            try {
+                                                await fetch(`${ENDPOINTS.EDIT_NOTE}/${note.id}`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ field: 'read_status', value: newStatus }),
+                                                });
+                                            } catch (err) {
+                                                console.error('mark read failed:', err);
+                                                setTaskNotes(prev =>
+                                                    prev.map(n => n.id === note.id ? { ...n, read_status: isUnread ? 'unread' : 'read' } : n)
+                                                );
+                                            }
+                                        };
+
+                                        return (
+                                            <div
+                                                key={note.id}
+                                                onClick={handleNoteClick}
+                                                className={`rounded-xl p-4 border space-y-2 transition-all cursor-pointer
+                            ${isUnread
+                                                        ? 'bg-slate-800/80 border-blue-500/40 shadow-md shadow-blue-500/10'
+                                                        : 'bg-slate-800/40 border-slate-700/40 opacity-70'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        {/* dot indicator */}
+                                                        {isUnread && (
+                                                            <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                                                        )}
+                                                        <p className="text-sm font-semibold text-white truncate">{note.subject}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        {/* read badge */}
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium
+                                    ${isUnread
+                                                                ? 'bg-amber-500/20 text-amber-300'
+                                                                : 'bg-sky-500/20 text-sky-300'
+                                                            }`}>
+                                                            {isUnread ? 'unread' : 'read'}
+                                                        </span>
+                                                        {/* visibility badge */}
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium
+                                    ${note.visibility === 'Client'
+                                                                ? 'bg-purple-500/20 text-purple-300'
+                                                                : 'bg-blue-500/20 text-blue-300'
+                                                            }`}>
+                                                            {note.visibility}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {note.body && <p className="text-xs text-slate-400 leading-relaxed">{note.body}</p>}
+                                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                    <span>✍️ {note.author}</span>
+                                                    {note.assigned_people?.length > 0 && (
+                                                        <span>👥 {note.assigned_people.join(', ')}</span>
+                                                    )}
+                                                    <span className="ml-auto">{new Date(note.created_at).toLocaleDateString('th-TH')}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         )}
 

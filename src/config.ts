@@ -1,5 +1,5 @@
 // endpoints.ts
-const BASE_URL = "https://cdt-advertisement-purposes-wallace.trycloudflare.com";
+const BASE_URL = "https://screens-circumstances-substantially-beings.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
 // maxaaaaa
@@ -22,7 +22,7 @@ const ENDPOINTS = {
   UPLOAD: `${BASE_URL}/upload`,
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
-  image_url: "https://cdt-advertisement-purposes-wallace.trycloudflare.com/",
+  image_url: "https://screens-circumstances-substantially-beings.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,
@@ -154,6 +154,7 @@ const ENDPOINTS = {
 
   ALL_PROJECT_FILES: `${BASE_URL}/all-project-files`,
   GET_NOTE_TASKS: `${BASE_URL}/get-note-tasks`,
+  GET_TASK_NOTES_RIGHTPANEL: `${BASE_URL}/get-task-notes-rightpanel`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 
