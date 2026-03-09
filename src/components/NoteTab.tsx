@@ -367,7 +367,7 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
                                 <td className="px-4 py-4 max-w-xs">
                                     <div className="space-y-1">
                                         <div className="text-sm font-medium text-blue-400 truncate">{note.subject}</div>
-                                        <div className="text-xs text-gray-500 line-clamp-2">{note.body || <span className="italic">—</span>}</div>
+                                        <div className="text-xs text-gray-500 whitespace-pre-wrap break-words">{note.body || <span className="italic">—</span>}</div>
                                     </div>
                                 </td>
 

@@ -1142,7 +1142,7 @@ export default function Project_Version() {
                                 <button
                                     onClick={() => handleDelete(deleteConfirm.id)}
                                     disabled={isDeleting}
-                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium disabled:opacity-50 flex items-center gap-2 bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                 >
                                     {isDeleting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                                     {isDeleting ? "Deleting..." : "Delete Version"}

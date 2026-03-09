@@ -318,8 +318,8 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                     key={`ver-${version.id}-${index}`}
                                     onContextMenu={e => handleContextMenu(e, version)}
                                     className={`group transition-all duration-200 cursor-context-menu ${mock
-                                            ? 'opacity-55'
-                                            : 'hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent'
+                                        ? 'opacity-55'
+                                        : 'hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent'
                                         }`}
                                 >
                                     {/* # */}
@@ -339,6 +339,8 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                                             src={ENDPOINTS.image_url + version.file_url}
                                                             className="w-full h-full object-cover"
                                                             muted
+                                                            loop
+                                                            autoPlay
                                                         />
                                                     ) : (
                                                         <>
@@ -354,12 +356,14 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                                         </>
                                                     )}
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-black/50 z-20">
-                                                        <button
+                                                        <div
                                                             onClick={() => setPreviewVersion(version)}
-                                                            className="p-1.5 bg-blue-500 hover:bg-blue-400 rounded-lg"
+                                                            className="cursor-pointer p-1.5 rounded-lg"
                                                         >
-                                                            <Eye className="w-4 h-4 text-white" />
-                                                        </button>
+                                                            <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                <Eye className="w-3.5 h-3.5 text-white" />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </>
                                             ) : (
@@ -501,7 +505,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                         ) : (
                                             <div
                                                 onClick={() => startEdit(version.id, 'description', version.description || '')}
-                                                className="w-full max-w-xs text-sm text-gray-300 cursor-pointer hover:bg-gray-800/60 rounded px-2 py-1 min-h-[2.5rem] transition-colors"
+                                                className="w-full max-w-xs text-sm text-gray-300 cursor-pointer hover:bg-gray-800/60 rounded px-2 py-1 min-h-[2.5rem] transition-colors whitespace-pre-wrap break-words"
                                             >
                                                 {version.description || (
                                                     <span className="text-gray-600 italic">

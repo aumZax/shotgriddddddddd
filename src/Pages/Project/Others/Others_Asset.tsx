@@ -194,7 +194,6 @@ export default function Others_Asset() {
     const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
@@ -241,7 +240,7 @@ export default function Others_Asset() {
 
     //============================================================================================================================================//
 
- 
+
 
     const [createTaskForm, setCreateTaskForm] = useState({
         task_name: '',
@@ -1098,9 +1097,7 @@ export default function Others_Asset() {
                             });
                         }}
                         onNoteClick={(note: Note) => {
-                            setSelectedNote(note);
-                            setIsPanelOpen(false);
-                            setTimeout(() => setIsPanelOpen(true), 10);
+                            console.log('note clicked:', note); // หรือลบทิ้งเลยถ้าไม่ใช้
                         }}
                     />
                 );
@@ -1761,7 +1758,7 @@ export default function Others_Asset() {
                                 />
                             </div>
 
-                         
+
                         </div>
 
                         {/* Footer */}
@@ -1838,13 +1835,13 @@ export default function Others_Asset() {
                                         <h2 className="text-base font-semibold text-white">New Note</h2>
                                         <span className="text-xs text-blue-300/60">- Global Form</span>
                                     </div>
-                                    <button
+                                    <div
                                         onClick={() => setShowCreateAsset_Note(false)}
                                         onMouseDown={(e) => e.stopPropagation()}
-                                        className="text-gray-400 hover:text-white text-xl leading-none transition-colors"
+                                        className=" cursor-pointer text-gray-400 hover:text-white text-xl leading-none transition-colors"
                                     >
                                         ×
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1941,13 +1938,12 @@ export default function Others_Asset() {
                                                     <span className="truncate text-blue-100">
                                                         {file.name}
                                                     </span>
-                                                    <button
-                                                        type="button"
+                                                    <div
                                                         onClick={() => removetaskFile(index)}
-                                                        className="text-blue-300 hover:text-red-400"
+                                                        className="cursor-pointer text-blue-300 hover:text-red-400"
                                                     >
                                                         ✕
-                                                    </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -1966,13 +1962,12 @@ export default function Others_Asset() {
                                                 className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-200 rounded"
                                             >
                                                 {person.name}
-                                                <button
-                                                    type="button"
+                                                <div
                                                     onClick={() => removePerson(person.id)}
-                                                    className="text-blue-300 hover:text-red-400"
+                                                    className="cursor-pointer text-blue-300 hover:text-red-400"
                                                 >
                                                     ✕
-                                                </button>
+                                                </div>
                                             </span>
                                         ))}
                                     </div>
@@ -2597,123 +2592,6 @@ export default function Others_Asset() {
                 onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
             />
 
-            {/* Right Panel - Note Details */}
-            {selectedNote && (
-                <div
-                    className={`
-                        fixed right-0 top-26 bottom-0
-                        bg-[#2a2d35] shadow-2xl flex z-40
-                        transform transition-transform duration-300 ease-out
-                        ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
-                    `}
-                    style={{ width: `${rightPanelWidth}px` }}
-                >
-                    {/* Resize Handle */}
-                    <div
-                        className="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
-                        onMouseDown={handleMouseDown}
-                    />
-
-                    {/* Panel Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-[#1a1d24] border-b border-gray-700">
-                            <div className="flex items-center justify-between px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <div>
-                                        <div className="text-sm text-gray-400">
-                                            Asset › {selectedNote?.note_type}
-                                        </div>
-                                        <h2 className="text-xl text-white font-normal mt-1">
-                                            {selectedNote?.subject}
-                                        </h2>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        setIsPanelOpen(false);
-                                        setTimeout(() => setSelectedNote(null), 300);
-                                    }}
-                                    className="text-gray-400 hover:text-white text-2xl"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-center">
-                                {selectedNote?.file_url ? (
-                                    <div className="flex items-center justify-center">
-                                        <img
-                                            src={ENDPOINTS.image_url + selectedNote?.file_url || ''}
-                                            alt=""
-                                            className="w-80 h-80 object-cover rounded"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-80 h-80 rounded-lg shadow-md border-2 border-dashed border-gray-600 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex flex-col items-center justify-center gap-3">
-                                        <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center animate-pulse">
-                                            <Image className="w-8 h-8 text-gray-500" />
-                                        </div>
-                                        <p className="text-gray-500 text-sm font-medium">No Thumbnail</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-4 px-4 py-3">
-                                <span className={`px-3 py-1 rounded text-xs font-medium ${selectedNote?.status === 'wtg'
-                                    ? 'text-gray-400 bg-gray-500/20'
-                                    : selectedNote?.status === 'ip'
-                                        ? 'text-blue-400 bg-blue-500/20'
-                                        : 'text-green-400 bg-green-500/20'
-                                    }`}>
-                                    {selectedNote?.status}
-                                </span>
-                                <div className="flex items-center gap-2 text-sm text-gray-400">
-                                    <span>📅</span>
-                                    <span>วันที่สร้าง {formatDateThai(selectedNote?.created_at)}</span>
-                                </div>
-                                <User className="w-4 h-4 text-gray-400" />
-                                <span>ผู้รับผิดชอบ : {selectedNote?.assigned_people?.map((person, index) => (
-                                    <span key={index}>{person}{index < (selectedNote.assigned_people?.length || 0) - 1 ? ' , ' : ''}</span>
-                                ))}</span>
-                            </div>
-
-                            <div className="flex border-t border-gray-700">
-                                <button
-                                    onClick={() => setRightPanelTab('notes')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm transition-colors ${rightPanelTab === 'notes'
-                                        ? 'text-white border-b-2 border-blue-500'
-                                        : 'text-gray-400 hover:text-white'
-                                        }`}
-                                >
-                                    <span>📝</span>
-                                    <span>NOTES</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content Area */}
-                        <div className="flex-1 overflow-auto p-4">
-                            {rightPanelTab === 'notes' && (
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder={selectedNote?.body || 'Write a note...'}
-                                        value={selectedNote?.body || ''}
-                                        onChange={(e) => {
-                                            if (selectedNote) {
-                                                setSelectedNote({ ...selectedNote, body: e.target.value });
-                                            }
-                                        }}
-                                        className="w-full px-4 py-2 bg-[#1a1d24] border border-gray-700 rounded text-gray-300 text-sm focus:outline-none focus:border-blue-500 mb-4"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {showAddShot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
