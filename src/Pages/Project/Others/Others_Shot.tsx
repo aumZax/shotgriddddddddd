@@ -4,7 +4,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Check, Eye, Image, Plus, Upload, User, X, } from 'lucide-react';
+import { Check, Eye, Image, Plus, Upload, X, } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";

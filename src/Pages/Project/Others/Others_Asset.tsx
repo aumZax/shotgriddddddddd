@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
+import { Check, Eye, Image, Upload, X } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
@@ -190,7 +190,8 @@ export default function Others_Asset() {
     const [modalTasks, setModalTasks] = useState<{ id: number; task_name: string; pipeline_step_name: string | null }[]>([]);
     const [loadingModalTasks, setLoadingModalTasks] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
-    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+    // `setSelectedNote` is intentionally unused for now (kept for future use)
+    const [selectedNote, _setSelectedNote] = useState<Note | null>(null);
     const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
@@ -789,18 +790,6 @@ export default function Others_Asset() {
         }));
     };
 
-    const formatDateThai = (dateString: string) => {
-        if (!dateString) return '-';
-
-        const date = new Date(dateString);
-        const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        };
-
-        return date.toLocaleDateString('th-TH', options);
-    };
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "-";
