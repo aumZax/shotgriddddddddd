@@ -106,7 +106,6 @@ export default function ProjectShot() {
 
     const [shotData, setShotData] = useState<ShotCategory[]>([]);
     const [isLoadingShots, setIsLoadingShots] = useState(false);
-    const [shotsError, setShotsError] = useState('');
     const [sequences, setSequences] = useState<Sequence[]>([]);
     const [, setIsLoadingSequences] = useState(false);
     const [showCreateShot, setShowCreateShot] = useState(false);
@@ -335,13 +334,12 @@ export default function ProjectShot() {
 
     const fetchShots = async () => {
         setIsLoadingShots(true);
-        setShotsError('');
         setFetchError(false);
 
         try {
             const projectData = getProjectData();
             if (!projectData?.projectId) {
-                setShotsError("Project data not found");
+                setFetchError(true);
                 return;
             }
 

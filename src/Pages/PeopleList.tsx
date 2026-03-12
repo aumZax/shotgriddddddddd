@@ -6,6 +6,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import ENDPOINTS from "../config";
 import React from "react";
+import PixelLoadingSkeleton from "../components/PixelLoadingSkeleton";
 
 /* ══════════════════════════════════════════════════════
    TYPES
@@ -220,13 +221,6 @@ function EntitySection({ group }: { group: EntityGroup }) {
       {group.tasks.map((task, i) => {
         const stepColor = task.pipeline_step?.color_hex ?? task.pipeline_step_color ?? "#374151";
         const stepName = task.pipeline_step?.step_name ?? task.pipeline_step_name;
-        const assignedName =
-          (task.assignees && task.assignees.length > 0)
-            ? task.assignees.map(a => a.username).join(", ")
-            : task.assignee_name
-            ?? task.assigned_user_name
-            ?? task.assigned_to
-            ?? (task as any).username;
         const isFirst = i === 0;
         const isLast = i === rowCount - 1;
 
@@ -561,26 +555,6 @@ function ProjectBucketCard({ bucket, color, index }: { bucket: ProjectBucket; co
   );
 }
 
-/* ══════════════════════════════════════════════════════
-   STAT CARD
-══════════════════════════════════════════════════════ */
-function StatCard({ label, value, color, Icon }: {
-  label: string; value: number; color: string; Icon: React.ElementType;
-}) {
-  return (
-    <div className="flex items-center gap-4 px-5 py-4 rounded-xl"
-      style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: color + "18", color }}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold font-mono leading-none" style={{ color }}>{value}</p>
-        <p className="text-xs text-gray-400 mt-1">{label}</p>
-      </div>
-    </div>
-  );
-}
 
 /* ══════════════════════════════════════════════════════
    PAGE COMPONENT
@@ -718,8 +692,6 @@ export default function PeopleList() {
     }
   };
 
-  /* ── derived stats ── */
-  const total = groups.reduce((s, g) => s + g.tasks.length, 0);
 
   const filtered = filter === "all" ? groups : groups.filter(g => g.type === filter);
 
@@ -751,14 +723,8 @@ export default function PeopleList() {
   if (loading) return (
     <div className="pt-14 flex items-center justify-center min-h-screen" style={{ background: "#0f172a" }}>
       <div className="text-center">
-        <div className="relative w-14 h-14 mx-auto">
-          <div className="absolute inset-0 rounded-full border-2 border-gray-800 border-t-sky-500 animate-spin" />
-          <div className="absolute inset-1 rounded-full border-2 border-transparent border-r-violet-500/60 animate-spin"
-            style={{ animationDuration: "1.4s", animationDirection: "reverse" }} />
-        </div>
-        <p className="mt-5 text-[11px] font-mono text-gray-400 uppercase tracking-[0.2em] animate-pulse">
-          Fetching pipeline data
-        </p>
+                            <PixelLoadingSkeleton />
+        
       </div>
     </div>
   );
