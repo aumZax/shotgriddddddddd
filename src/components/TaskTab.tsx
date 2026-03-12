@@ -103,6 +103,13 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
     const [searchAssignee, setSearchAssignee] = useState("");
     const [searchReviewer, setSearchReviewer] = useState("");
 
+    // ⭐ Loading state for async actions (add/remove assignee/reviewer)
+    const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+    const setLoading = (key: string, value: boolean) => {
+        setLoadingStates(prev => ({ ...prev, [key]: value }));
+    };
+    const isLoading = (key: string) => loadingStates[key] || false;
+
     // Refs
     // ⭐ เพิ่ม ref และ state สำหรับ Pipeline dropdown
     const pipelineDropdownRef = useRef<HTMLDivElement>(null); // ⭐ เพิ่มบรรทัดนี้
@@ -304,6 +311,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
 
     // ⭐ Add Assignee
     const addAssignee = async (taskId: number, userId: number) => {
+        const loadingKey = `assignee-${taskId}-add-${userId}`;
+        setLoading(loadingKey, true);
         try {
             const res = await axios.post(`${ENDPOINTS.ADD_TASK_ASSIGNEE}`, {
                 taskId,
@@ -331,11 +340,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
         } catch (err: any) {
             console.error("Add assignee error:", err);
             alert(err.response?.data?.message || "ไม่สามารถเพิ่มผู้รับผิดชอบได้");
+        } finally {
+            setLoading(loadingKey, false);
         }
     };
 
     // ⭐ Remove Assignee
     const removeAssignee = async (taskId: number, userId: number) => {
+        const loadingKey = `assignee-${taskId}-remove-${userId}`;
+        setLoading(loadingKey, true);
         try {
             await axios.post(`${ENDPOINTS.REMOVE_TASK_ASSIGNEE}`, {
                 taskId,
@@ -355,11 +368,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
         } catch (err) {
             console.error("Remove assignee error:", err);
             alert("ไม่สามารถลบผู้รับผิดชอบได้");
+        } finally {
+            setLoading(loadingKey, false);
         }
     };
 
     // ⭐ Add Reviewer
     const addReviewer = async (taskId: number, userId: number) => {
+        const loadingKey = `reviewer-${taskId}-add-${userId}`;
+        setLoading(loadingKey, true);
         try {
             const res = await axios.post(`${ENDPOINTS.ADD_TASK_REVIEWER}`, {
                 taskId,
@@ -386,11 +403,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
         } catch (err: any) {
             console.error("Add reviewer error:", err);
             alert(err.response?.data?.message || "ไม่สามารถเพิ่ม Reviewer ได้");
+        } finally {
+            setLoading(loadingKey, false);
         }
     };
 
     // ⭐ Remove Reviewer
     const removeReviewer = async (taskId: number, userId: number) => {
+        const loadingKey = `reviewer-${taskId}-remove-${userId}`;
+        setLoading(loadingKey, true);
         try {
             await axios.post(`${ENDPOINTS.REMOVE_TASK_REVIEWER}`, {
                 taskId,
@@ -409,6 +430,8 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
         } catch (err) {
             console.error("Remove reviewer error:", err);
             alert("ไม่สามารถลบ Reviewer ได้");
+        } finally {
+            setLoading(loadingKey, false);
         }
     };
 
@@ -1017,10 +1040,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                                             )}
                                                                             <button
                                                                                 onClick={() => removeAssignee(task.id, user.id)}
-                                                                                className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600"
+                                                                                disabled={isLoading(`assignee-${task.id}-remove-${user.id}`)}
+                                                                                className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
                                                                                 title="ลบ"
                                                                             >
-                                                                                <X className="w-3.5 h-3.5 text-red-400" />
+                                                                                {isLoading(`assignee-${task.id}-remove-${user.id}`) ? (
+                                                                                    <div className="w-3.5 h-3.5 border border-red-400 border-t-transparent rounded-full animate-spin" />
+                                                                                ) : (
+                                                                                    <X className="w-3.5 h-3.5 text-red-400" />
+                                                                                )}
                                                                             </button>
                                                                         </div>
                                                                     );
@@ -1028,16 +1056,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                             </div>
                                                         )}
 
-                                                        {/* Available Users - แสดงเฉพาะเมื่อมีการค้นหา */}
-                                                        {searchAssignee.trim().length > 0 && getAvailableAssignees(task).length > 0 && (
+                                                        {/* Available Users - แสดงรายการผู้ใช้ให้เลือก (ไม่ต้องค้นหา) */}
+                                                        {getAvailableAssignees(task).length > 0 && (
                                                             <div className="p-2">
                                                                 <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
-                                                                    ผลการค้นหา
+                                                                    {searchAssignee.trim().length > 0 ? 'ผลการค้นหา' : 'เลือกผู้รับผิดชอบ'}
                                                                 </div>
                                                                 {getAvailableAssignees(task).map((user) => (
                                                                     <div
                                                                         key={user.id}
-
                                                                         className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-700/50 transition-colors group/add"
                                                                     >
                                                                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-xs font-bold text-white shadow-lg">
@@ -1048,11 +1075,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                                         </span>
                                                                         <button
                                                                             onClick={() => addAssignee(task.id, user.id)}
-                                                                            className=" p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                                                            title="เพิ่มReviewer"
+                                                                            disabled={isLoading(`assignee-${task.id}-add-${user.id}`)}
+                                                                            className="p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                            title="เพิ่มผู้รับผิดชอบ"
                                                                         >
-                                                                            <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-400" />
-
+                                                                            {isLoading(`assignee-${task.id}-add-${user.id}`) ? (
+                                                                                <div className="w-4 h-4 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                                            ) : (
+                                                                                <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-400" />
+                                                                            )}
                                                                         </button>
                                                                     </div>
                                                                 ))}
@@ -1060,16 +1091,16 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                         )}
 
                                                         {/* Empty States */}
-                                                        {!task.assignees || task.assignees.length === 0 ? (
+                                                        {getAvailableAssignees(task).length === 0 ? (
                                                             <div className="p-6 text-center">
                                                                 <Users className="w-10 h-10 text-slate-700 mx-auto mb-2" />
-                                                                <p className="text-xs text-slate-500">ค้นหาเพื่อเพิ่มผู้รับผิดชอบ</p>
+                                                                <p className="text-xs text-slate-500">
+                                                                    {searchAssignee.trim().length > 0
+                                                                        ? 'ไม่พบผลการค้นหา'
+                                                                        : 'ไม่มีผู้ใช้เหลือสำหรับเพิ่มเป็นผู้รับผิดชอบ'}
+                                                                </p>
                                                             </div>
-                                                        ) : searchAssignee.trim().length > 0 && getAvailableAssignees(task).length === 0 && (
-                                                            <div className="p-6 text-center">
-                                                                <p className="text-xs text-slate-500">ไม่พบผลการค้นหา</p>
-                                                            </div>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </>
@@ -1201,10 +1232,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                                             )}
                                                                             <button
                                                                                 onClick={() => removeReviewer(task.id, reviewer.id)}
-                                                                                className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700"
+                                                                                disabled={isLoading(`reviewer-${task.id}-remove-${reviewer.id}`)}
+                                                                                className="opacity-0 group-hover/user:opacity-100 p-1 rounded-2xl transition-all bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-700 hover:to-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                                                                                 title="ลบ"
                                                                             >
-                                                                                <X className="w-3.5 h-3.5 text-red-400" />
+                                                                                {isLoading(`reviewer-${task.id}-remove-${reviewer.id}`) ? (
+                                                                                    <div className="w-3.5 h-3.5 border border-red-400 border-t-transparent rounded-full animate-spin" />
+                                                                                ) : (
+                                                                                    <X className="w-3.5 h-3.5 text-red-400" />
+                                                                                )}
                                                                             </button>
                                                                         </div>
                                                                     );
@@ -1212,11 +1248,11 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                             </div>
                                                         )}
 
-                                                        {/* Available Reviewers - แสดงเฉพาะเมื่อมีการค้นหา */}
-                                                        {searchReviewer.trim().length > 0 && getAvailableReviewers(task).length > 0 && (
+                                                        {/* Available Reviewers - แสดงรายการผู้ใช้ให้เลือก (ไม่ต้องค้นหา) */}
+                                                        {getAvailableReviewers(task).length > 0 && (
                                                             <div className="p-2">
                                                                 <div className="text-xs font-medium text-slate-400 px-2 py-1 mb-1">
-                                                                    ผลการค้นหา
+                                                                    {searchReviewer.trim().length > 0 ? 'ผลการค้นหา' : 'เลือก Reviewer'}
                                                                 </div>
                                                                 {getAvailableReviewers(task).map((user) => (
                                                                     <div
@@ -1231,10 +1267,15 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                                         </span>
                                                                         <button
                                                                             onClick={() => addReviewer(task.id, user.id)}
-                                                                            className=" p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                                                            title="เพิ่มReviewer"
+                                                                            disabled={isLoading(`reviewer-${task.id}-add-${user.id}`)}
+                                                                            className="p-1.5 rounded-2xl transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                            title="เพิ่ม Reviewer"
                                                                         >
-                                                                            <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-500" />
+                                                                            {isLoading(`reviewer-${task.id}-add-${user.id}`) ? (
+                                                                                <div className="w-4 h-4 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                                                            ) : (
+                                                                                <UserPlus className="w-4 h-4 text-slate-400 group-hover/add:text-blue-500" />
+                                                                            )}
                                                                         </button>
                                                                     </div>
                                                                 ))}
@@ -1242,16 +1283,16 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                         )}
 
                                                         {/* Empty States */}
-                                                        {!task.reviewers || task.reviewers.length === 0 ? (
+                                                        {getAvailableReviewers(task).length === 0 ? (
                                                             <div className="p-6 text-center">
                                                                 <Users className="w-10 h-10 text-slate-700 mx-auto mb-2" />
-                                                                <p className="text-xs text-slate-400">ค้นหาเพื่อเพิ่ม Reviewer</p>
+                                                                <p className="text-xs text-slate-400">
+                                                                    {searchReviewer.trim().length > 0
+                                                                        ? 'ไม่พบผลการค้นหา'
+                                                                        : 'ไม่มีผู้ใช้เหลือสำหรับเพิ่มเป็น Reviewer'}
+                                                                </p>
                                                             </div>
-                                                        ) : searchReviewer.trim().length > 0 && getAvailableReviewers(task).length === 0 && (
-                                                            <div className="p-6 text-center">
-                                                                <p className="text-xs text-slate-400">ไม่พบผลการค้นหา</p>
-                                                            </div>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </>

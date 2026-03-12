@@ -43,7 +43,7 @@ import Navbar_Project from "../../components/Navbar_Project";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import ENDPOINTS from "../../config";
-
+import ErrorLoadingState from '../../components/Errorloadingstate';
 
 type StatusType = 'wtg' | 'ip' | 'fin';
 
@@ -120,8 +120,30 @@ export default function Project_Detail() {
     const projectCreatedAt = projectData?.createdAt;
 
     const projectCreatedBy = projectData?.createdBy;
+    // ถ้าไม่มี projectData ใน localStorage
+    if (!projectData || !projectId) {
+        return (
+            <div className="min-h-screen bg-gray-900 text-gray-100">
+                <div className="pt-14">
+                    <Navbar_Project />
+                </div>
+                <div className="flex items-center justify-center h-[80vh]">
+                    <ErrorLoadingState
+                        entityName="project"
+                    />
+                </div>
+            </div>
+        );
+    }
+
     console.log("📌 CreatedBy:", projectCreatedBy); // เพิ่มบรรทัดนี้
     console.log("📌 CreatedAt:", projectCreatedAt); // เพิ่มบรรทัดนี้
+
+
+    const [fetchError, setFetchError] = useState(false);
+
+
+
 
     useEffect(() => {
         if (!projectId) return;
@@ -129,6 +151,7 @@ export default function Project_Detail() {
         const fetchSequences = async () => {
             try {
                 setLoadingSequences(true);
+                setFetchError(false);
 
                 const res = await fetch(ENDPOINTS.PROJECT_SEQUENCES, {
                     method: "POST",
@@ -146,6 +169,7 @@ export default function Project_Detail() {
                 setSequences(data);
             } catch (error) {
                 console.error("Failed to load sequences", error);
+                setFetchError(true);
             } finally {
                 setLoadingSequences(false);
             }
@@ -478,8 +502,15 @@ export default function Project_Detail() {
                                     </div>
                                 )}
 
+                                {/* Error State - เพิ่มใหม่ */}
+                                {!loadingSequences && fetchError && (
+                                    <ErrorLoadingState
+                                        entityName="sequences"
+                                    />
+                                )}
+
                                 {/* No Results */}
-                                {!loadingSequences && filteredSequences.length === 0 && (
+                                {!loadingSequences && !fetchError && filteredSequences.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                         <Layers className="w-16 h-16 mb-4 opacity-30" />
                                         <p className="text-lg font-medium">ไม่พบ Sequence</p>
@@ -488,7 +519,7 @@ export default function Project_Detail() {
                                 )}
 
                                 {/* Sequences Items */}
-                                {!loadingSequences && filteredSequences.map((seq) => (
+                                {!loadingSequences && !fetchError && filteredSequences.map((seq) => (
                                     <div
                                         key={seq.id}
                                         className="bg-gray-750 rounded-lg border border-gray-700 hover:border-purple-500 transition-all cursor-pointer overflow-hidden"
@@ -507,10 +538,18 @@ export default function Project_Detail() {
                                                                 </div>
                                                             </div>
                                                         )}
+
+                                                        <img
+                                                            src={ENDPOINTS.image_url + seq.file_url}
+                                                            alt=""
+                                                            className="absolute inset-0 w-full h-full object-cover scale-110 blur-lg opacity-60 pointer-events-none"
+                                                            aria-hidden="true"
+                                                        />
+
                                                         <img
                                                             src={ENDPOINTS.image_url + seq.file_url}
                                                             alt={seq.sequence_name}
-                                                            className="w-full h-full object-cover"
+                                                            className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer"
                                                             onLoad={() => handleSequenceImageLoad(seq.id)}
                                                             onError={() => handleSequenceImageError(seq.id)}
                                                         />

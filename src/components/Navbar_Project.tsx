@@ -124,12 +124,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
 
     const otherMenuItems = [
         { id: 'people', label: 'People', icon: '👤', route: '/Others_People' },
-        { id: 'bookings', label: 'Bookings', icon: '📅', route: '/Project_Bookings' },
-        { id: 'client-users', label: 'Client Users', icon: '👥', route: '/Project_ClientUsers' },
-        { id: 'contracts', label: 'Contracts', icon: '📄', route: '/Project_Contracts' },
-        { id: 'cut-items', label: 'Cut Items', icon: '📁', route: '/Project_CutItems' },
-        { id: 'cuts', label: 'Cuts', icon: '✂️', route: '/Project_Cuts' },
-        { id: 'event-log', label: 'Event Log Entries', icon: '📋', route: '/Project_EventLog' },
+
         { id: 'files', label: 'Files', icon: '📎', route: '/Project_Files' },
         { id: 'notes', label: 'Notes', icon: '📝', route: '/Project_Notes' },
     ];
@@ -166,7 +161,7 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
 
 
     return (
-        <header className="w-full h-12 px-6 flex items-center justify-between bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700/50 fixed z-[100] shadow-lg ">
+        <header className="w-full h-12 px-6 flex items-center bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700/50 fixed z-[100] shadow-lg ">
             {/* Left section */}
             <div className="flex items-center gap-6">
                 <div>
@@ -242,17 +237,6 @@ export default function Navbar_Project({ activeTab = 'ProDetail' }: NavbarProjec
                 </nav>
             </div>
 
-            {/* Right section */}
-            <div className="flex items-center gap-3 hidden md:inline-block">
-                <button
-                    className=" px-4 py-2 text-sm text-gray-200 bg-gradient-to-r from-blue-800 to-blue-700 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-lg flex items-center shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap"
-                >
-                    Project Actions
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-            </div>
         </header>
     );
 }

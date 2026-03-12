@@ -9,7 +9,7 @@ import { Check, FolderClosed, Image, LoaderCircle, Lock, Video } from 'lucide-re
 import ENDPOINTS from "../../config";
 import axios from 'axios';
 import PixelLoadingSkeleton from '../../components/PixelLoadingSkeleton';
-
+import ErrorLoadingState from '../../components/Errorloadingstate';
 
 
 type StatusType = keyof typeof statusConfig;
@@ -103,6 +103,7 @@ export default function Project_Sequence() {
     const [showShotDropdown, setShowShotDropdown] = useState(false);
     const [shotSearchText, setShotSearchText] = useState("");
     const [deleting, setDeleting] = useState(false);
+    const [fetchError, setFetchError] = useState(false);
 
 
     const [expandedItem, setExpandedItem] = useState<{
@@ -128,7 +129,7 @@ export default function Project_Sequence() {
         if (!projectId) return;
 
         setIsLoadingSequences(true);
-
+        setFetchError(false); // ← เพิ่ม
         fetch(ENDPOINTS.PROJECT_SEQUENCES, {
             method: "POST",
             headers: {
@@ -158,7 +159,10 @@ export default function Project_Sequence() {
                     fetchSequenceShots(seq.dbId);
                 });
             })
-            .catch(err => console.error("Sequence fetch error:", err))
+            .catch(err => {
+                console.error("Sequence fetch error:", err);
+                setFetchError(true); // ← แทนที่ console.error อย่างเดียว
+            })
             .finally(() => {
                 setIsLoadingSequences(false);
             });
@@ -845,6 +849,8 @@ export default function Project_Sequence() {
                 {isLoadingSequences ? (
                     <PixelLoadingSkeleton />
 
+                ) : fetchError ? (  // ← เพิ่ม block นี้
+                    <ErrorLoadingState entityName="sequences" />
                 ) : sequences.length === 0 ? (
                     /* Empty State */
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
@@ -926,11 +932,20 @@ export default function Project_Sequence() {
                                                     }}
                                                 >
                                                     {sequence.thumbnail ? (
-                                                        <img
-                                                            src={ENDPOINTS.image_url + sequence.thumbnail}
-                                                            alt={`${sequence.id}`}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                        />
+
+                                                        <>
+                                                            <img
+                                                                src={ENDPOINTS.image_url + sequence.thumbnail}
+                                                                alt=""
+                                                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                                aria-hidden="true"
+                                                            />
+                                                            <img
+                                                                src={ENDPOINTS.image_url + sequence.thumbnail}
+                                                                alt={`${sequence.id}`}
+                                                                className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                                            />
+                                                        </>
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">
                                                             <Image className="w-4 h-4 text-gray-500" />

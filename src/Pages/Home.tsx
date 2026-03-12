@@ -4,6 +4,7 @@ import axios from "axios";
 import ENDPOINTS from "../config";
 import { ChevronDown, LoaderCircle, Trash2 } from 'lucide-react';
 import PixelLoadingSkeleton from '../components/PixelLoadingSkeleton';
+import ErrorLoadingState from '../components/Errorloadingstate';
 
 interface Project {
     id: string;
@@ -44,6 +45,7 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [projectData, setProjectData] = useState<Project[]>([]);
     const [loadingProjects, setLoadingProjects] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
     const [error, setError] = useState("");
     const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
     const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
@@ -143,7 +145,7 @@ export default function Home() {
 
     const fetchProjects = async () => {
         setLoadingProjects(true);
-
+        setFetchError(false);
         try {
             const authUser = getAuthUser();
             const currentUserUid = authUser?.id ?? authUser?.uid;
@@ -197,6 +199,7 @@ export default function Home() {
         } catch (err) {
             console.error("❌ Error fetching projects:", err);
             setProjectData([]);
+            setFetchError(true);
         } finally {
             setLoadingProjects(false);
         }
@@ -866,6 +869,10 @@ export default function Home() {
             <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">
                 {loadingProjects ? (
                     <PixelLoadingSkeleton />
+                ) : fetchError ? (
+                    <div className="flex justify-center items-center h-64">
+                        <ErrorLoadingState entityName="projects"/>
+                    </div>
                 ) : projectData.length === 0 ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="text-gray-600 text-xl">No projects yet. Create your first project!</div>

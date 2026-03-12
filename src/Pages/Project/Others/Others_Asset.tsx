@@ -955,9 +955,34 @@ export default function Others_Asset() {
             if (Array.isArray(data) && data.length > 0) {
                 setAssetVersions(data);
                 setIsThumbnailLocked(data.length >= 1);
+
+                // ✅ sync thumbnail จาก version ล่าสุด
+                const latestThumb = data[0]?.file_url;
+                if (latestThumb) {
+                    setAssetData(prev => prev ? { ...prev, thumbnail: latestThumb } : null);
+                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                    localStorage.setItem('selectedAsset', JSON.stringify({
+                        ...stored,
+                        thumbnail: latestThumb,
+                        file_url: latestThumb
+                    }));
+                }
             } else {
                 setAssetVersions([]);
                 setIsThumbnailLocked(false);
+
+                // ✅ เช็ค thumbnail จาก localStorage ก่อน ไม่ clear ถ้ามีรูปอยู่แล้ว
+                const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                const existingThumb = stored.file_url || stored.thumbnail || '';
+
+                if (!existingThumb) {
+                    setAssetData(prev => prev ? { ...prev, thumbnail: '' } : null);
+                    localStorage.setItem('selectedAsset', JSON.stringify({
+                        ...stored,
+                        thumbnail: '',
+                        file_url: ''
+                    }));
+                }
             }
         } finally {
             setIsLoadingAssetVersions(false);
@@ -1282,12 +1307,22 @@ export default function Others_Asset() {
                                                 autoPlay
                                             />
                                         ) : (
-                                            <img
-                                                src={ENDPOINTS.image_url + assetData.thumbnail}
-                                                alt="Asset thumbnail"
-                                                className="relative w-full h-full object-cover z-10"
-                                            />
+                                            <>
+                                                <img
+                                                    src={ENDPOINTS.image_url + assetData.thumbnail}
+                                                    alt=""
+                                                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                    aria-hidden="true"
+                                                />
+                                                <img
+                                                    src={ENDPOINTS.image_url + assetData.thumbnail}
+                                                    alt="Asset thumbnail"
+                                                    className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer z-10"
+                                                />
+                                            </>
                                         )
+
+
                                     ) : (
                                         <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 z-10">
                                             <div className="p-4 rounded-full bg-gray-800/50 backdrop-blur-sm">
@@ -2133,11 +2168,10 @@ export default function Others_Asset() {
                                                                 <span className="text-base">🎬</span>
                                                             )}
                                                             <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
-                                                            <button
-                                                                type="button"
+                                                            <div
                                                                 onClick={e => { e.preventDefault(); removeVersionFile(i); }}
                                                                 className="text-gray-600 hover:text-red-400 transition-colors text-xs"
-                                                            >✕</button>
+                                                            >✕</div>
                                                         </div>
                                                     ))}
                                                     <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
@@ -2577,8 +2611,21 @@ export default function Others_Asset() {
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
                 onUpdateVersion={updateVersion}
-                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
-                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
+                onAddVersionSuccess={async () => {
+                    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+                    await fetchAssetVersions();
+                }}
+                // Others_Asset
+   onDeleteVersionSuccess={async (newThumb) => {
+    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+    await fetchAssetVersions();
+    if (newThumb !== undefined) {
+        const url = newThumb || '';
+        setAssetData(prev => prev ? { ...prev, thumbnail: url } : prev);
+        const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+        localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
+    }
+}}
             />
 
 

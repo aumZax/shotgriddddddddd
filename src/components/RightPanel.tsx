@@ -88,7 +88,7 @@ interface RightPanelProps {
     onTabChange: React.Dispatch<React.SetStateAction<string>>;
     onUpdateVersion?: (versionId: number, field: string, value: any) => Promise<boolean>;
     onAddVersionSuccess?: () => void;
-    onDeleteVersionSuccess?: () => void;
+    onDeleteVersionSuccess?: (newThumbnail?: string | null) => void;
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({
@@ -199,7 +199,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
 
 
-    
+
 
     const [contextMenu, setContextMenu] = React.useState<{
         visible: boolean;
@@ -246,7 +246,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside, true);
     }, [noteContextMenu]);
 
-    
+
     React.useEffect(() => {
         fetch(ENDPOINTS.GETALLPEOPLE)
             .then(r => r.json())
@@ -293,21 +293,40 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
 
     // ✅ handleDeleteVersion - เรียก callback ตรงๆ เช่นกัน
-    const handleDeleteVersion = async (versionId: number) => {
-        setIsDeletingVersion(true);
-        try {
+const handleDeleteVersion = async (versionId: number) => {
+    setIsDeletingVersion(true);
+    try {
+        const entityType = selectedTask?.entity_type;
+        const entityId = selectedTask?.entity_id;
+
+        let newThumbnail: string | null = null;
+
+        if (entityType === 'asset' && entityId) {
+            const res = await axios.delete(
+                `${ENDPOINTS.DELETE_ASSET_VERSION}/${versionId}`,
+                { data: { entityId } }
+            );
+            newThumbnail = res.data?.newThumbnail ?? null;
+        } else if (entityType === 'shot' && entityId) {
+            const res = await axios.delete(
+                `${ENDPOINTS.DELETE_SHOT_VERSION}/${versionId}`,
+                { data: { entityId } }
+            );
+            newThumbnail = res.data?.newThumbnail ?? null;
+        } else {
             await axios.delete(ENDPOINTS.DELETE_VERSION, {
                 data: { versionId },
             });
-            setDeleteConfirm(null);
-            await onDeleteVersionSuccess?.(); // ← parent refetch ใหม่
-        } catch (err) {
-            console.error('❌ Delete version failed:', err);
-            alert("ไม่สามารถลบ Version ได้ กรุณาลองใหม่อีกครั้ง"); // ✅ เพิ่มตรงนี้
-        } finally {
-            setIsDeletingVersion(false);
         }
-    };
+
+        setDeleteConfirm(null);
+        onDeleteVersionSuccess?.(newThumbnail);
+    } catch (err) {
+        alert("ไม่สามารถลบ Version ได้");
+    } finally {
+        setIsDeletingVersion(false);
+    }
+};
     // ✅ handleAddVersion - เรียก callback ตรงๆ ไม่ต้อง await refreshTaskVersions
     const handleAddVersion = async () => {
         if (!selectedTask || !addVersionForm.version_name.trim()) return;
@@ -315,26 +334,39 @@ const RightPanel: React.FC<RightPanelProps> = ({
             alert('กรุณาระบุผู้อัปโหลด');
             return;
         }
+
+        // ตรวจสอบชื่อซ้ำ
+        const baseName = addVersionForm.version_name.trim();
+        const isDuplicate = taskVersions.some(
+            v => v.version_name?.trim().toLowerCase() === baseName.toLowerCase()
+        );
+
+        let finalVersionName = baseName;
+
+        if (isDuplicate) {
+            const duplicateCount = taskVersions.filter(v => {
+                const stripped = v.version_name?.replace(/\s\(\d+\)$/, '').trim().toLowerCase();
+                return stripped === baseName.toLowerCase();
+            }).length;
+            finalVersionName = `${baseName} (${duplicateCount + 1})`;
+        }
+
         setIsUploadingVersion(true);
         try {
             let fileUrl: string | undefined = undefined;
             let fileId: string | undefined = undefined;
 
-            // ถ้ามีไฟล์ → อัพโหลดก่อน
-            // ✅ ใหม่ (ถูก)
             if (versionFile) {
                 const formData = new FormData();
                 formData.append('file', versionFile);
                 formData.append('fileName', versionFile.name);
                 formData.append('type', 'version');
 
-                // เลือก endpoint + field ตาม entity_type ของ task
                 let uploadEndpoint = '';
                 if (selectedTask.entity_type === 'shot') {
                     formData.append('shotId', selectedTask.entity_id.toString());
                     uploadEndpoint = ENDPOINTS.UPLOAD_SHOT;
                 } else {
-                    // asset (หรือ fallback)
                     formData.append('assetId', selectedTask.entity_id.toString());
                     uploadEndpoint = ENDPOINTS.UPLOAD_ASSET;
                 }
@@ -346,14 +378,13 @@ const RightPanel: React.FC<RightPanelProps> = ({
                 if (!uploadRes.ok) throw new Error('Upload failed');
                 const uploadData = await uploadRes.json();
 
-                // รองรับทั้ง { files: [...] } และ { file: {...} }
                 fileUrl = uploadData?.files?.[0]?.fileUrl ?? uploadData?.file?.fileUrl;
                 fileId = uploadData?.files?.[0]?.id?.toString() ?? uploadData?.file?.id?.toString();
             }
 
             await axios.post(`${ENDPOINTS.ADD_VERSION_TASK}`, {
                 task_id: selectedTask.id,
-                version_name: addVersionForm.version_name.trim(),
+                version_name: finalVersionName, // ← ใช้ชื่อที่ตรวจแล้ว
                 description: addVersionForm.description.trim() || undefined,
                 file_url: fileUrl,
                 file_id: fileId,
@@ -363,11 +394,9 @@ const RightPanel: React.FC<RightPanelProps> = ({
             });
 
             setShowAddVersionModal(false);
-
             setAddVersionForm({ version_name: '', description: '', status: 'wtg', file_size: 0 });
             setVersionFile(null);
             setVersionFilePreview('');
-
             setSelectedUploader(null);
             setUploaderQuery('');
             onAddVersionSuccess?.();
@@ -868,15 +897,23 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                                                     </>
 
                                                                 ) : (
-                                                                    <img
-                                                                        src={ENDPOINTS.image_url + version.file_url}
-                                                                        alt={`Version ${version.version_number}`}
-                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                        onError={(e) => {
-                                                                            e.currentTarget.style.display = 'none';
-                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                                        }}
-                                                                    />
+                                                                    <>
+                                                                        <img
+                                                                            src={ENDPOINTS.image_url + version.file_url}
+                                                                            alt=""
+                                                                            className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                        <img
+                                                                            src={ENDPOINTS.image_url + version.file_url}
+                                                                            alt={`Version ${version.version_number}`}
+                                                                            className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display = 'none';
+                                                                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                            }}
+                                                                        />
+                                                                    </>
                                                                 )
                                                             ) : null}
                                                             <div className={`${version.file_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-800 to-gray-700 ring-1 ring-gray-700`}>

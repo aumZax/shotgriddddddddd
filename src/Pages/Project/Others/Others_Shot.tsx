@@ -503,24 +503,49 @@ export default function Others_Shot() {
         }
     };
 
-    const fetchShotVersions = async () => {
-        if (!shotId) return;
-        setIsLoadingShotVersions(true);
-        try {
-            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
-            const data = res.data;
-            if (Array.isArray(data) && data.length > 0) {
-                setShotVersions(data);
-                setIsThumbnailLocked(data.length >= 1);
-            } else {
-                setShotVersions([]);
-                setIsThumbnailLocked(false);
+const fetchShotVersions = async () => {
+    if (!shotId) return;
+    setIsLoadingShotVersions(true);
+    try {
+        const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
+        const data = res.data;
+        if (Array.isArray(data) && data.length > 0) {
+            setShotVersions(data);
+            setIsThumbnailLocked(data.length >= 1);
+            
+            // ✅ เพิ่มส่วนนี้: sync thumbnail จาก version ล่าสุด
+            const latestThumb = data[0]?.file_url;
+            if (latestThumb) {
+                setShotData(prev => ({ ...prev, thumbnail: latestThumb }));
+                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                localStorage.setItem('selectedShot', JSON.stringify({
+                    ...stored,
+                    thumbnail: latestThumb,
+                    file_url: latestThumb
+                }));
             }
-
-        }
-        finally { setIsLoadingShotVersions(false); }
-
-    };
+       } else {
+    setShotVersions([]);
+    setIsThumbnailLocked(false);
+    
+    // ✅ เช็ค thumbnail จาก localStorage ก่อน
+    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+    const existingThumb = stored.file_url || stored.thumbnail || '';
+    
+    if (!existingThumb) {
+        setShotData(prev => ({ ...prev, thumbnail: '' }));
+        localStorage.setItem('selectedShot', JSON.stringify({
+            ...stored,
+            thumbnail: '',
+            file_url: ''
+        }));
+    }
+    // ถ้ามี existingThumb อยู่แล้ว → ไม่ต้องทำอะไร ปล่อยให้ state เดิมอยู่
+}
+    } finally { 
+        setIsLoadingShotVersions(false); 
+    }
+};
 
     // ✅ helper: filter versions array แล้ว sync isThumbnailLocked ด้วยเสมอ
     const removeVersionFromState = (versionId: number) => {
@@ -1397,14 +1422,22 @@ export default function Others_Shot() {
                                                     style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
                                                 />
                                             ) : (
-                                                <img
-                                                    src={ENDPOINTS.image_url + shotData.thumbnail}
-                                                    alt="Shot thumbnail"
-                                                    className="relative w-full h-full object-cover z-10"
-                                                    onLoadStart={() => setIsMediaLoading(true)}
-                                                    onLoad={() => setIsMediaLoading(false)}
-                                                    style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
-                                                />
+                                                <>
+                                                    <img
+                                                        src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                        alt=""
+                                                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                        aria-hidden="true"
+                                                    />
+                                                    <img
+                                                        src={ENDPOINTS.image_url + shotData.thumbnail}
+                                                        alt="Shot thumbnail"
+                                                        className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer z-10"
+                                                        onLoadStart={() => setIsMediaLoading(true)}
+                                                        onLoad={() => setIsMediaLoading(false)}
+                                                        style={{ opacity: isMediaLoading ? 0 : 1, transition: 'opacity 0.3s' }}
+                                                    />
+                                                </>
                                             )}
 
                                             {/* Loading overlay */}
@@ -2178,8 +2211,8 @@ export default function Others_Shot() {
                                     </label>
 
                                     <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-blue-500/30 bg-[#0a1018] text-blue-200 text-sm cursor-pointer hover:bg-blue-500/10 transition-all">
-                                        <Plus className="w-4 h-4"/>
-                                   
+                                        <Plus className="w-4 h-4" />
+
                                         Upload file
                                         <input
                                             type="file"
@@ -2200,7 +2233,7 @@ export default function Others_Shot() {
                                                         {file.name}
                                                     </span>
                                                     <div
-                                             
+
                                                         onClick={() => removetaskFile(index)}
                                                         className="cursor-pointer text-blue-300 hover:text-red-400"
                                                     >
@@ -2412,11 +2445,10 @@ export default function Others_Shot() {
                                                                 <span className="text-base">🎬</span>
                                                             )}
                                                             <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
-                                                            <button
-                                                                type="button"
+                                                            <div
                                                                 onClick={e => { e.preventDefault(); removeVersionFile(i); }}
                                                                 className="text-gray-600 hover:text-red-400 transition-colors text-xs"
-                                                            >✕</button>
+                                                            >✕</div>
                                                         </div>
                                                     ))}
                                                     <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
@@ -2874,8 +2906,21 @@ export default function Others_Shot() {
                 onResize={handleMouseDown}
                 onTabChange={setRightPanelActiveTab}
                 onUpdateVersion={updateVersion}
-                onAddVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
-                onDeleteVersionSuccess={() => selectedTask && fetchTaskVersions(selectedTask.id)}
+                onAddVersionSuccess={async () => {
+    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+    // re-fetch shot versions เพื่ออัพเดท thumbnail
+    await fetchShotVersions();
+}}
+onDeleteVersionSuccess={async (newThumb) => {
+    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+    await fetchShotVersions();
+    if (newThumb !== undefined) {
+        const url = newThumb || '';
+        setShotData(prev => prev ? { ...prev, thumbnail: url } : prev);
+        const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+        localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
+    }
+}}
             />
 
 

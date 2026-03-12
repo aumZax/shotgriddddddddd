@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ENDPOINTS from "../../config";
 import PixelLoadingSkeleton from '../../components/PixelLoadingSkeleton';
+import ErrorLoadingState from '../../components/Errorloadingstate';
+
 
 type StatusType = keyof typeof statusConfig;
 
@@ -135,6 +137,8 @@ export default function ProjectShot() {
     // ⭐ NEW STATES - เพิ่มใหม่
     const [sequenceSearchInput, setSequenceSearchInput] = useState('');
     const [showSequenceSearchDropdown, setShowSequenceSearchDropdown] = useState(false);
+    const [fetchError, setFetchError] = useState(false);
+
 
     const [contextMenu, setContextMenu] = useState<{
         visible: boolean;
@@ -332,6 +336,7 @@ export default function ProjectShot() {
     const fetchShots = async () => {
         setIsLoadingShots(true);
         setShotsError('');
+        setFetchError(false);
 
         try {
             const projectData = getProjectData();
@@ -406,7 +411,9 @@ export default function ProjectShot() {
 
         } catch (err) {
             console.error("Error fetching shots:", err);
-            setShotsError("Failed to load shots");
+
+            setFetchError(true);
+
         } finally {
             setIsLoadingShots(false);
         }
@@ -869,7 +876,7 @@ export default function ProjectShot() {
 
         } catch (err) {
             console.error("Delete shot failed:", err);
-        }finally {
+        } finally {
             setDeleting(false);
         }
     };
@@ -963,13 +970,11 @@ export default function ProjectShot() {
             <main className="flex-1 overflow-y-auto">
                 {isLoadingShots && <PixelLoadingSkeleton />}
 
-                {shotsError && !isLoadingShots && (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-red-400">{shotsError}</div>
-                    </div>
+                {fetchError && !isLoadingShots && (
+                    <ErrorLoadingState entityName="shots" />
                 )}
 
-                {!isLoadingShots && !shotsError && shotData.length === 0 && (
+                {!isLoadingShots && !fetchError && shotData.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="text-center space-y-4">
                             <Film className="w-24 h-24 text-gray-600 mx-auto" />
@@ -981,7 +986,7 @@ export default function ProjectShot() {
                     </div>
                 )}
 
-                {!isLoadingShots && !shotsError && shotData.length > 0 && (
+                {!isLoadingShots && !fetchError && shotData.length > 0 && (
                     <div className="max-w-full mx-auto">
                         {/* Table Header */}
                         <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 mb-2">
@@ -1079,11 +1084,19 @@ export default function ProjectShot() {
                                                                                     autoPlay
                                                                                 />
                                                                             ) : (
-                                                                                <img
-                                                                                    src={ENDPOINTS.image_url + shot.thumbnail}
-                                                                                    alt={shot.shot_name}
-                                                                                    className="w-full h-full object-cover"
-                                                                                />
+                                                                                <>
+                                                                                    <img
+                                                                                        src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                                        alt=""
+                                                                                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                    <img
+                                                                                        src={ENDPOINTS.image_url + shot.thumbnail}
+                                                                                        alt={shot.shot_name}
+                                                                                        className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                                                                    />
+                                                                                </>
                                                                             )
                                                                         ) : (
                                                                             <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900">

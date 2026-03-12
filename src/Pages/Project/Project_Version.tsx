@@ -11,7 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import PixelLoadingSkeleton from "../../components/PixelLoadingSkeleton";
-
+import ErrorLoadingState from "../../components/Errorloadingstate";
 // ===================== Types =====================
 type StatusType = keyof typeof statusConfig;
 
@@ -159,6 +159,8 @@ export default function Project_Version() {
     const [showEntityFilter, setShowEntityFilter] = useState(false);
     const [showStatusFilter, setShowStatusFilter] = useState(false);
 
+    const [fetchError, setFetchError] = useState(false);
+
     // -------------------- Fetch --------------------
     useEffect(() => {
         fetchVersions();
@@ -167,6 +169,7 @@ export default function Project_Version() {
 
     const fetchVersions = async () => {
         setIsLoading(true);
+        setFetchError(false);
         try {
             const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
             if (!projectId) return;
@@ -192,6 +195,7 @@ export default function Project_Version() {
             setProjectUsers(res.data);
         } catch (err) {
             console.error("Fetch project users error:", err);
+            setFetchError(true);
         }
     };
 
@@ -498,531 +502,551 @@ export default function Project_Version() {
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={8} className="px-4 py-16">
-                                        <PixelLoadingSkeleton/>
+                                        <PixelLoadingSkeleton />
                                     </td>
                                 </tr>
-                            ) : filteredGroups.length === 0 ? (
+                            ) : fetchError ? (
                                 <tr>
                                     <td colSpan={8} className="px-4 py-16">
-                                        <div className="flex flex-col items-center justify-center min-h-[300px]">
-                                            <Upload className="w-16 h-16 text-gray-700 mb-4" strokeWidth={1.5} />
-                                            <h3 className="text-xl font-semibold text-gray-300">ไม่พบ Version</h3>
-                                            <p className="text-gray-500 mt-1 text-sm">
-                                                {searchQuery || filterStatus || filterEntityType ? "ลองปรับ filter ใหม่" : "ยังไม่มี version ในโปรเจกต์นี้"}
-                                            </p>
-                                        </div>
+                                        <ErrorLoadingState entityName="versions" />
                                     </td>
                                 </tr>
-                            ) : (
-                                filteredGroups.map(group => {
-                                    const groupKey = `${group.entity_type}_${group.entity_id}`;
-                                    const isExpanded = expandedGroups.has(groupKey);
-                                    const entityColor = getEntityColor(group.entity_type);
+                            )
+                                : filteredGroups.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} className="px-4 py-16">
+                                            <div className="flex flex-col items-center justify-center min-h-[300px]">
+                                                <Upload className="w-16 h-16 text-gray-700 mb-4" strokeWidth={1.5} />
+                                                <h3 className="text-xl font-semibold text-gray-300">ไม่พบ Version</h3>
+                                                <p className="text-gray-500 mt-1 text-sm">
+                                                    {searchQuery || filterStatus || filterEntityType ? "ลองปรับ filter ใหม่" : "ยังไม่มี version ในโปรเจกต์นี้"}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredGroups.map(group => {
+                                        const groupKey = `${group.entity_type}_${group.entity_id}`;
+                                        const isExpanded = expandedGroups.has(groupKey);
+                                        const entityColor = getEntityColor(group.entity_type);
 
-                                    return (
-                                        <React.Fragment key={groupKey}>
-                                            {/* Group Header */}
-                                            <tr
-                                                className="bg-gray-800 hover:bg-gray-800/70 cursor-pointer transition-all border-b border-gray-700/50"
-                                                onClick={() => toggleGroup(group.entity_type, group.entity_id)}
-                                            >
-                                                <td colSpan={8} className="px-4 py-2.5">
-                                                    <div className="flex items-center gap-3">
-                                                        <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                                                        <div className={`w-7 h-7 rounded flex items-center justify-center ${group.entity_type === "unassigned" ? "bg-yellow-600/80" : "bg-indigo-600/80"}`}>
-                                                            <span className="text-white font-semibold text-xs">
-                                                                {group.entity_type === "unassigned" ? "?" : group.entity_name?.[0]?.toUpperCase()}
+                                        return (
+                                            <React.Fragment key={groupKey}>
+                                                {/* Group Header */}
+                                                <tr
+                                                    className="bg-gray-800 hover:bg-gray-800/70 cursor-pointer transition-all border-b border-gray-700/50"
+                                                    onClick={() => toggleGroup(group.entity_type, group.entity_id)}
+                                                >
+                                                    <td colSpan={8} className="px-4 py-2.5">
+                                                        <div className="flex items-center gap-3">
+                                                            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                                                            <div className={`w-7 h-7 rounded flex items-center justify-center ${group.entity_type === "unassigned" ? "bg-yellow-600/80" : "bg-indigo-600/80"}`}>
+                                                                <span className="text-white font-semibold text-xs">
+                                                                    {group.entity_type === "unassigned" ? "?" : group.entity_name?.[0]?.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <h3 className="text-sm font-medium text-white">{group.entity_name}</h3>
+                                                                {group.entity_type !== "unassigned" && (
+                                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${entityColor}`}>
+                                                                        {getEntityIcon(group.entity_type)}
+                                                                        {group.entity_type}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-medium">
+                                                                {group.versions.length} versions
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-3 flex-1">
-                                                            <h3 className="text-sm font-medium text-white">{group.entity_name}</h3>
-                                                            {group.entity_type !== "unassigned" && (
-                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${entityColor}`}>
-                                                                    {getEntityIcon(group.entity_type)}
-                                                                    {group.entity_type}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-medium">
-                                                            {group.versions.length} versions
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                    </td>
+                                                </tr>
 
-                                            {/* Version Rows */}
-                                            {isExpanded && group.versions.map((version, idx) => {
-                                                const statusCfg = statusConfig[version.status as StatusType];
-                                                const isEditingThisName = editingVersionId === version.id && editingField === "version_name";
-                                                const isEditingThisDesc = editingVersionId === version.id && editingField === "description";
+                                                {/* Version Rows */}
+                                                {isExpanded && group.versions.map((version, idx) => {
+                                                    const statusCfg = statusConfig[version.status as StatusType];
+                                                    const isEditingThisName = editingVersionId === version.id && editingField === "version_name";
+                                                    const isEditingThisDesc = editingVersionId === version.id && editingField === "description";
 
-                                                return (
-                                                    <tr
-                                                        key={`v-${version.id}`}
-                                                        className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
-                                                        onContextMenu={e => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setContextMenu({ visible: true, x: e.clientX, y: e.clientY, version });
-                                                        }}
-                                                    >
-                                                        {/* # */}
-                                                        <td className="px-4 py-4">
-                                                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 text-gray-400 text-sm font-medium group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
-                                                                {idx + 1}
-                                                            </div>
-                                                        </td>
+                                                    return (
+                                                        <tr
+                                                            key={`v-${version.id}`}
+                                                            className="group hover:bg-gradient-to-r hover:from-blue-500/5 hover:to-transparent transition-all duration-200"
+                                                            onContextMenu={e => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setContextMenu({ visible: true, x: e.clientX, y: e.clientY, version });
+                                                            }}
+                                                        >
+                                                            {/* # */}
+                                                            <td className="px-4 py-4">
+                                                                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 text-gray-400 text-sm font-medium group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
+                                                                    {idx + 1}
+                                                                </div>
+                                                            </td>
 
-                                                        {/* Thumbnail */}
-                                                        <td className="px-4 py-4">
-                                                            <div className="relative w-32 h-20 rounded-lg overflow-hidden group">
-                                                                {version.file_url && isImageUrl(version.file_url) ? (
-                                                                    <>
-                                                                        <img
-                                                                            src={ENDPOINTS.image_url + version.file_url}
-                                                                            alt="thumbnail"
-                                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                                                                            onClick={() => setThumbnailVersion(version)}
-                                                                            onError={(e) => {
-                                                                                (e.target as HTMLImageElement).closest('.relative')!.classList.add('show-fallback');
-                                                                                (e.target as HTMLImageElement).style.display = "none";
-                                                                            }}
-                                                                        />
-                                                                        {/* Overlay on hover */}
-                                                                        <div
-                                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
-                                                                            onClick={() => setThumbnailVersion(version)}
-                                                                        >
-                                                                            {/* Hover Overlay */}
-                                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                            {/* Thumbnail */}
+                                                            <td className="px-2 py-2">
+                                                                <div className="relative w-24 h-14 rounded-lg overflow-hidden group">
+                                                                    {version.file_url && isImageUrl(version.file_url) ? (
+                                                                        <>
+                                                                            {/* Blur background layer */}
+                                                                            <img
+                                                                                src={ENDPOINTS.image_url + version.file_url}
+                                                                                alt=""
+                                                                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                            <img
+                                                                                src={ENDPOINTS.image_url + version.file_url}
+                                                                                alt="thumbnail"
+                                                                                className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                                                                onClick={() => setThumbnailVersion(version)}
+                                                                                onError={(e) => {
+                                                                                    (e.target as HTMLImageElement).closest('.relative')!.classList.add('show-fallback');
+                                                                                    (e.target as HTMLImageElement).style.display = "none";
+                                                                                }}
+                                                                            />
+                                                                            {/* Overlay on hover */}
+                                                                            <div
+                                                                                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer"
+                                                                                onClick={() => setThumbnailVersion(version)}
+                                                                            >
+                                                                                {/* Hover Overlay */}
+                                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+                                                                                    <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                                                        <Eye className="w-3.5 h-3.5 text-white" />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Subtle border glow */}
+                                                                            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 group-hover:ring-blue-400/40 transition-all duration-200 pointer-events-none" />
+                                                                        </>
+                                                                    ) : version.file_url && isVideoUrl(version.file_url) ? (
+                                                                        <>
+                                                                            {/* Blur background */}
+                                                                            <video
+                                                                                src={ENDPOINTS.image_url + version.file_url}
+                                                                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                                                muted autoPlay loop aria-hidden
+                                                                            />
+                                                                            <video
+                                                                                src={ENDPOINTS.image_url + version.file_url}
+                                                                                className="w-full h-full object-cover cursor-pointer"
+                                                                                muted
+                                                                                loop
+                                                                                autoPlay
+                                                                                onClick={() => {
+                                                                                    localStorage.setItem("selectedVideo", JSON.stringify({
+                                                                                        videoUrl: ENDPOINTS.image_url + version.file_url,
+                                                                                        shotCode: group.entity_name,
+                                                                                        sequence: group.entity_type,
+                                                                                        status: version.status,
+                                                                                        description: version.description || "",
+                                                                                        dueDate: "",
+                                                                                        shotId: group.entity_id,
+                                                                                        versionId: version.id,
+                                                                                        versionName: version.version_name || `Version ${version.version_number}`,
+                                                                                        versionStatus: version.status,
+                                                                                        versionUploadedBy: version.uploaded_by_name || null,
+                                                                                        versionCreatedAt: version.created_at,
+                                                                                        versionDescription: version.description || null,
+                                                                                    }));
+                                                                                    navigate("/Others_Video");
+                                                                                }}
+                                                                            />
+                                                                            {/* Hover overlay สำหรับ video */}
+                                                                            <div
+                                                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40 cursor-pointer"
+                                                                                onClick={() => {
+                                                                                    localStorage.setItem("selectedVideo", JSON.stringify({
+                                                                                        videoUrl: ENDPOINTS.image_url + version.file_url,
+                                                                                        shotCode: group.entity_name,
+                                                                                        sequence: group.entity_type,
+                                                                                        status: version.status,
+                                                                                        description: version.description || "",
+                                                                                        dueDate: "",
+                                                                                        shotId: group.entity_id,
+                                                                                        versionId: version.id,
+                                                                                        versionName: version.version_name || `Version ${version.version_number}`,
+                                                                                        versionStatus: version.status,
+                                                                                        versionUploadedBy: version.uploaded_by_name || null,
+                                                                                        versionCreatedAt: version.created_at,
+                                                                                        versionDescription: version.description || null,
+                                                                                    }));
+                                                                                    navigate("/Others_Video");
+                                                                                }}
+                                                                            >
                                                                                 <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
                                                                                     <Eye className="w-3.5 h-3.5 text-white" />
                                                                                 </div>
                                                                             </div>
+                                                                            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 pointer-events-none" />
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 ring-1 ring-inset ring-white/5">
+                                                                            {/* Subtle grid pattern */}
+                                                                            <div className="absolute inset-0 opacity-[0.03]" />
+                                                                            <Image className="w-5 h-5 text-gray-600 relative" />
+                                                                            <p className="text-gray-600 text-[9px] tracking-widest uppercase relative">No Thumbnail</p>
                                                                         </div>
-                                                                        {/* Subtle border glow */}
-                                                                        <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 group-hover:ring-blue-400/40 transition-all duration-200 pointer-events-none" />
-                                                                    </>
-                                                                ) : version.file_url && isVideoUrl(version.file_url) ? (
-                                                                    <>
-                                                                        <video
-                                                                            src={ENDPOINTS.image_url + version.file_url}
-                                                                            className="w-full h-full object-cover cursor-pointer"
-                                                                            muted
-                                                                            loop
-                                                                            autoPlay
-                                                                            onClick={() => {
-                                                                                localStorage.setItem("selectedVideo", JSON.stringify({
-                                                                                    videoUrl: ENDPOINTS.image_url + version.file_url,
-                                                                                    shotCode: group.entity_name,
-                                                                                    sequence: group.entity_type,
-                                                                                    status: version.status,
-                                                                                    description: version.description || "",
-                                                                                    dueDate: "",
-                                                                                    shotId: group.entity_id,
-                                                                                    versionId: version.id,
-                                                                                    versionName: version.version_name || `Version ${version.version_number}`,
-                                                                                    versionStatus: version.status,
-                                                                                    versionUploadedBy: version.uploaded_by_name || null,
-                                                                                    versionCreatedAt: version.created_at,
-                                                                                    versionDescription: version.description || null,
-                                                                                }));
-                                                                                navigate("/Others_Video");
-                                                                            }}
-                                                                        />
-                                                                        {/* Hover overlay สำหรับ video */}
-                                                                        <div
-                                                                            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40 cursor-pointer"
-                                                                            onClick={() => {
-                                                                                localStorage.setItem("selectedVideo", JSON.stringify({
-                                                                                    videoUrl: ENDPOINTS.image_url + version.file_url,
-                                                                                    shotCode: group.entity_name,
-                                                                                    sequence: group.entity_type,
-                                                                                    status: version.status,
-                                                                                    description: version.description || "",
-                                                                                    dueDate: "",
-                                                                                    shotId: group.entity_id,
-                                                                                    versionId: version.id,
-                                                                                    versionName: version.version_name || `Version ${version.version_number}`,
-                                                                                    versionStatus: version.status,
-                                                                                    versionUploadedBy: version.uploaded_by_name || null,
-                                                                                    versionCreatedAt: version.created_at,
-                                                                                    versionDescription: version.description || null,
-                                                                                }));
-                                                                                navigate("/Others_Video");
-                                                                            }}
-                                                                        >
-                                                                            <div className="w-7 h-7 bg-white/25 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                                                                <Eye className="w-3.5 h-3.5 text-white" />
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10 pointer-events-none" />
-                                                                    </>
-                                                                ) : (
-                                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 ring-1 ring-inset ring-white/5">
-                                                                        {/* Subtle grid pattern */}
-                                                                        <div className="absolute inset-0 opacity-[0.03]" />
-                                                                        <Image className="w-5 h-5 text-gray-600 relative" />
-                                                                        <p className="text-gray-600 text-[9px] tracking-widest uppercase relative">No Thumbnail</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
+                                                                    )}
+                                                                </div>
+                                                            </td>
 
 
 
 
-                                                        {/* Version Name — inline editable */}
-                                                        <td className="px-2 py-4">
-                                                            {isEditingThisName ? (
-                                                                <textarea
-                                                                    autoFocus
-                                                                    value={editValue}
-                                                                    onChange={e => setEditValue(e.target.value)}
-                                                                    onBlur={() => commitEdit(version.id, "version_name", editValue)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Escape") cancelEditing();
-                                                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                                                                            e.preventDefault();
-                                                                            e.currentTarget.blur(); // Ctrl+Enter เพื่อ save
-                                                                        }
-                                                                    }}
-                                                                    rows={3}
-                                                                    className="w-full px-2 py-1 
+                                                            {/* Version Name — inline editable */}
+                                                            <td className="px-2 py-4">
+                                                                {isEditingThisName ? (
+                                                                    <textarea
+                                                                        autoFocus
+                                                                        value={editValue}
+                                                                        onChange={e => setEditValue(e.target.value)}
+                                                                        onBlur={() => commitEdit(version.id, "version_name", editValue)}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === "Escape") cancelEditing();
+                                                                            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                                                                e.preventDefault();
+                                                                                e.currentTarget.blur(); // Ctrl+Enter เพื่อ save
+                                                                            }
+                                                                        }}
+                                                                        rows={3}
+                                                                        className="w-full px-2 py-1 
                                                                         bg-gray-800 
                                                                         border border-blue-500 
                                                                         rounded 
                                                                         text-blue-400 text-sm font-medium 
                                                                         outline-none resize-none"
-                                                                />
-                                                            ) : (
-                                                                <div className="flex items-center gap-2 group/name">
-                                                                    <p className="text-sm font-medium text-gray-200 leading-tight hover:text-blue-400 truncate max-w-[160px] block"
-                                                                        title={version.version_name || `Version ${version.version_number}`}>
-                                                                        {version.version_name || `Version ${version.version_number}`}
-                                                                    </p>
-                                                                    <button
-                                                                        onClick={() => startEditing(version.id, "version_name", version.version_name || `Version ${version.version_number}`)}
-                                                                        className="opacity-0 group-hover/name:opacity-100 p-1 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all"
-                                                                        title="แก้ไขชื่อ"
-                                                                    >
-                                                                        <Pencil className="w-3 h-3 text-gray-400 hover:text-blue-400" />
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </td>
-
-
-                                                        {/* Task */}
-                                                        <td className="px-2 py-4">
-                                                            {version.task_name ? (
-                                                                <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
-                                                                    {version.task_name}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
-                                                            )}
-
-                                                        </td>
-
-
-                                                        {/* LINK */}
-                                                        <td className="px-2 py-4">
-                                                            {group.entity_type !== "unassigned" ? (
-                                                                <span
-                                                                    onClick={async (e) => {
-                                                                        e.stopPropagation();
-                                                                        if (group.entity_type === "shot") {
-                                                                            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                            const res = await axios.post(ENDPOINTS.SHOTLIST, { projectId });
-                                                                            let foundShot = null;
-                                                                            for (const g of res.data) {
-                                                                                const shot = g.shots?.find((s: any) => s.id === group.entity_id);
-                                                                                if (shot) { foundShot = { ...shot, sequence: g.category, assets: shot.assets || [] }; break; }
-                                                                            }
-                                                                            if (foundShot) {
-                                                                                localStorage.setItem("selectedShot", JSON.stringify({
-                                                                                    id: foundShot.id, shot_name: foundShot.shot_name,
-                                                                                    description: foundShot.description, status: foundShot.status,
-                                                                                    thumbnail: foundShot.thumbnail || foundShot.file_url || "",
-                                                                                    sequence: foundShot.sequence, assets: foundShot.assets,
-                                                                                }));
-                                                                                navigate("/Project_Shot/Others_Shot");
-                                                                            }
-                                                                        } else if (group.entity_type === "asset") {
-                                                                            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                            const res = await axios.post(ENDPOINTS.ASSETLIST, { projectId });
-                                                                            let foundAsset = null;
-                                                                            for (const g of res.data) {
-                                                                                const asset = g.assets?.find((a: any) => a.id === group.entity_id);
-                                                                                if (asset) { foundAsset = { ...asset, category: g.category }; break; }
-                                                                            }
-                                                                            if (foundAsset) {
-                                                                                localStorage.setItem("selectedAsset", JSON.stringify({
-                                                                                    id: foundAsset.id, asset_name: foundAsset.asset_name,
-                                                                                    description: foundAsset.description, status: foundAsset.status,
-                                                                                    file_url: foundAsset.file_url || "", sequence: foundAsset.category,
-                                                                                }));
-                                                                                navigate("/Project_Assets/Others_Asset");
-                                                                            }
-                                                                        } else if (group.entity_type === "sequence") {
-                                                                            const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                            const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, { projectId });
-                                                                            const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
-                                                                            if (sequence) {
-                                                                                localStorage.setItem("sequenceData", JSON.stringify({
-                                                                                    sequenceId: sequence.id, sequenceName: sequence.sequence_name,
-                                                                                    description: sequence.description, status: sequence.status || "wtg",
-                                                                                    thumbnail: sequence.file_url || "", createdAt: sequence.created_at, projectId,
-                                                                                }));
-                                                                                navigate("/Project_Sequence/Others_Sequence");
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
-                                                                >
-                                                                    {group.entity_name}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-gray-600 italic">ไม่ระบุ</span>
-                                                            )}
-                                                        </td>
-
-
-
-                                                        {/* Status */}
-                                                        <td className="px-2 py-4">
-                                                            <div className="relative">
-                                                                <button
-                                                                    onClick={e => {
-                                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                                        const spaceBelow = window.innerHeight - rect.bottom;
-                                                                        setStatusMenuPos(spaceBelow < 300 ? "top" : "bottom");
-                                                                        setShowStatusMenu(prev => prev === version.id ? null : version.id);
-                                                                    }}
-                                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 whitespace-nowrap"
-                                                                >
-                                                                    {/* ✅ แก้ตรงนี้ */}
-                                                                    {statusCfg?.icon === '-' ? (
-                                                                        <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
-                                                                    ) : (
-                                                                        <div className={`w-2.5 h-2.5 rounded-full ${statusCfg?.color || "bg-gray-500"}`} />
-                                                                    )}
-                                                                    <span className="text-xs text-gray-300 font-medium">
-                                                                        {statusCfg?.label || version.status}
-                                                                    </span>
-                                                                </button>
-
-                                                                {showStatusMenu === version.id && (
-                                                                    <>
-                                                                        <div className="fixed inset-0 z-10" onClick={() => setShowStatusMenu(null)} />
-                                                                        <div className={`absolute left-0 ${statusMenuPos === "top" ? "bottom-full mb-1" : "top-full mt-1"} z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[200px] max-h-[350px] overflow-y-auto`}>
-                                                                            {(Object.entries(statusConfig) as [string, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, cfg]) => (
-                                                                                <button
-                                                                                    key={key}
-                                                                                    onClick={e => { e.stopPropagation(); handleStatusChange(version.id, key); }}
-                                                                                    className="flex items-center gap-3 w-full px-3 py-2 text-left bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 first:rounded-t-lg last:rounded-b-lg transition-colors"
-                                                                                >
-                                                                                    {/* ✅ แก้ตรงนี้ด้วย */}
-                                                                                    {cfg.icon === '-' ? (
-                                                                                        <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
-                                                                                    ) : (
-                                                                                        <div className={`w-2.5 h-2.5 rounded-full ${cfg.color}`} />
-                                                                                    )}
-                                                                                    <div className="flex items-center gap-4 text-xs text-gray-200">
-                                                                                        <span className="inline-block w-10">{cfg.label}</span>
-                                                                                        <span className="text-gray-400">{cfg.fullLabel}</span>
-                                                                                    </div>
-                                                                                    {version.status === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    </>
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2 group/name">
+                                                                        <p className="text-sm font-medium text-gray-200 leading-tight hover:text-blue-400 truncate max-w-[160px] block"
+                                                                            title={version.version_name || `Version ${version.version_number}`}>
+                                                                            {version.version_name || `Version ${version.version_number}`}
+                                                                        </p>
+                                                                        <button
+                                                                            onClick={() => startEditing(version.id, "version_name", version.version_name || `Version ${version.version_number}`)}
+                                                                            className="opacity-0 group-hover/name:opacity-100 p-1 rounded-lg bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all"
+                                                                            title="แก้ไขชื่อ"
+                                                                        >
+                                                                            <Pencil className="w-3 h-3 text-gray-400 hover:text-blue-400" />
+                                                                        </button>
+                                                                    </div>
                                                                 )}
-                                                            </div>
-                                                        </td>
+                                                            </td>
 
-                                                        {/* Uploaded By — dropdown เลือก user */}
-                                                        <td className="px-2 py-4">
-                                                            <div className="relative">
-                                                                <div className="flex items-center gap-5 group/uploader-container">
 
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            if (showUserMenu === version.id) {
-                                                                                setShowUserMenu(null);
-                                                                                setUserSearchTerm("");
-                                                                                return;
+                                                            {/* Task */}
+                                                            <td className="px-2 py-4">
+                                                                {version.task_name ? (
+                                                                    <span className="text-sm text-gray-300 truncate max-w-[120px] block" title={version.task_name}>
+                                                                        {version.task_name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-gray-600 italic text-sm">ไม่ระบุ</span>
+                                                                )}
+
+                                                            </td>
+
+
+                                                            {/* LINK */}
+                                                            <td className="px-2 py-4">
+                                                                {group.entity_type !== "unassigned" ? (
+                                                                    <span
+                                                                        onClick={async (e) => {
+                                                                            e.stopPropagation();
+                                                                            if (group.entity_type === "shot") {
+                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                                                                                const res = await axios.post(ENDPOINTS.SHOTLIST, { projectId });
+                                                                                let foundShot = null;
+                                                                                for (const g of res.data) {
+                                                                                    const shot = g.shots?.find((s: any) => s.id === group.entity_id);
+                                                                                    if (shot) { foundShot = { ...shot, sequence: g.category, assets: shot.assets || [] }; break; }
+                                                                                }
+                                                                                if (foundShot) {
+                                                                                    localStorage.setItem("selectedShot", JSON.stringify({
+                                                                                        id: foundShot.id, shot_name: foundShot.shot_name,
+                                                                                        description: foundShot.description, status: foundShot.status,
+                                                                                        thumbnail: foundShot.thumbnail || foundShot.file_url || "",
+                                                                                        sequence: foundShot.sequence, assets: foundShot.assets,
+                                                                                    }));
+                                                                                    navigate("/Project_Shot/Others_Shot");
+                                                                                }
+                                                                            } else if (group.entity_type === "asset") {
+                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                                                                                const res = await axios.post(ENDPOINTS.ASSETLIST, { projectId });
+                                                                                let foundAsset = null;
+                                                                                for (const g of res.data) {
+                                                                                    const asset = g.assets?.find((a: any) => a.id === group.entity_id);
+                                                                                    if (asset) { foundAsset = { ...asset, category: g.category }; break; }
+                                                                                }
+                                                                                if (foundAsset) {
+                                                                                    localStorage.setItem("selectedAsset", JSON.stringify({
+                                                                                        id: foundAsset.id, asset_name: foundAsset.asset_name,
+                                                                                        description: foundAsset.description, status: foundAsset.status,
+                                                                                        file_url: foundAsset.file_url || "", sequence: foundAsset.category,
+                                                                                    }));
+                                                                                    navigate("/Project_Assets/Others_Asset");
+                                                                                }
+                                                                            } else if (group.entity_type === "sequence") {
+                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
+                                                                                const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, { projectId });
+                                                                                const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
+                                                                                if (sequence) {
+                                                                                    localStorage.setItem("sequenceData", JSON.stringify({
+                                                                                        sequenceId: sequence.id, sequenceName: sequence.sequence_name,
+                                                                                        description: sequence.description, status: sequence.status || "wtg",
+                                                                                        thumbnail: sequence.file_url || "", createdAt: sequence.created_at, projectId,
+                                                                                    }));
+                                                                                    navigate("/Project_Sequence/Others_Sequence");
+                                                                                }
                                                                             }
+                                                                        }}
+                                                                        className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
+                                                                    >
+                                                                        {group.entity_name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-gray-600 italic">ไม่ระบุ</span>
+                                                                )}
+                                                            </td>
+
+
+
+                                                            {/* Status */}
+                                                            <td className="px-2 py-4">
+                                                                <div className="relative">
+                                                                    <button
+                                                                        onClick={e => {
                                                                             const rect = e.currentTarget.getBoundingClientRect();
                                                                             const spaceBelow = window.innerHeight - rect.bottom;
-                                                                            const spaceRight = window.innerWidth - rect.left;
-                                                                            setUserMenuPos({
-                                                                                vertical: spaceBelow < 280 ? "top" : "bottom",
-                                                                                horizontal: spaceRight < 270 ? "right" : "left",
-                                                                            });
-                                                                            setShowUserMenu(version.id);
-                                                                            setUserSearchTerm("");
+                                                                            setStatusMenuPos(spaceBelow < 300 ? "top" : "bottom");
+                                                                            setShowStatusMenu(prev => prev === version.id ? null : version.id);
                                                                         }}
-                                                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
-                                                                        title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
+                                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 whitespace-nowrap"
                                                                     >
-                                                                        {version.uploaded_by_name ? (
-                                                                            <>
-                                                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
-                                                                                    {version.uploaded_by_name[0].toUpperCase()}
-                                                                                </div>
-                                                                                <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
-                                                                                    {version.uploaded_by_name}
-                                                                                </span>
-
-
-
-                                                                            </>
+                                                                        {/* ✅ แก้ตรงนี้ */}
+                                                                        {statusCfg?.icon === '-' ? (
+                                                                            <span className="text-gray-500 font-bold w-3 text-center text-sm">-</span>
                                                                         ) : (
-                                                                            <>
-                                                                                <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                                                                    <User className="w-3.5 h-3.5 text-slate-50" />
-                                                                                </div>
-                                                                                <span className="text-slate-400 italic text-sm">เลือกผู้อัปโหลด</span>
-
-                                                                            </>
+                                                                            <div className={`w-2.5 h-2.5 rounded-full ${statusCfg?.color || "bg-gray-500"}`} />
                                                                         )}
+                                                                        <span className="text-xs text-gray-300 font-medium">
+                                                                            {statusCfg?.label || version.status}
+                                                                        </span>
                                                                     </button>
-                                                                    {/* ✅ ปุ่ม X ลบคนอัพโหลด — แสดงเฉพาะเมื่อ hover */}
-                                                                    {version.uploaded_by_name && (
-                                                                        <div
+
+                                                                    {showStatusMenu === version.id && (
+                                                                        <>
+                                                                            <div className="fixed inset-0 z-10" onClick={() => setShowStatusMenu(null)} />
+                                                                            <div className={`absolute left-0 ${statusMenuPos === "top" ? "bottom-full mb-1" : "top-full mt-1"} z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl min-w-[200px] max-h-[350px] overflow-y-auto`}>
+                                                                                {(Object.entries(statusConfig) as [string, { label: string; fullLabel: string; color: string; icon: string }][]).map(([key, cfg]) => (
+                                                                                    <button
+                                                                                        key={key}
+                                                                                        onClick={e => { e.stopPropagation(); handleStatusChange(version.id, key); }}
+                                                                                        className="flex items-center gap-3 w-full px-3 py-2 text-left bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-700 hover:to-gray-500 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                                                                    >
+                                                                                        {/* ✅ แก้ตรงนี้ด้วย */}
+                                                                                        {cfg.icon === '-' ? (
+                                                                                            <span className="text-gray-400 font-bold w-2.5 text-center">-</span>
+                                                                                        ) : (
+                                                                                            <div className={`w-2.5 h-2.5 rounded-full ${cfg.color}`} />
+                                                                                        )}
+                                                                                        <div className="flex items-center gap-4 text-xs text-gray-200">
+                                                                                            <span className="inline-block w-10">{cfg.label}</span>
+                                                                                            <span className="text-gray-400">{cfg.fullLabel}</span>
+                                                                                        </div>
+                                                                                        {version.status === key && <Check className="w-4 h-4 text-blue-400 ml-auto" />}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+
+                                                            {/* Uploaded By — dropdown เลือก user */}
+                                                            <td className="px-2 py-4">
+                                                                <div className="relative">
+                                                                    <div className="flex items-center gap-5 group/uploader-container">
+
+                                                                        <button
                                                                             onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                updateVersion(version.id, "uploaded_by", null);
+                                                                                if (showUserMenu === version.id) {
+                                                                                    setShowUserMenu(null);
+                                                                                    setUserSearchTerm("");
+                                                                                    return;
+                                                                                }
+                                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                                const spaceBelow = window.innerHeight - rect.bottom;
+                                                                                const spaceRight = window.innerWidth - rect.left;
+                                                                                setUserMenuPos({
+                                                                                    vertical: spaceBelow < 280 ? "top" : "bottom",
+                                                                                    horizontal: spaceRight < 270 ? "right" : "left",
+                                                                                });
+                                                                                setShowUserMenu(version.id);
+                                                                                setUserSearchTerm("");
                                                                             }}
-                                                                            className="hidden group-hover/uploader-container:flex items-center justify-center
+                                                                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-slate-800 to-slate-800 hover:from-slate-600 hover:to-slate-500 border border-transparent transition-all group/uploader"
+                                                                            title="คลิกเพื่อเปลี่ยนผู้อัปโหลด"
+                                                                        >
+                                                                            {version.uploaded_by_name ? (
+                                                                                <>
+                                                                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg flex-shrink-0">
+                                                                                        {version.uploaded_by_name[0].toUpperCase()}
+                                                                                    </div>
+                                                                                    <span className="text-sm text-gray-300 group-hover/uploader:text-white transition-colors">
+                                                                                        {version.uploaded_by_name}
+                                                                                    </span>
+
+
+
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                                                        <User className="w-3.5 h-3.5 text-slate-50" />
+                                                                                    </div>
+                                                                                    <span className="text-slate-400 italic text-sm">เลือกผู้อัปโหลด</span>
+
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                        {/* ✅ ปุ่ม X ลบคนอัพโหลด — แสดงเฉพาะเมื่อ hover */}
+                                                                        {version.uploaded_by_name && (
+                                                                            <div
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    updateVersion(version.id, "uploaded_by", null);
+                                                                                }}
+                                                                                className="hidden group-hover/uploader-container:flex items-center justify-center
                                                                                         w-6 h-6 
                                                                                         rounded-full
                                                                                         bg-red-500
                                                                                         hover:bg-red-600
                                                                                         hover:ring-1 hover:ring-red-400
                                                                                         transition-all duration-150 cursor-pointer"
-                                                                            title="ลบผู้อัปโหลด"
-                                                                        >
-                                                                            <X className="w-4 h-4 text-white" />
-                                                                        </div>
-                                                                    )}
+                                                                                title="ลบผู้อัปโหลด"
+                                                                            >
+                                                                                <X className="w-4 h-4 text-white" />
+                                                                            </div>
+                                                                        )}
 
-                                                                </div>
+                                                                    </div>
 
 
 
-                                                                {showUserMenu === version.id && (
-                                                                    <>
-                                                                        <div className="fixed inset-0 z-10" onClick={() => { setShowUserMenu(null); setUserSearchTerm(""); }} />
-                                                                        <div
-                                                                            data-user-menu="true"
-                                                                            className={`absolute z-50 w-64 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5
+                                                                    {showUserMenu === version.id && (
+                                                                        <>
+                                                                            <div className="fixed inset-0 z-10" onClick={() => { setShowUserMenu(null); setUserSearchTerm(""); }} />
+                                                                            <div
+                                                                                data-user-menu="true"
+                                                                                className={`absolute z-50 w-64 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5
                                                                                 ${userMenuPos.vertical === "top" ? "bottom-full mb-1" : "top-full mt-1"}
                                                                                 ${userMenuPos.horizontal === "right" ? "right-0" : "left-0"}
                                                                             `}
-                                                                        >
-                                                                            {/* Header */}
-                                                                            <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
-                                                                                <div className="flex items-center gap-2 mb-2">
-                                                                                    <User className="w-3.5 h-3.5 text-slate-400" />
-                                                                                    <span className="text-xs font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
+                                                                            >
+                                                                                {/* Header */}
+                                                                                <div className="px-3 py-2.5 bg-gray-800 border-b border-gray-700/50">
+                                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                                        <User className="w-3.5 h-3.5 text-slate-400" />
+                                                                                        <span className="text-xs font-semibold text-slate-200">เลือกผู้อัปโหลด</span>
+                                                                                    </div>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        placeholder="ค้นหาชื่อ..."
+                                                                                        value={userSearchTerm}
+                                                                                        onChange={e => setUserSearchTerm(e.target.value)}
+                                                                                        onClick={e => e.stopPropagation()}
+                                                                                        autoFocus
+                                                                                        className="w-full px-2.5 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                                                                                    />
                                                                                 </div>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    placeholder="ค้นหาชื่อ..."
-                                                                                    value={userSearchTerm}
-                                                                                    onChange={e => setUserSearchTerm(e.target.value)}
-                                                                                    onClick={e => e.stopPropagation()}
-                                                                                    autoFocus
-                                                                                    className="w-full px-2.5 py-1.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
-                                                                                />
+
+                                                                                {/* User List */}
+                                                                                <div className="max-h-56 overflow-y-auto p-1.5">
+
+
+                                                                                    {/* รายชื่อ Users */}
+                                                                                    {projectUsers
+                                                                                        .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
+                                                                                        .map(user => (
+                                                                                            <button
+                                                                                                key={user.id}
+                                                                                                onClick={e => {
+                                                                                                    e.stopPropagation();
+                                                                                                    updateVersion(version.id, "uploaded_by", user.id);
+                                                                                                    setShowUserMenu(null);
+                                                                                                    setUserSearchTerm("");
+                                                                                                }}
+                                                                                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
+                                                                                            >
+                                                                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow ${version.uploaded_by === user.id
+                                                                                                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50"
+                                                                                                    : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"
+                                                                                                    }`}>
+                                                                                                    {user.username[0].toUpperCase()}
+                                                                                                </div>
+                                                                                                <span className="flex-1 text-sm text-slate-200">{user.username}</span>
+                                                                                                {version.uploaded_by === user.id && (
+                                                                                                    <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                                                                                                )}
+                                                                                            </button>
+                                                                                        ))
+                                                                                    }
+
+                                                                                    {projectUsers.filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 && (
+                                                                                        <div className="p-4 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
-
-                                                                            {/* User List */}
-                                                                            <div className="max-h-56 overflow-y-auto p-1.5">
-
-
-                                                                                {/* รายชื่อ Users */}
-                                                                                {projectUsers
-                                                                                    .filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
-                                                                                    .map(user => (
-                                                                                        <button
-                                                                                            key={user.id}
-                                                                                            onClick={e => {
-                                                                                                e.stopPropagation();
-                                                                                                updateVersion(version.id, "uploaded_by", user.id);
-                                                                                                setShowUserMenu(null);
-                                                                                                setUserSearchTerm("");
-                                                                                            }}
-                                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700"
-                                                                                        >
-                                                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow ${version.uploaded_by === user.id
-                                                                                                ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50"
-                                                                                                : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"
-                                                                                                }`}>
-                                                                                                {user.username[0].toUpperCase()}
-                                                                                            </div>
-                                                                                            <span className="flex-1 text-sm text-slate-200">{user.username}</span>
-                                                                                            {version.uploaded_by === user.id && (
-                                                                                                <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                                                                                            )}
-                                                                                        </button>
-                                                                                    ))
-                                                                                }
-
-                                                                                {projectUsers.filter(u => !userSearchTerm.trim() || u.username.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 && (
-                                                                                    <div className="p-4 text-center text-slate-500 text-xs">ไม่พบผู้ใช้</div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </td>
-
-                                                        {/* Description — inline editable */}
-                                                        <td className="px-4 py-4">
-                                                            {isEditingThisDesc ? (
-                                                                <textarea
-                                                                    autoFocus
-                                                                    value={editValue}
-                                                                    onChange={e => setEditValue(e.target.value)}
-                                                                    onBlur={() => commitEdit(version.id, "description", editValue)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
-                                                                        if (e.key === "Escape") cancelEditing();
-                                                                    }}
-                                                                    rows={2}
-                                                                    className="w-full max-w-[220px] px-2 py-1 bg-gray-800 border border-blue-500 rounded text-gray-300 text-xs outline-none resize-none"
-                                                                />
-                                                            ) : (
-                                                                <div
-                                                                    className="flex items-start gap-2 group/desc cursor-pointer rounded-sm hover:bg-slate-800"
-                                                                    onClick={() => startEditing(version.id, "description", version.description || "")}
-                                                                    title="คลิกเพื่อแก้ไข"
-                                                                >
-                                                                    {version.description ? (
-                                                                        <span className="text-sm text-gray-300 truncate max-w-[200px] block transition-colors" title={version.description}>
-                                                                            {version.description}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-600 italic text-sm group-hover/desc:text-gray-500 transition-colors">
-                                                                            คลิกเพื่อเพิ่ม...
-                                                                        </span>
+                                                                        </>
                                                                     )}
-                                                                    <Pencil className="w-3 h-3 text-gray-600 opacity-0 group-hover/desc:opacity-100 mt-0.5 flex-shrink-0 transition-opacity" />
                                                                 </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </React.Fragment>
-                                    );
-                                })
-                            )}
+                                                            </td>
+
+                                                            {/* Description — inline editable */}
+                                                            <td className="px-4 py-4">
+                                                                {isEditingThisDesc ? (
+                                                                    <textarea
+                                                                        autoFocus
+                                                                        value={editValue}
+                                                                        onChange={e => setEditValue(e.target.value)}
+                                                                        onBlur={() => commitEdit(version.id, "description", editValue)}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
+                                                                            if (e.key === "Escape") cancelEditing();
+                                                                        }}
+                                                                        rows={2}
+                                                                        className="w-full max-w-[220px] px-2 py-1 bg-gray-800 border border-blue-500 rounded text-gray-300 text-xs outline-none resize-none"
+                                                                    />
+                                                                ) : (
+                                                                    <div
+                                                                        className="flex items-start gap-2 group/desc cursor-pointer rounded-sm hover:bg-slate-800"
+                                                                        onClick={() => startEditing(version.id, "description", version.description || "")}
+                                                                        title="คลิกเพื่อแก้ไข"
+                                                                    >
+                                                                        {version.description ? (
+                                                                            <span className="text-sm text-gray-300 truncate max-w-[200px] block transition-colors" title={version.description}>
+                                                                                {version.description}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-gray-600 italic text-sm group-hover/desc:text-gray-500 transition-colors">
+                                                                                คลิกเพื่อเพิ่ม...
+                                                                            </span>
+                                                                        )}
+                                                                        <Pencil className="w-3 h-3 text-gray-600 opacity-0 group-hover/desc:opacity-100 mt-0.5 flex-shrink-0 transition-opacity" />
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        );
+                                    })
+                                )}
                         </tbody>
                     </table>
                 </div>
@@ -1058,7 +1082,7 @@ export default function Project_Version() {
                         {/* Image */}
                         <div className="p-4 flex items-center justify-center bg-gray-950 max-h-[70vh]">
                             <img
-                                src={ENDPOINTS.image_url+previewVersion.file_url}
+                                src={ENDPOINTS.image_url + previewVersion.file_url}
                                 alt={previewVersion.version_name || "thumbnail"}
                                 className="max-w-full max-h-[65vh] object-contain rounded-lg"
                             />

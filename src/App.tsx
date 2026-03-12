@@ -7,7 +7,6 @@ import Register from "./Pages/Register";
 
 import Home from "./Pages/Home";
 import Inbox from "./Pages/Inbox";
-import Mytask from "./Pages/Mytask";
 import PeopleList from "./Pages/PeopleList"
 import ENDPOINTS from "./config";
 
@@ -291,7 +290,7 @@ function MainLayout() {
         {PROJECT_PAGES.map((page, i) => {
           const Icon = page.icon;
           return (
-            <button
+            <div
               key={page.path}
               onMouseDown={(e) => {
                 e.stopPropagation();
@@ -301,7 +300,7 @@ function MainLayout() {
             >
               <Icon className="w-4 h-4 flex-shrink-0 text-gray-500 group-hover:text-blue-400" />
               {page.label}
-            </button>
+            </div>
           );
         })}
       </div>,
@@ -579,7 +578,6 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route path="/Home" element={<Home />} />
         <Route path="/Inbox" element={<Inbox />} />
-        <Route path="/Mytask" element={<Mytask />} />
 
         <Route path="/Project_Detail" element={<Project_Detail />} />
         <Route path="/Project_Shot" element={<Project_Shot />} />

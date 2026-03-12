@@ -449,17 +449,20 @@ export default function VideoReviewSystem() {
         <div className="min-h-screen max-h-screen bg-[#0d0f14] text-white overflow-hidden flex flex-col font-sans">
 
             {/* ── Header ── */}
-            <header className="h-14 bg-[#0a0c10]/95 backdrop-blur border-b border-white/[0.06] px-5 flex items-center justify-between flex-shrink-0 z-20">
-                <div className="flex items-center gap-3">
+            <header className="h-14 bg-gradient-to-r from-[#080a0f] via-[#0d1018] to-[#080a0f] border-b border-white/[0.08] px-5 flex items-center justify-between flex-shrink-0 z-20 shadow-lg shadow-black/40">
+                <div className="flex items-center gap-4">
+                    <div className="w-px h-8 bg-gradient-to-b from-transparent via-cyan-400/60 to-transparent" />
                     <div className="flex flex-col gap-0.5">
-                        <span className="text-xl font-semibold text-white leading-tight">Version Name: {videoData.versionName}</span>
-                        <span className="text-[11px] text-gray-400 leading-tight">
+                        <span className="text-base font-semibold tracking-tight text-white leading-tight">
+                            {videoData.versionName}
+                        </span>
+                        <span className="text-[10px] text-gray-500 tracking-widest uppercase leading-tight">
                             {videoData.shotCode}
                         </span>
                     </div>
                     {videoData.versionStatus && (
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusColors[videoData.versionStatus]?.bg ?? statusColors['wtg'].bg} ${statusColors[videoData.versionStatus]?.text ?? statusColors['wtg'].text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusColors[videoData.versionStatus]?.dot ?? statusColors['wtg'].dot}`} />
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider ring-1 ring-inset ${statusColors[videoData.versionStatus]?.bg ?? statusColors['wtg'].bg} ${statusColors[videoData.versionStatus]?.text ?? statusColors['wtg'].text} ring-white/10`}>
+                            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${statusColors[videoData.versionStatus]?.dot ?? statusColors['wtg'].dot}`} />
                             {videoData.versionStatus.toUpperCase()}
                         </div>
                     )}
@@ -472,7 +475,7 @@ export default function VideoReviewSystem() {
                 <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
                     {/* Drawing Toolbar */}
-                    <div className="h-11 bg-[#0d0f14] border-b border-white/[0.05] px-4 flex items-center gap-3 flex-shrink-0">
+                    <div className="h-11 bg-gradient-to-r from-[#0d0f14] via-[#111318] to-[#0d0f14] border-b border-white/[0.06] px-4 flex items-center gap-3 flex-shrink-0 shadow-sm">
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={() => setSelectedTool('cursor')}
@@ -588,16 +591,21 @@ export default function VideoReviewSystem() {
                     </div>
 
                     {/* Video Controls */}
-                    <div className="bg-[#161a21] border-t border-white/[0.05] px-5 py-3 flex-shrink-0">
+                    <div className="bg-gradient-to-b from-[#12151c] to-[#0d1018] border-t border-white/[0.07] px-5 py-3 flex-shrink-0">
                         <div className="flex items-center gap-4 mb-3">
+                            {/* Play button — แก้จาก red เป็น neutral สว่างกว่า */}
                             <div onClick={togglePlay}
-                                className="rounded-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-400 hover:to-red-400 flex items-center justify-center w-8 h-8 cursor-pointer transition-all hover:scale-105 active:scale-95">
-                                {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+                                className="rounded-full bg-white hover:bg-gray-200 flex items-center justify-center w-8 h-8 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md shadow-black/40">
+                                {isPlaying
+                                    ? <Pause size={14} className="text-gray-900" />
+                                    : <Play size={14} className="text-gray-900 ml-0.5" />}
                             </div>
-                            <span className="font-mono tabular-nums text-gray-400">
-                                <span className="text-white">{formatTime(currentTime)}</span>
-                                <span className="text-gray-600 mx-1">/</span>
-                                {formatTime(duration)}
+
+                            {/* Timecode — ทำให้ชัดขึ้น */}
+                            <span className="font-mono tabular-nums text-sm">
+                                <span className="text-white font-semibold">{formatTime(currentTime)}</span>
+                                <span className="text-gray-700 mx-1.5">/</span>
+                                <span className="text-gray-500">{formatTime(duration)}</span>
                             </span>
                             <div className="flex-1" />
                             <div onClick={() => setIsLooping(o => !o)} title="Loop" className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-105 ${isLooping ? 'border border-cyan-400 text-cyan-400' : 'bg-white/[0.06] border border-white/[0.10] text-gray-500 hover:text-white'}`}>
@@ -626,8 +634,8 @@ export default function VideoReviewSystem() {
                         {/* Progress bar */}
                         <div className="relative group" ref={progressBarRef}
                             onMouseDown={handleProgressMouseDown} onMouseMove={handleProgressMouseMove} onMouseUp={handleProgressMouseUp}>
-                            <div className="h-1.5 bg-white/[0.06] rounded-full cursor-pointer relative overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-none"
+                            <div className="h-2 bg-white/[0.05] rounded-full cursor-pointer relative overflow-hidden group-hover:h-2.5 transition-all duration-150">
+                                <div className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-cyan-300 rounded-full transition-none shadow-sm shadow-cyan-400/30"
                                     style={{ width: `${(currentTime / duration) * 100 || 0}%` }} />
                             </div>
                             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -664,11 +672,11 @@ export default function VideoReviewSystem() {
                 <div className="relative flex-shrink-0 flex">
                     <div className="w-px bg-white/[0.20]" />
 
-                    <div onClick={() => setSidebarOpen(o => !o)} title={sidebarOpen ? 'Hide panel' : 'Show panel'}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 w-7 h-20 rounded-full bg-[#1f2227] border border-white/[0.20] hover:border-cyan-400/50 hover:bg-[#0d1117] flex items-center justify-center shadow-lg cursor-pointer transition-all group">
+                    <div onClick={() => setSidebarOpen(o => !o)}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 w-5 h-14 rounded-full bg-[#1a1d24] border border-white/[0.12] hover:border-cyan-400/40 flex items-center justify-center shadow-lg cursor-pointer transition-all group">
                         {sidebarOpen
-                            ? <ChevronRight className="text-slate-50 group-hover:text-cyan-400 transition-colors" />
-                            : <ChevronLeft className="text-slate-50 group-hover:text-cyan-400 transition-colors" />}
+                            ? <ChevronRight className="w-3 h-3 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                            : <ChevronLeft className="w-3 h-3 text-gray-500 group-hover:text-cyan-400 transition-colors" />}
                     </div>
 
                     <div className="h-full bg-[#0a0c10] border-l border-white/[0.05] flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
@@ -676,21 +684,31 @@ export default function VideoReviewSystem() {
                         <div className="w-[360px] flex flex-col h-full">
 
                             {/* Tab bar */}
-                            <div className="flex flex-shrink-0">
+                            <div className="flex flex-shrink-0 border-b border-white/[0.06] bg-[#0a0c10]">
                                 {[
                                     { key: 'feedback', icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Feedback', count: comments.length },
-                                    { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Shot Info', count: null },
+                                    { key: 'info', icon: <Info className="w-3.5 h-3.5" />, label: 'Info', count: null },
                                 ].map(tab => (
-                                    <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                                        className={`flex-1 flex items-center justify-center text-slate-50 gap-1.5 px-3 py-3 text-xs font-medium transition-all ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-400 to-cyan-400' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
+                                    <div key={tab.key} onClick={() => setActiveTab(tab.key)}
+                                        className={`cursor-pointer relative flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-[11px] font-semibold tracking-wide uppercase transition-all ${activeTab === tab.key
+                                            ? 'text-cyan-400'
+                                            : 'text-gray-600 hover:text-gray-400'
+                                            }`}>
                                         {tab.icon}
                                         {tab.label}
                                         {tab.count !== null && (
-                                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-gray-400'}`}>
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${activeTab === tab.key
+                                                ? 'bg-cyan-400/15 text-cyan-400'
+                                                : 'bg-white/[0.05] text-gray-600'
+                                                }`}>
                                                 {tab.count}
                                             </span>
                                         )}
-                                    </button>
+                                        {/* Active indicator line */}
+                                        {activeTab === tab.key && (
+                                            <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />
+                                        )}
+                                    </div>
                                 ))}
                             </div>
 
@@ -706,9 +724,9 @@ export default function VideoReviewSystem() {
                                             { label: 'Upload Date', value: videoData.versionCreatedAt ? formatVersionDate(videoData.versionCreatedAt) : '—', mono: false },
                                             { label: 'Description', value: videoData.versionDescription || '—', mono: false },
                                         ].map(row => (
-                                            <div key={row.label} className="flex items-start justify-between py-2.5 border-b border-white/[0.04]">
-                                                <span className="text-[11px] text-gray-500 w-24 flex-shrink-0">{row.label}</span>
-                                                <span className={`text-[12px] text-gray-200 text-right ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
+                                            <div key={row.label} className="flex items-start justify-between py-2.5 border-b border-white/[0.04] hover:bg-white/[0.02] px-1 rounded transition-colors">
+                                                <span className="text-[11px] text-gray-600 w-24 flex-shrink-0 font-medium">{row.label}</span>
+                                                <span className={`text-[12px] text-gray-100 text-right max-w-[200px] ${row.mono ? 'font-mono text-cyan-300/80' : ''}`}>{row.value}</span>
                                             </div>
                                         ))}
                                         {videoData.versionStatus && (
@@ -737,31 +755,46 @@ export default function VideoReviewSystem() {
                             ) : (
                                 /* ── Feedback Tab ── */
                                 <>
-                                    <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
-                                        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                                            {comments.length} Comments
+                                    <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0 border-b border-white/[0.04]">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                            Comments
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full bg-white/[0.05] text-gray-500 text-[10px] font-mono">
+                                            {comments.length}
                                         </span>
                                     </div>
 
                                     {/* Comment list */}
-                                    <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+                                    <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3 space-y-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                                         {isLoadingComments ? (
                                             <div className="flex flex-col items-center justify-center h-40 gap-3">
                                                 <div className="w-6 h-6 border-2 border-white/10 border-t-cyan-400 rounded-full animate-spin" />
                                                 <p className="text-xs text-gray-600">Loading comments…</p>
                                             </div>
                                         ) : comments.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center h-40 text-center">
-                                                <MessageSquare className="w-8 h-8 text-gray-700 mb-2" />
-                                                <p className="text-xs text-gray-600">No feedback yet</p>
-                                                <p className="text-[11px] text-gray-700 mt-0.5">Select your name and leave a note</p>
+                                            <div className="flex flex-col items-center justify-center h-40 text-center gap-2">
+                                                <div className="w-10 h-10 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                                                    <MessageSquare className="w-4 h-4 text-gray-700" />
+                                                </div>
+                                                <p className="text-xs text-gray-600 font-medium">No feedback yet</p>
+                                                <p className="text-[11px] text-gray-700">Select your name and leave a note</p>
                                             </div>
                                         ) : null}
                                         {comments.map(comment => (
                                             <div key={comment.id}
-                                                className={`rounded-xl border p-3 transition-all ${comment.completed ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.10]'}`}>
+                                                className={`rounded-xl border p-3 transition-all relative overflow-hidden ${comment.completed
+                                                    ? 'bg-emerald-950/20 border-emerald-500/20'
+                                                    : 'bg-white/[0.025] border-white/[0.07] hover:border-cyan-400/20 hover:bg-white/[0.04]'
+                                                    }`}>
+                                                {/* Left accent bar */}
+                                                {!comment.completed && (
+                                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-blue-400/60 to-cyan-400/30" />
+                                                )}
                                                 <div className="flex items-start gap-2.5 mb-2">
-                                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-xs font-bold flex-shrink-0 text-white">
+                                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white shadow-md"
+                                                        style={{
+                                                            background: `linear-gradient(135deg, hsl(${(comment.author.charCodeAt(0) * 37) % 360}, 70%, 55%), hsl(${(comment.author.charCodeAt(0) * 37 + 60) % 360}, 80%, 45%))`
+                                                        }}>
                                                         {comment.author[0]}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -773,10 +806,10 @@ export default function VideoReviewSystem() {
                                                         </div>
                                                         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                                             {(comment.timestamps ?? [comment.timestampSeconds]).map(ts => (
-                                                                <button key={ts} onClick={() => jumpToTimestamp(ts)}
-                                                                    className="h-6 flex items-center px-2 text-slate-300 hover:text-slate-100 font-mono font-medium transition-colors rounded-2xl bg-gradient-to-r from-gray-700 to-gray-600">
-                                                                    <span className="text-md">{formatTime(ts)}</span>
-                                                                </button>
+                                                                <div key={ts} onClick={() => jumpToTimestamp(ts)}
+                                                                    className="h-5 flex cursor-pointer items-center px-2 font-mono font-semibold transition-all rounded-full bg-white/[0.07] hover:bg-cyan-400/20 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-400/30 text-gray-400 text-[10px] tracking-wide">
+                                                                    {formatTime(ts)}
+                                                                </div>
                                                             ))}
                                                             <span className="text-gray-700">·</span>
                                                             <span className="text-md text-gray-600">{comment.timeAgo}</span>
@@ -822,17 +855,18 @@ export default function VideoReviewSystem() {
                                                 ) : (
                                                     <p
                                                         className="text-xs text-gray-300 leading-relaxed mb-2 ml-9 cursor-pointer hover:text-white border border-white/[0.12] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-400/50"
-                                                        onDoubleClick={() => {
+                                                        onClick={() => {
                                                             setEditingCommentId(comment.id);
                                                             setEditingText(comment.text);
                                                         }}
+                                                        title="Click to edit"
                                                     >
                                                         {comment.text}
                                                     </p>
                                                 )}
                                                 {comment.drawings?.length > 0 && (
-                                                    <div className="ml-9 mb-2 flex items-center gap-1 text-[10px] text-gray-600">
-                                                        <Pencil className="w-2.5 h-2.5" />
+                                                    <div className="ml-9 mb-1 flex items-center gap-1.5 text-[10px] text-gray-600">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-400/60" />
                                                         {comment.drawings.length} annotation{comment.drawings.length > 1 ? 's' : ''}
                                                     </div>
                                                 )}
@@ -841,11 +875,11 @@ export default function VideoReviewSystem() {
                                     </div>
 
                                     {/* ── Comment Input ── */}
-                                    <div className="border-t border-white/[0.20] p-3 flex-shrink-0 bg-[#0a0c10]">
+                                    <div className="border-t border-white/[0.08] p-3 flex-shrink-0 bg-gradient-to-b from-[#0a0c10] to-[#080a0d]">
 
                                         {/* Version Info Banner */}
                                         {videoData.versionUploadedBy && (
-                                            <div className="mb-2 px-2.5 py-2 bg-white/[0.03] border border-white/[0.5] rounded-xl">
+                                            <div className="mb-2 px-2.5 py-2 bg-white/[0.02] border-l-2 border-l-purple-400/40 border border-white/[0.05] rounded-xl">
                                                 <div className="flex items-start gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">
                                                         {videoData.versionUploadedBy[0].toUpperCase()}
@@ -873,7 +907,7 @@ export default function VideoReviewSystem() {
                                             {/* Trigger button */}
                                             <div
                                                 onClick={() => { setUserSearchOpen(o => !o); setUserSearchQuery(''); }}
-                                                className="w-full flex items-center gap-2 bg-white/[0.04] border border-white/[0.5] hover:border-white/[0.5] rounded-lg px-2.5 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-cyan-400/50 transition-colors"
+                                                className="w-full flex items-center gap-2 bg-white/[0.03] border border-white/[0.10] hover:border-white/[0.20] rounded-lg px-2.5 py-1.5 text-xs text-gray-300 cursor-pointer transition-colors"
                                             >
                                                 {selectedAuthor ? (
                                                     <>
@@ -951,7 +985,7 @@ export default function VideoReviewSystem() {
 
                                         {/* ── Input Row ── */}
                                         <div className="flex gap-2 items-end">
-                                            <div className="flex-1 bg-white/[0.04] border border-white/[0.5] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
+                                            <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-cyan-400/40 transition-colors">
                                                 <div className="text-[10px] text-gray-200 mb-1 font-mono">
                                                     {(() => {
                                                         const unposted = drawings.filter(d => !postedDrawingIds.includes(d.id));
@@ -972,7 +1006,7 @@ export default function VideoReviewSystem() {
                                             <button
                                                 onClick={addComment}
                                                 disabled={!selectedAuthor || !newComment.trim() || isPosting}
-                                                className="px-3 py-2 bg-gradient-to-r from-blue-400 to-cyan-400 hover:from-blue-300 hover:to-cyan-300 rounded-xl text-xs font-semibold transition-all hover:shadow-lg hover:shadow-cyan-400/20 active:scale-95 flex-shrink-0 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-400 hover:to-cyan-300 rounded-xl text-xs font-bold tracking-wide transition-all hover:shadow-lg hover:shadow-cyan-400/20 active:scale-95 flex-shrink-0 text-white disabled:opacity-30 disabled:cursor-not-allowed"
                                             >
                                                 {isPosting ? '…' : 'Post'}
                                             </button>

@@ -1054,11 +1054,19 @@ export default function Others_Sequence() {
                                             </div>
                                         </>
                                     ) : SequenceData.thumbnail ? (
-                                        <img
-                                            src={ENDPOINTS.image_url + SequenceData.thumbnail}
-                                            alt="Sequence thumbnail"
-                                            className="relative w-full h-full object-cover z-10"
-                                        />
+                                        <>
+                                            <img
+                                                src={ENDPOINTS.image_url + SequenceData.thumbnail}
+                                                alt=""
+                                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-60 pointer-events-none"
+                                                aria-hidden="true"
+                                            />
+                                            <img
+                                                src={ENDPOINTS.image_url + SequenceData.thumbnail}
+                                                alt="Sequence thumbnail"
+                                                className="relative w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-pointer z-10"
+                                            />
+                                        </>
                                     ) : (
                                         <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 z-10">
                                             <div className="p-4 rounded-full bg-gray-800/50 backdrop-blur-sm">

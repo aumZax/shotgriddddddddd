@@ -1,8 +1,8 @@
 // endpoints.ts
-const BASE_URL = "https://obituaries-compounds-shareware-proposition.trycloudflare.com";
+const BASE_URL = "https://country-matched-contribute-marker.trycloudflare.com";
 // const BASE_URL = "http://localhost:3000";
 
-// maxaaaaa
+// maxaaaaaa
 // const BASE_URL = "https://api-test-pi-rosy.vercel.app";
 
 
@@ -22,7 +22,7 @@ const ENDPOINTS = {
   UPLOAD: `${BASE_URL}/upload`,
   GETPROJECTIMAGES: `${BASE_URL}/project/images`,
   DELETEPROJECT: `${BASE_URL}/deleteProject`,
-  image_url: "https://obituaries-compounds-shareware-proposition.trycloudflare.com/",
+  image_url: "https://country-matched-contribute-marker.trycloudflare.com/",
   videos: `${BASE_URL}/videos`,
   IMAGE_URL: `${BASE_URL}/`,
   UPLOAD_VIDEO: `${BASE_URL}/upload/video`,

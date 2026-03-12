@@ -52,7 +52,7 @@ export interface VersionTabProps {
     isLoadingVersions: boolean;
     isMock?: boolean;
     onUpdateVersion: (versionId: number, field: string, value: any) => Promise<boolean>;
-    onDeleteVersion: (versionId: number) => void;
+    onDeleteVersion: (versionId: number) => void | Promise<void>;
     formatDate?: (dateStr: string) => string;
 }
 
@@ -84,6 +84,7 @@ const VersionTab: React.FC<VersionTabProps> = ({
         versionId: number;
         versionName: string;
     } | null>(null);
+    const [isDeletingVersion, setIsDeletingVersion] = useState(false);
 
     const formatDateDefault = (dateStr: string) => {
         if (!dateStr) return '-';
@@ -135,6 +136,16 @@ const VersionTab: React.FC<VersionTabProps> = ({
 
     // ── Close context menu on outside click ──
     const closeContextMenu = () => setContextMenu(null);
+
+    const handleDeleteVersion = async (versionId: number) => {
+        if (isDeletingVersion) return;
+        setIsDeletingVersion(true);
+        try {
+            await onDeleteVersion(versionId);
+        } finally {
+            setIsDeletingVersion(false);
+        }
+    };
 
     if (isLoadingVersions) {
         return (
@@ -256,18 +267,20 @@ const VersionTab: React.FC<VersionTabProps> = ({
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setDeleteConfirm(null)}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 font-medium disabled:opacity-50 bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        onDeleteVersion(deleteConfirm.versionId);
+                                    onClick={async () => {
+                                        await handleDeleteVersion(deleteConfirm.versionId);
                                         setDeleteConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingVersion}
+                                    className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50 flex items-center gap-2 bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600"
                                 >
-                                    Delete Version
+                                    {isDeletingVersion && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                    {isDeletingVersion ? 'Deleting...' : 'Delete Version'}
                                 </button>
                             </div>
                         </div>

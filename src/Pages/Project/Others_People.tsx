@@ -5,6 +5,7 @@ import Navbar_Project from "../../components/Navbar_Project";
 import ENDPOINTS from "../../config";
 import axios from "axios";
 import PixelLoadingSkeleton from "../../components/PixelLoadingSkeleton";
+import ErrorLoadingState from "../../components/Errorloadingstate";
 
 /* ================= Types ================= */
 interface Person {
@@ -66,6 +67,8 @@ export default function Others_People() {
   const [columnWidths] = useState<number[]>([48, 220, 220, 260, 160, 200]);
   const now = new Date();
   const timeString = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: true });
+  
+  const[fetchError, setFetchError] = useState(false);
 
   
   useEffect(() => {
