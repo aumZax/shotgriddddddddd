@@ -1047,19 +1047,9 @@ export default function ProjectShot() {
                                                             key={`${category.category}-${shot.id}-${shotIndex}`}
                                                             onContextMenu={(e) => handleContextMenu(e, shot)}
                                                             onClick={() => {
-                                                                localStorage.setItem(
-                                                                    "selectedShot",
-                                                                    JSON.stringify({
-                                                                        id: shot.id,
-                                                                        shot_name: shot.shot_name,
-                                                                        description: shot.description,
-                                                                        status: shot.status,
-                                                                        thumbnail: shot.thumbnail || "",
-                                                                        sequence: category.category,
-                                                                        sequenceDetail: shot.sequence || null,
-                                                                        assets: shot.assets || []
-                                                                    })
-                                                                );
+                                                                localStorage.setItem("selectedShot", JSON.stringify({
+                                                                    id: shot.id
+                                                                }));
                                                                 navigate("/Project_Shot/Others_Shot");
                                                                 setSelectedShot({ categoryIndex, shotIndex });
                                                             }}

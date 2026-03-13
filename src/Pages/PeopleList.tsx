@@ -7,7 +7,8 @@ import { useState, useEffect, useMemo } from "react";
 import ENDPOINTS from "../config";
 import React from "react";
 import PixelLoadingSkeleton from "../components/PixelLoadingSkeleton";
-
+// บรรทัดแรกๆ ของไฟล์
+import ErrorLoadingState from '../components/Errorloadingstate';
 /* ══════════════════════════════════════════════════════
    TYPES
 ══════════════════════════════════════════════════════ */
@@ -309,6 +310,17 @@ function EntitySection({ group }: { group: EntityGroup }) {
                               createdAt: sequence.created_at,
                               projectId: group.project_id,
                             }));
+                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
+                            localStorage.setItem("projectData", JSON.stringify({
+                              projectId: group.project_id,
+                              projectName: group.project_name,
+                              thumbnail: "",
+                              createdBy: "",
+                              createdAt: new Date().toISOString(),
+                              fetchedAt: new Date().toISOString(),
+                              projectInfo: null,
+                              projectDetails: null,
+                            }));
                             navigate("/Project_Sequence/Others_Sequence");
                           }
                         } catch (err) { console.error("Failed to fetch sequence:", err); }
@@ -340,6 +352,17 @@ function EntitySection({ group }: { group: EntityGroup }) {
                               sequenceDetail: foundShot.sequenceDetail,
                               assets: foundShot.assets,
                             }));
+                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
+                            localStorage.setItem("projectData", JSON.stringify({
+                              projectId: group.project_id,
+                              projectName: group.project_name,
+                              thumbnail: "",
+                              createdBy: "",
+                              createdAt: new Date().toISOString(),
+                              fetchedAt: new Date().toISOString(),
+                              projectInfo: null,
+                              projectDetails: null,
+                            }));
                             navigate("/Project_Shot/Others_Shot");
                           } else { alert("ไม่พบข้อมูล Shot"); }
                         } catch (err) { console.error("Failed to fetch shot:", err); alert("ไม่สามารถโหลดข้อมูล Shot ได้"); }
@@ -365,6 +388,17 @@ function EntitySection({ group }: { group: EntityGroup }) {
                               status: foundAsset.status,
                               file_url: foundAsset.file_url || "",
                               sequence: foundAsset.category,
+                            }));
+                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
+                            localStorage.setItem("projectData", JSON.stringify({
+                              projectId: group.project_id,
+                              projectName: group.project_name,
+                              thumbnail: "",
+                              createdBy: "",
+                              createdAt: new Date().toISOString(),
+                              fetchedAt: new Date().toISOString(),
+                              projectInfo: null,
+                              projectDetails: null,
                             }));
                             navigate('/Project_Assets/Others_Asset');
                           } else { alert("ไม่พบข้อมูล Asset"); }
@@ -510,22 +544,22 @@ function ProjectBucketCard({ bucket, color, index }: { bucket: ProjectBucket; co
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ background: "rgba(255,255,255,0.025)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                <th className="py-2 px-3 pl-4 text-left" style={{ width: 80, minWidth: 80, borderRight: "1px solid rgba(255,255,255,0.08)"  }}>
+                <th className="py-2 px-3 pl-4 text-left" style={{ width: 80, minWidth: 80, borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">Preview</span>
                 </th>
-                <th className="py-2 px-3 text-left" style={{ minWidth: 120, borderRight: "1px solid rgba(255,255,255,0.08)"  }}>
+                <th className="py-2 px-3 text-left w-84" style={{ minWidth: 120, borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">Name</span>
                 </th>
-                <th className="py-2 px-3 text-left w-20" style={{ minWidth: 100, borderRight: "1px solid rgba(255,255,255,0.08)"  }}>
+                <th className="py-2 px-3 text-left w-20" style={{ minWidth: 100, borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">Entity Status</span>
                 </th>
-                <th className="py-2 px-3 text-left" style={{ minWidth: 140, borderRight: "1px solid rgba(255,255,255,0.08)"  }}>
+                <th className="py-2 px-3 text-left w-128" style={{ minWidth: 140, borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">Description</span>
                 </th>
                 <th className="px-3 py-2 text-left w-8" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">#</span>
                 </th>
-                <th className="px-3 py-2 text-left" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+                <th className="px-3 py-2 text-left w-84" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500">Task</span>
                 </th>
                 <th className="px-3 py-2 text-left w-30" style={{ borderRight: "1px solid rgba(255,255,255,0.08)" }}>
@@ -703,7 +737,9 @@ export default function PeopleList() {
       if (!bucketMap[pid]) bucketMap[pid] = { project_id: pid, project_name: pname, entities: [] };
       bucketMap[pid].entities.push(g);
     }
-    return Object.values(bucketMap);
+
+    // Sort projects newest → oldest by project_id (assumes increasing IDs over time)
+    return Object.values(bucketMap).sort((a, b) => b.project_id - a.project_id);
   }, [filtered]);
 
   const entityCounts = {
@@ -723,8 +759,8 @@ export default function PeopleList() {
   if (loading) return (
     <div className="pt-14 flex items-center justify-center min-h-screen" style={{ background: "#0f172a" }}>
       <div className="text-center">
-                            <PixelLoadingSkeleton />
-        
+        <PixelLoadingSkeleton />
+
       </div>
     </div>
   );
@@ -831,14 +867,11 @@ export default function PeopleList() {
 
             {/* ── error ── */}
             {error && (
-              <div className="mb-5 px-4 py-3 rounded-xl text-sm text-red-400"
-                style={{ fontFamily: "'JetBrains Mono', monospace", background: "rgba(239,68,68,.07)", border: "1px solid rgba(239,68,68,.2)" }}>
-                ⚠ {error}
-              </div>
+              <ErrorLoadingState entityName="Assignments Tasks" />
             )}
 
             {/* ── project buckets ── */}
-            {projectBuckets.length === 0 ? (
+            {(!error && projectBuckets.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-24 rounded-2xl"
                 style={{ background: "rgba(255,255,255,.015)", border: "1px dashed rgba(255,255,255,.07)" }}>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"

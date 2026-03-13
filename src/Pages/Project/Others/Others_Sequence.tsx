@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
-import { Check, Eye, Image, Upload, User, X } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X, LoaderCircle } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
@@ -151,6 +151,7 @@ export default function Others_Sequence() {
     const [shots, setShots] = useState<Shot[]>([]);
     const [loadingShots, setLoadingShots] = useState(false);
     const [subject, setSubject] = useState("");
+    const isNoteFormValid = Boolean(subject.trim() && type && body.trim());
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [thumbnailLoading, setThumbnailLoading] = useState(true);
@@ -207,6 +208,8 @@ export default function Others_Sequence() {
         noteId: number;
         subject: string;
     } | null>(null);
+
+    const [isDeletingNote, setIsDeletingNote] = useState(false);
 
     const [noteContextMenu, setNoteContextMenu] = useState<{
         visible: boolean;
@@ -537,6 +540,11 @@ export default function Others_Sequence() {
     };
 
     const handleCreateNote = async () => {
+        if (!subject.trim() || !type || !body.trim()) {
+            alert('Please fill in Subject, Type, and Message before creating a note.');
+            return;
+        }
+
         try {
             setUploading(true);
 
@@ -610,7 +618,6 @@ export default function Others_Sequence() {
             console.log('✅ Note created successfully:', result);
 
             // 3. Success
-            alert('Note created successfully!');
             setShowCreateAsset_Note(false);
 
             // Reset form
@@ -1203,7 +1210,7 @@ export default function Others_Sequence() {
                                         />
                                     ) : (
                                         <p
-                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors"
+                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors break-words"
                                             onClick={() => setEditingField('sequence')}
                                         >
                                             {SequenceData.sequence}
@@ -1539,6 +1546,8 @@ export default function Others_Sequence() {
                 </div>
             )}
 
+
+{/* Create Note Modal */}
             {showCreateAsset_Note && (
                 <>
                     <div
@@ -1583,20 +1592,23 @@ export default function Others_Sequence() {
                                         <h2 className="text-base font-semibold text-white">New Note</h2>
                                         <span className="text-xs text-blue-300/60">- Global Form</span>
                                     </div>
-                                    <button
+                                    <div
                                         onClick={() => setShowCreateAsset_Note(false)}
                                         onMouseDown={(e) => e.stopPropagation()}
-                                        className="text-gray-400 hover:text-white text-xl leading-none transition-colors"
+                                        className="text-gray-400 hover:text-white text-xl leading-none transition-colors cursor-pointer"
                                     >
                                         ×
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="px-5 py-4 space-y-3">
                                 <div className="space-y-1.5">
-                                    <label className="block text-xs font-medium text-gray-300">
-                                        Links
+                                    <label className="flex items-center justify-between text-xs font-medium text-gray-300">
+                                        <span>
+                                            Links <span className="text-xs text-green-300 font-normal">auto</span>
+                                        </span>
+                                        <span className="text-[11px] text-gray-400">already selected</span>
                                     </label>
                                     <input
                                         disabled
@@ -1604,6 +1616,7 @@ export default function Others_Sequence() {
                                         defaultValue={SequenceData?.sequence || ''}
                                         className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                     />
+                                    <p className="text-[11px] text-green-200">Auto-selected based on the current sequence.</p>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -1735,19 +1748,19 @@ export default function Others_Sequence() {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Subject
+                                        Subject <span className="text-red-400">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all ${subject.trim() ? 'border-blue-500/30' : 'border-red-500/50'}`}
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Type
+                                        Type <span className="text-red-400">*</span>
                                     </label>
 
                                     <select
@@ -1755,7 +1768,7 @@ export default function Others_Sequence() {
                                         onChange={(e) => setType(e.target.value as NoteType)}
                                         className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
                                         ${type === null
-                                                ? 'border-red-500/50 text-gray-400'
+                                                ? 'border-blue-500/30 text-gray-400'
                                                 : 'border-blue-500/30 text-blue-50'}
                                             focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
                                         `}
@@ -1770,14 +1783,14 @@ export default function Others_Sequence() {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Message
+                                        Message <span className="text-red-400">*</span>
                                     </label>
                                     <textarea
                                         value={body}
                                         onChange={(e) => setBody(e.target.value)}
                                         placeholder="Write your note here..."
                                         rows={3}
-                                        className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
+                                        className={`w-full px-3 py-2 bg-[#0a1018] border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none ${body.trim() ? 'border-blue-500/30' : 'border-blue-500/30'}`}
                                     />
                                 </div>
                             </div>
@@ -1793,7 +1806,7 @@ export default function Others_Sequence() {
                                 <button
                                     className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handleCreateNote}
-                                    disabled={uploading}
+                                    disabled={uploading || !isNoteFormValid}
                                 >
                                     {uploading ? 'Creating...' : 'Create Note'}
                                 </button>
@@ -1870,22 +1883,36 @@ export default function Others_Sequence() {
                                         e.stopPropagation();
                                         setDeleteNoteConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.stopPropagation();
-                                        handleDeleteNote(deleteNoteConfirm.noteId);
-                                        alert('ลบสำเร็จแล้ว');
-                                        setDeleteNoteConfirm(null);
-                                        fetchNotes();
+                                        setIsDeletingNote(true);
+                                        try {
+                                            await handleDeleteNote(deleteNoteConfirm.noteId);
+                                            setDeleteNoteConfirm(null);
+                                            fetchNotes();
+                                        } catch (error) {
+                                            // handle error if needed
+                                        } finally {
+                                            setIsDeletingNote(false);
+                                        }
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingNote}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
                                 >
-                                    Delete Note
+                                    {isDeletingNote ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Note'
+                                    )}
                                 </button>
                             </div>
                         </div>

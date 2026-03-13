@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Check, Eye, Image, Upload, X } from 'lucide-react';
+import { Check, Eye, Image, Upload, X, LoaderCircle } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
@@ -68,7 +68,8 @@ interface AssetData {
     description: string;
     status: StatusType;
     thumbnail: string;
-    sequence: string;
+    sequence: string;   // ← sequence name สำหรับ Asset Info
+    type: string;
     tags?: string[];
     dueDate?: string;
 }
@@ -125,7 +126,8 @@ const assetFieldMap: Record<keyof AssetData, string | null> = {
     id: null,
     asset_name: "asset_name",
     shotCode: "shot_name",
-    sequence: "sequence_name",
+    sequence: null,          // ← sequence เป็น read-only ไม่ได้ update ตรงๆ
+    type: "type",            // ← เพิ่ม
     status: "status",
     tags: null,
     thumbnail: "thumbnail",
@@ -144,11 +146,12 @@ const getSelectedAsset = (): AssetData | null => {
             description: data.description || '',
             status: data.status || 'wtg',
             thumbnail: data.file_url || '',
-            sequence: data.sequence || '',
+            sequence: data.sequence_name || data.sequence || '',  // ← sequence name
+            type: data.type || '',                                 // ← asset type
             shotCode: data.shot_name || ''
         };
     } catch (error) {
-        console.error("Error parsing selectedShot:", error);
+        console.error("Error parsing selectedAsset:", error);
         return null;
     }
 };
@@ -211,6 +214,7 @@ export default function Others_Asset() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
     const [loadingTasks, setLoadingTasks] = useState(false);
+    const [isLoadingAsset, setIsLoadingAsset] = useState(true);
 
 
     const [showAddShot, setShowAddShot] = useState(false);
@@ -279,6 +283,9 @@ export default function Others_Asset() {
         subject: string;
     } | null>(null);
 
+    const [isDeletingNote, setIsDeletingNote] = useState(false);
+    const [isDeletingVersion, setIsDeletingVersion] = useState(false);
+
     //============================================================================================================================================//
     useEffect(() => {
         fetchAssetVersions();
@@ -319,6 +326,49 @@ export default function Others_Asset() {
 
         fetchLinkedShots();
     }, [activeTab, AssetID]);
+
+
+    // useEffect ใหม่ — fetch asset จาก API ด้วย AssetID
+    useEffect(() => {
+        if (!AssetID) return;
+
+        const fetchAssetData = async () => {
+            setIsLoadingAsset(true);
+            try {
+                const res = await axios.post(ENDPOINTS.PROJECT_ASSET_DETAIL, {
+                    assetId: AssetID
+                });
+
+                if (res.data && res.data.length > 0) {
+                    const row = res.data[0];
+                    setAssetData({
+                        id: row.asset_id,
+                        asset_name: row.asset_name,
+                        description: row.asset_description || '',
+                        status: row.asset_status || 'wtg',
+                        thumbnail: row.asset_thumbnail || '',
+                        sequence: row.sequence_name || '',   // ← sequence name จาก JOIN
+                        type: row.asset_type || '',          // ← type จาก project_assets.type
+                        shotCode: row.shot_name || ''
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to fetch asset data:', err);
+                const fallback = getSelectedAsset();
+                if (fallback) setAssetData(fallback);
+            } finally {
+                setIsLoadingAsset(false);
+            }
+        };
+
+        fetchAssetData();
+    }, [AssetID]); // ← ดึงจาก API ทุกครั้งที่ AssetID เปลี่ยน
+
+    useEffect(() => {
+        if (assetData?.asset_name) {
+            setSubject(`Note on ${assetData.asset_name}`);
+        }
+    }, [assetData?.asset_name]);
 
     useEffect(() => {
         if (!showCreateAsset_Note || !AssetID || !projectId) return;
@@ -385,14 +435,6 @@ export default function Others_Asset() {
         }
     }, [noteContextMenu]);
 
-    useEffect(() => {
-        const selectedAsset = getSelectedAsset();
-        if (selectedAsset) {
-            setAssetData(selectedAsset);
-
-            setSubject(`Note on ${selectedAsset.asset_name}`);
-        }
-    }, []);
 
     useEffect(() => {
         if (deleteNoteConfirm) {
@@ -642,7 +684,6 @@ export default function Others_Asset() {
             console.log('✅ Note created successfully:', result);
 
             // 3. Success
-            alert('Note created successfully!');
             setShowCreateAsset_Note(false);
 
             // Reset form
@@ -710,14 +751,7 @@ export default function Others_Asset() {
             });
 
             setAssetData(prev => prev ? { ...prev, [field]: value } : null);
-            const currentStored = JSON.parse(localStorage.getItem("selectedAsset") || "{}");
-            localStorage.setItem(
-                "selectedAsset",
-                JSON.stringify({
-                    ...currentStored,
-                    [dbField]: value
-                })
-            );
+
         } catch (err) {
             console.error("❌ update asset failed:", err);
             alert("Update failed");
@@ -960,12 +994,7 @@ export default function Others_Asset() {
                 const latestThumb = data[0]?.file_url;
                 if (latestThumb) {
                     setAssetData(prev => prev ? { ...prev, thumbnail: latestThumb } : null);
-                    const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                    localStorage.setItem('selectedAsset', JSON.stringify({
-                        ...stored,
-                        thumbnail: latestThumb,
-                        file_url: latestThumb
-                    }));
+
                 }
             } else {
                 setAssetVersions([]);
@@ -1078,6 +1107,8 @@ export default function Others_Asset() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InfoRow label="Asset Name" value={assetData?.asset_name || '-'} />
                         <InfoRow label="Status" value={assetData?.status ? statusConfig[assetData.status].label : '-'} />
+                        <InfoRow label="Type" value={assetData?.type || '-'} />           {/* ← เพิ่ม */}
+                        <InfoRow label="Sequence" value={assetData?.sequence || '-'} />   {/* ← เพิ่ม */}
                         <InfoRow label="Due Date" value={formatDate(assetData?.dueDate || '')} />
                         <div className="md:col-span-2">
                             <InfoRow label="Description" value={assetData?.description || '-'} />
@@ -1251,12 +1282,14 @@ export default function Others_Asset() {
                     {/* Header Card */}
                     <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-xl border border-gray-700/50">
                         {/* Breadcrumb */}
+                        {/* Breadcrumb */}
                         <div className="mb-4 flex items-center gap-2 text-sm text-gray-400">
-                            <span className="hover:text-white cursor-pointer transition-colors">📁 {assetData.sequence}</span>
+                            <span className="hover:text-white cursor-pointer transition-colors">
+                                📁 {assetData.type || '-'}   {/* ← เปลี่ยนจาก assetData.sequence */}
+                            </span>
                             <span className="text-gray-600">›</span>
                             <span className="font-bold text-white">🎬 {assetData.asset_name}</span>
                         </div>
-
                         {/* Preview Modal */}
                         {showPreview && assetData.thumbnail && (
                             <div
@@ -1513,7 +1546,7 @@ export default function Others_Asset() {
                                         />
                                     ) : (
                                         <p
-                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors"
+                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors break-words"
                                             onClick={() => setEditingField('assetName')}
                                         >
                                             {assetData.asset_name}
@@ -1574,12 +1607,15 @@ export default function Others_Asset() {
                                 </div>
 
                                 {/* Type Name */}
+                                {/* Type */}
                                 <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
                                     <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
                                         <span>📁</span>
                                         Type
                                     </label>
-                                    <p className="text-white font-semibold px-2 py-1.5 text-sm">{assetData.sequence}</p>
+                                    <p className="text-white font-semibold px-2 py-1.5 text-sm">
+                                        {assetData.type || '-'}
+                                    </p>
                                 </div>
 
                                 {/* Description - ใช้ 3 คอลัมน์ */}
@@ -1725,7 +1761,7 @@ export default function Others_Asset() {
                                     placeholder="Enter task name"
                                     value={createTaskForm.task_name}
                                     onChange={(e) => handleFormChange('task_name', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
                             </div>
 
@@ -1738,7 +1774,7 @@ export default function Others_Asset() {
                                     type="text"
                                     value={`Asset: ${assetData?.asset_name}`}
                                     readOnly
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
+                                    className="h-9 px-3 bg-white/4  border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
                                 />
                             </div>
 
@@ -1751,7 +1787,7 @@ export default function Others_Asset() {
                                     type="date"
                                     value={createTaskForm.start_date}
                                     onChange={(e) => handleFormChange('start_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4  border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -1764,7 +1800,7 @@ export default function Others_Asset() {
                                     type="date"
                                     value={createTaskForm.due_date}
                                     onChange={(e) => handleFormChange('due_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4  border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -1778,7 +1814,7 @@ export default function Others_Asset() {
                                     value={createTaskForm.description}
                                     onChange={(e) => handleFormChange('description', e.target.value)}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
+                                    className="px-3 py-2 bg-white/4  border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
                                 />
                             </div>
 
@@ -1871,22 +1907,22 @@ export default function Others_Asset() {
 
                             <div className="px-5 py-4 space-y-3">
                                 <div className="space-y-1.5">
-                                    <label className="block text-xs font-medium text-gray-300">
-                                        Links
-                                    </label>
-                                    <input
-                                        disabled
-                                        type="text"
-                                        defaultValue={assetData?.asset_name || ''}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-medium text-gray-300">Links</label>
+                                        <span className="text-[10px] text-green-300 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                            auto
+                                        </span>
+                                    </div>
+                                    <div className="h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm flex items-center justify-between">
+                                        <span className="truncate">Auto-linked to: <span className="font-medium">{assetData?.asset_name || ''}</span></span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         📄 Tasks
                                     </label>
-                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
+                                    <div className="p-3 bg-white/4 border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
                                         {loadingModalTasks ? (
                                             <div className="flex items-center justify-center py-2 gap-2 text-gray-500 text-xs">
                                                 <div className="w-3 h-3 border border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
@@ -1979,7 +2015,7 @@ export default function Others_Asset() {
                                         To
                                     </label>
 
-                                    <div className="flex flex-wrap gap-1 mb-1">
+                                    <div className="flex flex-wrap gap-1 mb-1 ">
                                         {selectedPeople.map((person) => (
                                             <span
                                                 key={person.id}
@@ -2005,7 +2041,7 @@ export default function Others_Asset() {
                                         }}
                                         onFocus={() => setOpen(true)}
                                         onBlur={() => setTimeout(() => setOpen(false), 200)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                                         placeholder={loading ? "Loading..." : "Add people..."}
                                         disabled={loading}
                                     />
@@ -2034,27 +2070,27 @@ export default function Others_Asset() {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Subject
+                                        Subject <span className="text-red-400">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Type
+                                        Type <span className="text-red-400">*</span>
                                     </label>
 
                                     <select
                                         value={type ?? ''}
                                         onChange={(e) => setType(e.target.value as NoteType)}
-                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
+                                        className={`w-full h-8 px-3 bg-white/4 border rounded-lg text-sm transition-all
                                         ${type === null
-                                                ? 'border-red-500/50 text-gray-400'
+                                                ? 'border-blue-500/30 text-gray-400'
                                                 : 'border-blue-500/30 text-blue-50'}
                                             focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
                                         `}
@@ -2069,14 +2105,14 @@ export default function Others_Asset() {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Message
+                                        Message <span className="text-red-400">*</span>
                                     </label>
                                     <textarea
                                         value={body}
                                         onChange={(e) => setBody(e.target.value)}
                                         placeholder="Write your note here..."
                                         rows={3}
-                                        className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
+                                        className="w-full px-3 py-2 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
                                     />
                                 </div>
                             </div>
@@ -2084,15 +2120,15 @@ export default function Others_Asset() {
                             <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
                                 <button
                                     onClick={() => setShowCreateAsset_Note(false)}
-                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
+                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium flex flex items-center"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
-                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                     onClick={handleCreateNote}
-                                    disabled={uploading}
+                                    disabled={uploading || !subject.trim() || !type || !body.trim()}
                                 >
                                     {uploading ? 'Creating...' : 'Create Note'}
                                 </button>
@@ -2104,312 +2140,335 @@ export default function Others_Asset() {
 
             {/* Create Version Modal */}
             {showCreateVersion && (
-                <>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
-                        className="fixed inset-0 z-40 bg-black/50"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={() => !isCreatingVersion && resetVersionForm()}
                     />
 
-                    <div className="fixed inset-0 z-45 flex items-center justify-center pointer-events-none">
+                    <div
+                        style={{
+                            transform: `translate(${versionModalPosition?.x || 0}px, ${versionModalPosition?.y || 0}px)`
+                        }}
+                        className="relative w-full max-w-lg bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden"
+                    >
+                        {/* Header */}
                         <div
-                            style={{ transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)` }}
-                            className="relative w-[360px] pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-visible"
-                        >
-                            {/* Header */}
-                            <div
-                                onMouseDown={(e) => {
-                                    const startX = e.clientX;
-                                    const startY = e.clientY;
-                                    const startPos = { ...versionModalPosition };
-                                    const onMove = (me: MouseEvent) => setVersionModalPosition({
-                                        x: startPos.x + me.clientX - startX,
-                                        y: startPos.y + me.clientY - startY,
+                            onMouseDown={(e) => {
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startPos = versionModalPosition || { x: 0, y: 0 };
+
+                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                    const deltaX = moveEvent.clientX - startX;
+                                    const deltaY = moveEvent.clientY - startY;
+                                    setVersionModalPosition({
+                                        x: startPos.x + deltaX,
+                                        y: startPos.y + deltaY
                                     });
-                                    const onUp = () => {
-                                        document.removeEventListener('mousemove', onMove);
-                                        document.removeEventListener('mouseup', onUp);
-                                    };
-                                    document.addEventListener('mousemove', onMove);
-                                    document.addEventListener('mouseup', onUp);
-                                }}
-                                className="flex items-center justify-between px-4 py-3 border-b border-white/6 cursor-grab active:cursor-grabbing select-none"
-                            >
-                                <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
-                                <div
-                                    onMouseDown={e => e.stopPropagation()}
-                                    onClick={() => resetVersionForm()}
-                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm cursor-pointer"
-                                >✕</div>
+                                };
+
+                                const handleMouseUp = () => {
+                                    document.removeEventListener('mousemove', handleMouseMove);
+                                    document.removeEventListener('mouseup', handleMouseUp);
+                                };
+
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                            className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none flex items-center justify-between"
+                        >
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-100">Create Version</h2>
+                                <p className="text-xs text-blue-300/60 mt-0.5">
+                                    Linked to: <span className="text-blue-300 font-medium">{assetData?.asset_name}</span>
+                                </p>
                             </div>
+                            <div
+                                onClick={() => !isCreatingVersion && resetVersionForm()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                className="cursor-pointer text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors"
+                            >
+                                ×
+                            </div>
+                        </div>
 
-                            {/* Body */}
-                            <div className="px-4 py-4 space-y-3">
+                        {/* Body */}
+                        <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
 
-                                {/* File Upload */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
-                                    <div
-                                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                                        onDragLeave={() => setIsDragging(false)}
-                                        onDrop={handleVersionFileDrop}
-                                        className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
-                                            ? 'border-blue-500/60 bg-blue-500/8'
-                                            : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
-                                            }`}
-                                    >
-                                        <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
-                                            {versionFiles.length > 0 ? (
-                                                <div className="w-full space-y-1.5">
-                                                    {versionFiles.map((file, i) => (
-                                                        <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
-                                                            {versionFilePreviews[i] ? (
-                                                                <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
-                                                            ) : (
-                                                                <span className="text-base">🎬</span>
-                                                            )}
-                                                            <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
-                                                            <div
-                                                                onClick={e => { e.preventDefault(); removeVersionFile(i); }}
-                                                                className="text-gray-600 hover:text-red-400 transition-colors text-xs"
-                                                            >✕</div>
-                                                        </div>
-                                                    ))}
-                                                    <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
-                                                        <span>+ Add more files</span>
-                                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                            {/* File Upload */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">Uploaded Version</label>
+                                <div
+                                    onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={handleVersionFileDrop}
+                                    className={`relative rounded-lg border border-dashed transition-all duration-150 ${isDragging
+                                        ? 'border-blue-500/60 bg-blue-500/8'
+                                        : 'border-white/10 hover:border-white/20 bg-white/3 hover:bg-white/5'
+                                        }`}
+                                >
+                                    <label className="flex flex-col items-center justify-center py-5 px-4 cursor-pointer w-full">
+                                        {versionFiles.length > 0 ? (
+                                            <div className="w-full space-y-1.5">
+                                                {versionFiles.map((file, i) => (
+                                                    <div key={i} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white/5 rounded-md">
+                                                        {versionFilePreviews[i] ? (
+                                                            <img src={versionFilePreviews[i]} className="w-8 h-8 object-cover rounded" />
+                                                        ) : (
+                                                            <span className="text-base">🎬</span>
+                                                        )}
+                                                        <span className="text-xs text-gray-300 truncate flex-1">{file.name}</span>
+                                                        <div
+                                                            onClick={e => { e.preventDefault(); removeVersionFile(i); }}
+                                                            className="text-gray-600 hover:text-red-400 transition-colors text-xs"
+                                                        >✕</div>
                                                     </div>
+                                                ))}
+                                                <div className="flex items-center justify-center gap-1 text-xs text-blue-400/70 hover:text-blue-300 cursor-pointer py-0.5">
+                                                    <span>+ Add more files</span>
+                                                    <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
                                                 </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-1.5 pointer-events-none">
-                                                    <span className="text-2xl text-gray-600">📎</span>
-                                                    <p className="text-xs text-gray-400">Drop files or click to browse</p>
-                                                </div>
-                                            )}
-                                            <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Version Name */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
-                                    <input
-                                        type="text"
-                                        value={createVersionForm.version_name}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
-                                        className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
-                                    />
-                                </div>
-
-                                {/* Uploaded By */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded By <span className="text-red-400">*</span></label>
-                                    <div className="relative">
-                                        {selectedUploader ? (
-                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
-                                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-[9px] font-semibold">{selectedUploader.name[0].toUpperCase()}</span>
-                                                </div>
-                                                <span className="text-gray-200 text-xs flex-1 truncate">{selectedUploader.name}</span>
-                                                <div
-                                                    onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
-                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer"
-                                                >✕</div>
                                             </div>
                                         ) : (
-                                            <input
-                                                type="text"
-                                                value={uploaderQuery}
-                                                onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
-                                                onFocus={() => setUploaderOpen(true)}
-                                                onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
-                                                placeholder={currentUser}
-                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
-                                            />
-                                        )}
-                                        {uploaderOpen && !selectedUploader && (
-                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-36 overflow-y-auto">
-                                                {allPeople
-                                                    .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
-                                                    .map(person => (
-                                                        <div
-                                                            key={person.id}
-                                                            onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
-                                                            className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
-                                                        >
-                                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                                                <span className="text-white text-[9px] font-semibold">{person.name[0].toUpperCase()}</span>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-xs text-gray-200">{person.name}</p>
-                                                                <p className="text-[10px] text-gray-500">{person.email}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                }
-                                                {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
-                                                    <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
-                                                )}
+                                            <div className="flex flex-col items-center gap-1.5 pointer-events-none">
+                                                <span className="text-2xl text-gray-600">📎</span>
+                                                <p className="text-xs text-gray-400">Drop files or click to browse</p>
                                             </div>
                                         )}
-                                    </div>
+                                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleVersionFileSelect} />
+                                    </label>
                                 </div>
+                            </div>
 
-                                {/* Task — Searchable Combobox */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
-                                    {createVersionForm.task_id ? (() => {
-                                        const t = tasks.find(t => t.id === createVersionForm.task_id);
-                                        if (!t) return null;
-                                        return (
-                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
-                                                {t.pipeline_step ? (
-                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
-                                                ) : (
-                                                    <span className="text-sm flex-shrink-0">📋</span>
-                                                )}
-                                                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
-                                                {t.pipeline_step && (
-                                                    <span
-                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-                                                        style={{
-                                                            backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
-                                                            color: t.pipeline_step.color_hex || '#9ca3af',
-                                                        }}
-                                                    >{t.pipeline_step.step_code}</span>
-                                                )}
-                                                <div
-                                                    onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
-                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
-                                                >✕</div>
+                            {/* Version Name */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">
+                                    Version Name <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="ชื่อเวอร์ชัน เช่น v001, v002"
+                                    value={createVersionForm.version_name}
+                                    onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
+                                    className="w-full h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 transition-all"
+                                />
+                            </div>
+
+                            {/* Uploaded By */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">
+                                    Uploaded By <span className="text-red-400">*</span>
+                                </label>
+                                <div className="relative">
+                                    {selectedUploader ? (
+                                        <div className="flex items-center gap-2 h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg">
+                                            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                <span className="text-white text-[9px] font-semibold">{selectedUploader.name[0].toUpperCase()}</span>
                                             </div>
-                                        );
-                                    })() : (
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={taskSearchQuery}
-                                                onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
-                                                onFocus={() => setTaskSearchOpen(true)}
-                                                onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
-                                                placeholder="ค้นหา task..."
-                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
-                                            />
-                                            {taskSearchOpen && (
-                                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                                            <span className="text-gray-200 text-sm flex-1 truncate">{selectedUploader.name}</span>
+                                            <div
+                                                onClick={() => { setSelectedUploader(null); setUploaderQuery(''); }}
+                                                className="text-gray-600 hover:text-red-400 text-sm cursor-pointer"
+                                            >✕</div>
+                                        </div>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={uploaderQuery}
+                                            onChange={e => { setUploaderQuery(e.target.value); setUploaderOpen(true); }}
+                                            onFocus={() => setUploaderOpen(true)}
+                                            onBlur={() => setTimeout(() => setUploaderOpen(false), 200)}
+                                            placeholder={currentUser}
+                                            className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 w-full transition-all"
+                                        />
+                                    )}
+                                    {uploaderOpen && !selectedUploader && (
+                                        <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-blue-500/30 rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                                            {allPeople
+                                                .filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase()))
+                                                .map(person => (
                                                     <div
-                                                        onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
-                                                        className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
+                                                        key={person.id}
+                                                        onMouseDown={() => { setSelectedUploader(person); setUploaderOpen(false); }}
+                                                        className="flex items-center gap-2 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
                                                     >
-                                                        <span className="text-xs text-gray-500 italic">— ไม่ระบุ task —</span>
+                                                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-white text-[9px] font-semibold">{person.name[0].toUpperCase()}</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-200">{person.name}</p>
+                                                            <p className="text-[10px] text-gray-500">{person.email}</p>
+                                                        </div>
                                                     </div>
-                                                    {tasks
-                                                        .filter(t =>
-                                                            t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
-                                                            (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
-                                                        )
-                                                        .map(task => (
-                                                            <div
-                                                                key={task.id}
-                                                                onMouseDown={() => {
-                                                                    setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
-                                                                    setTaskSearchQuery('');
-                                                                    setTaskSearchOpen(false);
-                                                                }}
-                                                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
-                                                            >
-                                                                {task.pipeline_step ? (
-                                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
-                                                                ) : (
-                                                                    <span className="text-xs flex-shrink-0">📋</span>
-                                                                )}
-                                                                <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
-                                                                {task.pipeline_step && (
-                                                                    <span
-                                                                        className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-                                                                        style={{
-                                                                            backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
-                                                                            color: task.pipeline_step.color_hex || '#9ca3af',
-                                                                        }}
-                                                                    >{task.pipeline_step.step_code}</span>
-                                                                )}
-                                                            </div>
-                                                        ))
-                                                    }
-                                                    {tasks.filter(t =>
-                                                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
-                                                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
-                                                    ).length === 0 && taskSearchQuery && (
-                                                            <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
-                                                        )}
-                                                </div>
+                                                ))}
+                                            {allPeople.filter(p => p.name.toLowerCase().includes(uploaderQuery.toLowerCase())).length === 0 && (
+                                                <p className="px-3 py-2 text-xs text-gray-500">No people found</p>
                                             )}
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Link + Project — read-only */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
-                                        <input
-                                            type="text"
-                                            value={assetData?.asset_name || ''}
-                                            readOnly
-                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={projectData?.projectName || ''}
-                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
-                                    <textarea
-                                        value={createVersionForm.description}
-                                        onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
-                                        rows={2}
-                                        className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
-                                    />
-                                </div>
-
                             </div>
 
-                            {/* Footer */}
-                            <div className="flex items-center justify-between px-4 py-3 border-t border-white/6">
-                                <button
-                                    onClick={() => resetVersionForm()}
-                                    disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg flex items-center text-xs text-gray-400 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all disabled:opacity-40"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCreateVersion}
-                                    disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
-                                >
-                                    {isCreatingVersion ? (
-                                        <>
-                                            <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Creating…</span>
-                                        </>
-                                    ) : 'Create Version'}
-                                </button>
+                            {/* Task — Searchable Combobox */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">Task</label>
+                                {createVersionForm.task_id ? (() => {
+                                    const t = tasks.find(t => t.id === createVersionForm.task_id);
+                                    if (!t) return null;
+                                    return (
+                                        <div className="flex items-center gap-2 h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg">
+                                            {t.pipeline_step ? (
+                                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
+                                            ) : (
+                                                <span className="text-sm flex-shrink-0">📋</span>
+                                            )}
+                                            <span className="text-gray-200 text-sm flex-1 truncate">{t.task_name}</span>
+                                            {t.pipeline_step && (
+                                                <span
+                                                    className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                    style={{
+                                                        backgroundColor: (t.pipeline_step.color_hex || '#6b7280') + '33',
+                                                        color: t.pipeline_step.color_hex || '#9ca3af',
+                                                    }}
+                                                >{t.pipeline_step.step_code}</span>
+                                            )}
+                                            <div
+                                                onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
+                                                className="text-gray-600 hover:text-red-400 text-sm cursor-pointer flex-shrink-0"
+                                            >✕</div>
+                                        </div>
+                                    );
+                                })() : (
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={taskSearchQuery}
+                                            onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
+                                            onFocus={() => setTaskSearchOpen(true)}
+                                            onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
+                                            placeholder="ค้นหา task..."
+                                            className="h-9 px-3 bg-white/4  border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 w-full transition-all"
+                                        />
+                                        {taskSearchOpen && (
+                                            <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-blue-500/30 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                                                <div
+                                                    onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
+                                                    className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
+                                                >
+                                                    <span className="text-xs text-gray-500 italic">— ไม่ระบุ task —</span>
+                                                </div>
+                                                {tasks
+                                                    .filter(t =>
+                                                        t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                        (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                    )
+                                                    .map(task => (
+                                                        <div
+                                                            key={task.id}
+                                                            onMouseDown={() => {
+                                                                setCreateVersionForm(p => ({ ...p, task_id: task.id, task: task.task_name }));
+                                                                setTaskSearchQuery('');
+                                                                setTaskSearchOpen(false);
+                                                            }}
+                                                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-500/15 cursor-pointer"
+                                                        >
+                                                            {task.pipeline_step ? (
+                                                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.pipeline_step.color_hex || '#6b7280' }} />
+                                                            ) : (
+                                                                <span className="text-xs flex-shrink-0">📋</span>
+                                                            )}
+                                                            <span className="text-xs text-gray-200 flex-1 truncate">{task.task_name}</span>
+                                                            {task.pipeline_step && (
+                                                                <span
+                                                                    className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+                                                                    style={{
+                                                                        backgroundColor: (task.pipeline_step.color_hex || '#6b7280') + '33',
+                                                                        color: task.pipeline_step.color_hex || '#9ca3af',
+                                                                    }}
+                                                                >{task.pipeline_step.step_code}</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                {tasks.filter(t =>
+                                                    t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                                                    (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
+                                                ).length === 0 && taskSearchQuery && (
+                                                        <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
+                                                    )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Link + Project — read-only */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-400 font-medium uppercase tracking-wider">Link</label>
+                                    <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                        <span className="text-blue-300 font-medium truncate">{assetData?.asset_name}</span>
+                                        <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 whitespace-nowrap">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                            auto-linked
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-400 font-medium uppercase tracking-wider">Project</label>
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={projectData?.projectName || ''}
+                                        className="w-full h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm cursor-default"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">Description</label>
+                                <textarea
+                                    placeholder="คำอธิบายเพิ่มเติมเกี่ยวกับเวอร์ชันนี้ (ไม่บังคับ)"
+                                    value={createVersionForm.description}
+                                    onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={2}
+                                    className="w-full px-3 py-2 bbg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none transition-all"
+                                />
                             </div>
 
                         </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center gap-3">
+                            <button
+                                onClick={() => resetVersionForm()}
+                                disabled={isCreatingVersion}
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all flex items-center"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleCreateVersion}
+                                disabled={isCreatingVersion}
+                                className="px-5 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCreatingVersion ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Creating...</span>
+                                    </>
+                                ) : (
+                                    'Create Version'
+                                )}
+                            </button>
+                        </div>
                     </div>
-                </>
+                </div>
             )}
+
+
 
             {/* Context Menu for Notes */}
             {noteContextMenu && (
@@ -2507,22 +2566,36 @@ export default function Others_Asset() {
                                         e.stopPropagation();
                                         setDeleteNoteConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.stopPropagation();
-                                        handleDeleteNote(deleteNoteConfirm.noteId);
-                                        alert('ลบสำเร็จแล้ว');
-                                        setDeleteNoteConfirm(null);
-                                        fetchNotes();
+                                        setIsDeletingNote(true);
+                                        try {
+                                            await handleDeleteNote(deleteNoteConfirm.noteId);
+                                            setDeleteNoteConfirm(null);
+                                            fetchNotes();
+                                        } catch (error) {
+                                            // handle error if needed
+                                        } finally {
+                                            setIsDeletingNote(false);
+                                        }
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingNote}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600 disabled:opacity-50"
                                 >
-                                    Delete Note
+                                    {isDeletingNote ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Note'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2566,7 +2639,7 @@ export default function Others_Asset() {
                                         e.stopPropagation();
                                         setDeleteVersionConfirm(null);
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-zinc-700/60 text-zinc-200 hover:bg-zinc-700 transition-colors font-medium"
+                                    className="px-4 py-2 rounded-lg text-zinc-200 transition-colors font-medium bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-600"
                                 >
                                     Cancel
                                 </button>
@@ -2574,6 +2647,7 @@ export default function Others_Asset() {
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
+                                        setIsDeletingVersion(true);
                                         try {
                                             await axios.delete(
                                                 `${ENDPOINTS.DELETE_ASSET_VERSION}/${deleteVersionConfirm.versionId}`,
@@ -2583,11 +2657,21 @@ export default function Others_Asset() {
                                             await fetchAssetVersions();
                                         } catch {
                                             alert('ไม่สามารถลบได้');
+                                        } finally {
+                                            setIsDeletingVersion(false);
                                         }
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingVersion}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600 disabled:opacity-50"
                                 >
-                                    Delete Version
+                                    {isDeletingVersion ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Version'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2616,16 +2700,16 @@ export default function Others_Asset() {
                     await fetchAssetVersions();
                 }}
                 // Others_Asset
-   onDeleteVersionSuccess={async (newThumb) => {
-    if (selectedTask) await fetchTaskVersions(selectedTask.id);
-    await fetchAssetVersions();
-    if (newThumb !== undefined) {
-        const url = newThumb || '';
-        setAssetData(prev => prev ? { ...prev, thumbnail: url } : prev);
-        const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-        localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
-    }
-}}
+                onDeleteVersionSuccess={async (newThumb) => {
+                    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+                    await fetchAssetVersions();
+                    if (newThumb !== undefined) {
+                        const url = newThumb || '';
+                        setAssetData(prev => prev ? { ...prev, thumbnail: url } : prev);
+                        const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
+                        localStorage.setItem('selectedAsset', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
+                    }
+                }}
             />
 
 
@@ -2665,17 +2749,18 @@ export default function Others_Asset() {
                                     value={createShotForm.shot_name}
                                     onChange={(e) => setCreateShotForm(p => ({ ...p, shot_name: e.target.value }))}
                                     autoFocus
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
                                 />
                             </div>
 
                             {/* Link to Asset (read-only) */}
                             <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">Link to Asset</label>
-                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
-                                    <span className="text-blue-500/60">📦</span>
-                                    <span>{assetData?.asset_name}</span>
-                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                <div className="h-9 px-3 bg-white/4 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="flex-1 truncate w-1">
+                                        {assetData?.asset_name}
+                                    </span>
+                                    <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 whitespace-nowrap">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
                                         auto-linked
                                     </span>
@@ -2685,7 +2770,7 @@ export default function Others_Asset() {
                             {/* Project (read-only) */}
                             <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">Project</label>
-                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                <div className="h-9 px-3 bg-white/4 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
                                     {projectData?.projectName || 'Unknown Project'}
                                 </div>
                             </div>
@@ -2698,7 +2783,7 @@ export default function Others_Asset() {
                                     value={createShotForm.description}
                                     onChange={(e) => setCreateShotForm(p => ({ ...p, description: e.target.value }))}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
+                                    className="px-3 py-2 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
                                 />
                             </div>
                         </div>

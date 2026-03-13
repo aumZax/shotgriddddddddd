@@ -4,7 +4,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Check, Eye, Image, Plus, Upload, X, } from 'lucide-react';
+import { Check, Eye, Image, Plus, Upload, X, LoaderCircle } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -152,33 +152,16 @@ interface Asset {
 
 //============================================================================================================================================//
 
-const getInitialShotData = () => {
-    const stored = localStorage.getItem("selectedShot");
-    if (stored) {
-        const data = JSON.parse(stored);
-        return {
-            id: data.id || 1,
-            shotCode: data.shot_name || "Unknown Shot",
-            sequence: data.sequence || "Unknown Sequence",
-            status: (data.status || "wtg") as StatusType,
-            tags: data.tags || [],
-            thumbnail: data.thumbnail || "",
-            description: data.description || "No description",
-            dueDate: data.dueDate || new Date().toISOString().split('T')[0]
-        };
-    }
-    // Fallback if no data in localStorage
-    return {
-        id: 1,
-        shotCode: "No Shot Selected",
-        sequence: "N/A",
-        status: "wtg" as StatusType,
-        tags: [],
-        thumbnail: "",
-        description: "Please select a shot first",
-        dueDate: new Date().toISOString().split('T')[0]
-    };
-};
+const getInitialShotData = (): ShotData => ({
+    id: JSON.parse(localStorage.getItem("selectedShot") || "{}").id || 0,
+    shotCode: "Loading...",
+    sequence: "",
+    status: "wtg" as StatusType,
+    tags: [],
+    thumbnail: "",
+    description: "",
+    dueDate: ""
+});
 
 export default function Others_Shot() {
 
@@ -190,10 +173,9 @@ export default function Others_Shot() {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [type, setType] = useState<string | null>(null);
     const [showCreateShot_Task, setShowCreateShot_Task] = useState(false);
-    const [showCreateShot_Note, setShowCreateShot_Note] = useState(false);
     const [showCreateShot_Versions, setShowCreateShot_Versions] = useState(false);
     const [showCreateShot_Assets, setShowCreateShot_Assets] = useState(false);
-    const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
+    const [showCreateShot_Note, setshowCreateShot_Note] = useState(false);
     const [loadingNotes, setLoadingNotes] = useState(false);
     const [notes, setNotes] = useState<Note[]>([]);
     const [open, setOpen] = useState(false);
@@ -297,6 +279,9 @@ export default function Others_Shot() {
         versionName: string;
     } | null>(null);
 
+    const [isDeletingNote, setIsDeletingNote] = useState(false);
+    const [isDeletingVersion, setIsDeletingVersion] = useState(false);
+
     //============================================================================================================================================//
 
     useEffect(() => {
@@ -306,7 +291,7 @@ export default function Others_Shot() {
     }, [activeTab, shotData?.id]);
 
     useEffect(() => {
-        if (!showCreateAsset_Note || !shotId || !projectId) return;
+        if (!showCreateShot_Note || !shotId || !projectId) return;
 
         const fetchModalTasks = async () => {
             setLoadingModalTasks(true);
@@ -331,7 +316,11 @@ export default function Others_Shot() {
         };
 
         fetchModalTasks();
-    }, [showCreateAsset_Note, shotId, projectId]);
+    }, [showCreateShot_Note, shotId, projectId]);
+
+    useEffect(() => {
+        fetchShotDetail();
+    }, [shotId]);
 
     useEffect(() => {
         const fetchPeople = async () => {
@@ -503,49 +492,69 @@ export default function Others_Shot() {
         }
     };
 
-const fetchShotVersions = async () => {
-    if (!shotId) return;
-    setIsLoadingShotVersions(true);
-    try {
-        const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
-        const data = res.data;
-        if (Array.isArray(data) && data.length > 0) {
-            setShotVersions(data);
-            setIsThumbnailLocked(data.length >= 1);
-            
-            // ✅ เพิ่มส่วนนี้: sync thumbnail จาก version ล่าสุด
-            const latestThumb = data[0]?.file_url;
-            if (latestThumb) {
-                setShotData(prev => ({ ...prev, thumbnail: latestThumb }));
+    const fetchShotDetail = async () => {
+        if (!shotId) return;
+        try {
+            const res = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, {
+                shotId: Number(shotId)
+            });
+            const rawData = res.data;
+            if (!rawData.length) return;
+
+            const row = rawData[0];
+            setShotData({
+                id: row.shot_id,
+                shotCode: row.shot_name,
+                sequence: row.sequence_name || "No Sequence",  // ← เปลี่ยนจาก row.sequence?.sequence_name
+                status: (row.shot_status || "wtg") as StatusType,
+                tags: [],
+                thumbnail: row.shot_thumbnail || "",
+                description: row.shot_description || "",
+                dueDate: row.shot_created_at?.split("T")[0] || ""
+            });
+        } catch (err) {
+            console.error("fetchShotDetail error:", err);
+        }
+    };
+
+    const fetchShotVersions = async () => {
+        if (!shotId) return;
+        setIsLoadingShotVersions(true);
+        try {
+            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
+            const data = res.data;
+            if (Array.isArray(data) && data.length > 0) {
+                setShotVersions(data);
+                setIsThumbnailLocked(data.length >= 1);
+
+                // ✅ เพิ่มส่วนนี้: sync thumbnail จาก version ล่าสุด
+                const latestThumb = data[0]?.file_url;
+                if (latestThumb) {
+                    setShotData(prev => ({ ...prev, thumbnail: latestThumb }));
+
+                }
+            } else {
+                setShotVersions([]);
+                setIsThumbnailLocked(false);
+
+                // ✅ เช็ค thumbnail จาก localStorage ก่อน
                 const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                localStorage.setItem('selectedShot', JSON.stringify({
-                    ...stored,
-                    thumbnail: latestThumb,
-                    file_url: latestThumb
-                }));
+                const existingThumb = stored.file_url || stored.thumbnail || '';
+
+                if (!existingThumb) {
+                    setShotData(prev => ({ ...prev, thumbnail: '' }));
+                    localStorage.setItem('selectedShot', JSON.stringify({
+                        ...stored,
+                        thumbnail: '',
+                        file_url: ''
+                    }));
+                }
+                // ถ้ามี existingThumb อยู่แล้ว → ไม่ต้องทำอะไร ปล่อยให้ state เดิมอยู่
             }
-       } else {
-    setShotVersions([]);
-    setIsThumbnailLocked(false);
-    
-    // ✅ เช็ค thumbnail จาก localStorage ก่อน
-    const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-    const existingThumb = stored.file_url || stored.thumbnail || '';
-    
-    if (!existingThumb) {
-        setShotData(prev => ({ ...prev, thumbnail: '' }));
-        localStorage.setItem('selectedShot', JSON.stringify({
-            ...stored,
-            thumbnail: '',
-            file_url: ''
-        }));
-    }
-    // ถ้ามี existingThumb อยู่แล้ว → ไม่ต้องทำอะไร ปล่อยให้ state เดิมอยู่
-}
-    } finally { 
-        setIsLoadingShotVersions(false); 
-    }
-};
+        } finally {
+            setIsLoadingShotVersions(false);
+        }
+    };
 
     // ✅ helper: filter versions array แล้ว sync isThumbnailLocked ด้วยเสมอ
     const removeVersionFromState = (versionId: number) => {
@@ -801,14 +810,7 @@ const fetchShotVersions = async () => {
             setShowStatusMenu(false);
 
             // 3️⃣ sync localStorage
-            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-            localStorage.setItem(
-                "selectedShot",
-                JSON.stringify({
-                    ...currentStored,
-                    status: newStatus,
-                })
-            );
+
 
         } catch (error) {
             console.error("❌ update status failed:", error);
@@ -836,14 +838,7 @@ const fetchShotVersions = async () => {
             });
 
             setShotData(prev => ({ ...prev, [field]: value }));
-            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-            localStorage.setItem(
-                "selectedShot",
-                JSON.stringify({
-                    ...currentStored,
-                    [dbField]: value
-                })
-            );
+
         } catch (err) {
             console.error("❌ update shot failed:", err);
             alert("Update failed");
@@ -882,14 +877,7 @@ const fetchShotVersions = async () => {
             const updated = { ...shotData, description: payload.description };
             setShotData(updated);
             // const stored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-            const currentStored = JSON.parse(localStorage.getItem("selectedShot") || "{}");
-            localStorage.setItem(
-                "selectedShot",
-                JSON.stringify({
-                    ...currentStored,
-                    description: payload.description
-                })
-            );
+
         } catch (err) {
             console.error("❌ update description failed:", err);
             alert("Failed to update description");
@@ -897,6 +885,11 @@ const fetchShotVersions = async () => {
     };
 
     const handleCreateNote = async () => {
+        if (!subject.trim() || !type || !body.trim()) {
+            alert('กรุณากรอก Subject, Type และ Message ก่อนสร้าง');
+            return;
+        }
+
         try {
             setUploading(true);
 
@@ -968,8 +961,7 @@ const fetchShotVersions = async () => {
             console.log('✅ Note created successfully:', result);
 
             // 3. Success
-            alert('Note created successfully!');
-            setShowCreateAsset_Note(false);
+            setshowCreateShot_Note(false);
 
             // Reset form
             setSelectedFile(null);
@@ -1575,7 +1567,7 @@ const fetchShotVersions = async () => {
                                         />
                                     ) : (
                                         <p
-                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors"
+                                            className="text-white font-semibold cursor-pointer hover:bg-gray-700/50 px-2 py-1.5 rounded transition-colors break-words "
                                             onClick={() => setEditingField('shotCode')}
                                         >
                                             {shotData.shotCode}
@@ -1752,7 +1744,7 @@ const fetchShotVersions = async () => {
 
                                 {activeTab === 'Notes' && (
                                     <button
-                                        onClick={() => setShowCreateAsset_Note(true)}
+                                        onClick={() => setshowCreateShot_Note(true)}
                                         className="px-3 py-1.5  text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
 
                                     >
@@ -1820,7 +1812,7 @@ const fetchShotVersions = async () => {
                                     placeholder="Enter task name"
                                     value={createTaskForm.task_name}
                                     onChange={(e) => handleFormChange('task_name', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
                             </div>
 
@@ -1833,7 +1825,7 @@ const fetchShotVersions = async () => {
                                     type="text"
                                     value={`Shot: ${shotData.shotCode}`}
                                     readOnly
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-400 text-sm cursor-not-allowed"
                                 />
                             </div>
 
@@ -1846,7 +1838,7 @@ const fetchShotVersions = async () => {
                                     type="date"
                                     value={createTaskForm.start_date}
                                     onChange={(e) => handleFormChange('start_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4  border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -1859,7 +1851,7 @@ const fetchShotVersions = async () => {
                                     type="date"
                                     value={createTaskForm.due_date}
                                     onChange={(e) => handleFormChange('due_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -1873,7 +1865,7 @@ const fetchShotVersions = async () => {
                                     value={createTaskForm.description}
                                     onChange={(e) => handleFormChange('description', e.target.value)}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
+                                    className="px-3 py-2 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
                                 />
                             </div>
 
@@ -1909,23 +1901,7 @@ const fetchShotVersions = async () => {
                 </div>
             )}
 
-            {showCreateShot_Note && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateShot_Note(false)} />
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-t flex items-center justify-between">
-                            <h2 className="text-lg text-gray-200 font-normal">
-                                Create a new Note <span className="text-gray-400 text-sm font-normal">- Global Form</span>
-                            </h2>
-                            <button onClick={() => setShowCreateShot_Note(false)} className="text-gray-400 hover:text-white text-xl">⚙️</button>
-                        </div>
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
-                            <button onClick={() => setShowCreateShot_Note(false)} className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded flex items-center justify-center">Cancel</button>
-                            <button className="px-4 h-9 bg-[#2d7a9e] hover:bg-[#3a8db5] text-white text-sm rounded flex items-center justify-center">Create Note</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {showCreateShot_Versions && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1985,10 +1961,10 @@ const fetchShotVersions = async () => {
                                     Linked to: <span className="text-blue-300 font-medium">{shotData.shotCode}</span>
                                 </p>
                             </div>
-                            <button
+                            <div
                                 onClick={() => !isCreatingAsset && setShowCreateShot_Assets(false)}
-                                className="text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors"
-                            >×</button>
+                                className="text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors cursor-pointer"
+                            >×</div>
                         </div>
 
                         {/* Body */}
@@ -2005,7 +1981,7 @@ const fetchShotVersions = async () => {
                                     value={createAssetForm.asset_name}
                                     onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_name: e.target.value }))}
                                     autoFocus
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 transition-colors"
                                 />
                             </div>
 
@@ -2015,7 +1991,7 @@ const fetchShotVersions = async () => {
                                 <select
                                     value={createAssetForm.asset_type}
                                     onChange={(e) => setCreateAssetForm(p => ({ ...p, asset_type: e.target.value }))}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                                 >
                                     <option value="Character">Character</option>
                                     <option value="Environment">Environment</option>
@@ -2035,9 +2011,8 @@ const fetchShotVersions = async () => {
                             {/* Link to Shot (read-only) */}
                             <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">Link to Shot</label>
-                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
-                                    <span className="text-blue-500/60">🎬</span>
-                                    <span>{shotData.shotCode}</span>
+                                <div className="h-9 px-3 bg-white/4 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                    <span className="flex-1 truncate w-1">{shotData.shotCode}</span>
                                     <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
                                         auto-linked
@@ -2048,7 +2023,7 @@ const fetchShotVersions = async () => {
                             {/* Project (read-only) */}
                             <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">Project</label>
-                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                <div className="h-9 px-3 bg-white/4 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
                                     {projectData?.projectName || 'Unknown Project'}
                                 </div>
                             </div>
@@ -2061,7 +2036,7 @@ const fetchShotVersions = async () => {
                                     value={createAssetForm.description}
                                     onChange={(e) => setCreateAssetForm(p => ({ ...p, description: e.target.value }))}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
+                                    className="px-3 py-2 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none transition-colors"
                                 />
                             </div>
                         </div>
@@ -2071,7 +2046,7 @@ const fetchShotVersions = async () => {
                             <button
                                 onClick={() => setShowCreateShot_Assets(false)}
                                 disabled={isCreatingAsset}
-                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all"
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all flex items-center"
                             >
                                 Cancel
                             </button>
@@ -2092,11 +2067,13 @@ const fetchShotVersions = async () => {
                 </div>
             )}
 
-            {showCreateAsset_Note && (
+
+            {/* Create Note Modal */}
+            {showCreateShot_Note && (
                 <>
                     <div
                         className="fixed inset-0 z-40 bg-black/60"
-                        onClick={() => setShowCreateAsset_Note(false)}
+                        onClick={() => setshowCreateShot_Note(false)}
                     />
 
                     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -2137,7 +2114,7 @@ const fetchShotVersions = async () => {
                                         <span className="text-xs text-blue-300/60">- Global Form</span>
                                     </div>
                                     <div
-                                        onClick={() => setShowCreateAsset_Note(false)}
+                                        onClick={() => setshowCreateShot_Note(false)}
                                         onMouseDown={(e) => e.stopPropagation()}
                                         className="cursor-pointertext-gray-400 hover:text-white text-xl leading-none transition-colors"
                                     >
@@ -2152,18 +2129,21 @@ const fetchShotVersions = async () => {
                                         Links
                                     </label>
                                     <input
-                                        disabled
+                                        readOnly
                                         type="text"
-                                        defaultValue={shotData?.shotCode || ''}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                        value={`auto (เลือกให้แล้ว)`}
+                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                     />
+                                    <p className="text-[10px] text-gray-500">
+                                        ลิงก์จะถูกเลือกให้โดยอัตโนมัติ (Shot: {shotData?.shotCode || 'N/A'})
+                                    </p>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         📄 Tasks
                                     </label>
-                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
+                                    <div className="p-3 bg-white/4 border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
                                         {loadingModalTasks ? (
                                             <div className="flex items-center justify-center py-2 gap-2 text-gray-500 text-xs">
                                                 <div className="w-3 h-3 border border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
@@ -2276,7 +2256,7 @@ const fetchShotVersions = async () => {
                                         }}
                                         onFocus={() => setOpen(true)}
                                         onBlur={() => setTimeout(() => setOpen(false), 200)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                                         placeholder={loading ? "Loading..." : "Add people..."}
                                         disabled={loading}
                                     />
@@ -2305,27 +2285,28 @@ const fetchShotVersions = async () => {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Subject
+                                        Subject <span className="text-red-400">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                        className={`w-full h-8 px-3 bg-white/4 border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all ${subject.trim() === '' ? 'border-red-500/50' : 'border-blue-500/30'
+                                            }`}
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Type
+                                        Type <span className="text-red-400">*</span>
                                     </label>
 
                                     <select
                                         value={type ?? ''}
                                         onChange={(e) => setType(e.target.value as NoteType)}
-                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
+                                        className={`w-full h-8 px-3 bg-white/4 border rounded-lg text-sm transition-all
                                         ${type === null
-                                                ? 'border-red-500/50 text-gray-400'
+                                                ? 'border-blue-500/30 text-gray-400'
                                                 : 'border-blue-500/30 text-blue-50'}
                                             focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
                                         `}
@@ -2340,30 +2321,31 @@ const fetchShotVersions = async () => {
 
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
-                                        Message
+                                        Message <span className="text-red-400">*</span>
                                     </label>
                                     <textarea
                                         value={body}
                                         onChange={(e) => setBody(e.target.value)}
                                         placeholder="Write your note here..."
                                         rows={3}
-                                        className="w-full px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
+                                        className={`w-full px-3 py-2 bg-white/4 border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none ${body.trim() === '' ? 'border-blue-500/30' : 'border-blue-500/30'
+                                            }`}
                                     />
                                 </div>
                             </div>
 
                             <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
                                 <button
-                                    onClick={() => setShowCreateAsset_Note(false)}
-                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
+                                    onClick={() => setshowCreateShot_Note(false)}
+                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium flex items-center"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
-                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all flex items-center font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handleCreateNote}
-                                    disabled={uploading}
+                                    disabled={uploading || subject.trim() === '' || !type || body.trim() === ''}
                                 >
                                     {uploading ? 'Creating...' : 'Create Note'}
                                 </button>
@@ -2373,10 +2355,12 @@ const fetchShotVersions = async () => {
                 </>
             )}
 
+            {/* Create Version Modal */}
+
             {showCreateVersion && (
                 <>
                     <div
-                        className="fixed inset-0 z-40 bg-black/50"
+                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
                         onClick={() => !isCreatingVersion && resetVersionForm()}
                     />
 
@@ -2386,7 +2370,7 @@ const fetchShotVersions = async () => {
                                 transform: `translate(${versionModalPosition.x}px, ${versionModalPosition.y}px)`,
                                 maxHeight: 'calc(100vh - 60px)',
                             }}
-                            className="relative w-full max-w-md pointer-events-auto flex flex-col bg-[#13151f] rounded-xl shadow-2xl border border-white/8 overflow-hidden"
+                            className="relative w-full max-w-md pointer-events-auto flex flex-col bg-gradient-to-br from-[#0f1729] via-[#162038] to-[#0d1420] rounded-2xl shadow-2xl shadow-blue-900/50 border border-blue-500/20 overflow-hidden"
                         >
                             {/* Header — ลากได้ */}
                             <div
@@ -2407,24 +2391,29 @@ const fetchShotVersions = async () => {
                                     document.addEventListener('mousemove', onMove);
                                     document.addEventListener('mouseup', onUp);
                                 }}
-                                className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                                className="px-6 py-4 bg-gradient-to-r from-[#1e3a5f] via-[#1a2f4d] to-[#152640] border-b border-blue-500/30 cursor-grab active:cursor-grabbing select-none flex items-center justify-between"
                             >
-                                <h2 className="text-sm font-semibold text-gray-100 tracking-wide">Create Version</h2>
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-100">Create Version</h2>
+                                    <p className="text-xs text-blue-300/60 mt-0.5">
+                                        Linked to: <span className="text-blue-300 font-medium">{shotData?.shotCode}</span>
+                                    </p>
+                                </div>
                                 <div
                                     onMouseDown={e => e.stopPropagation()}
                                     onClick={() => resetVersionForm()}
-                                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-200 hover:bg-white/8 transition-all text-sm"
+                                    className="cursor-pointer text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors"
                                 >
-                                    ✕
+                                    ×
                                 </div>
                             </div>
 
                             {/* Body */}
-                            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
+                            <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
 
                                 {/* File Upload */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Uploaded Version</label>
+                                    <label className="text-xs text-gray-400 font-medium">Uploaded Version</label>
                                     <div
                                         onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                                         onDragLeave={() => setIsDragging(false)}
@@ -2470,12 +2459,14 @@ const fetchShotVersions = async () => {
                                 {/* Version Name + Status */}
                                 <div className="grid grid-cols-1 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Version Name <span className="text-red-400">*</span></label>
+                                        <label className="text-xs text-gray-400 font-medium">Version Name <span className="text-red-400">*</span></label>
                                         <input
                                             type="text"
+                                            placeholder="ชื่อเวอร์ชัน เช่น v001, v002"
+
                                             value={createVersionForm.version_name}
                                             onChange={e => setCreateVersionForm(p => ({ ...p, version_name: e.target.value }))}
-                                            className="w-full h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 transition-colors"
+                                            className="w-full h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 transition-all"
                                         />
                                     </div>
 
@@ -2541,18 +2532,18 @@ const fetchShotVersions = async () => {
 
                                 {/* Task */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Task</label>
+                                    <label className="text-xs text-gray-400 font-medium ">Task</label>
                                     {createVersionForm.task_id ? (() => {
                                         const t = tasks.find(t => t.id === createVersionForm.task_id);
                                         if (!t) return null;
                                         return (
-                                            <div className="flex items-center gap-2 h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg">
+                                            <div className="flex items-center gap-2 h-9 px-3 bg-white/4  border border-blue-500/30 rounded-lg">
                                                 {t.pipeline_step ? (
                                                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.pipeline_step.color_hex || '#6b7280' }} />
                                                 ) : (
                                                     <span className="text-sm flex-shrink-0">📋</span>
                                                 )}
-                                                <span className="text-gray-200 text-xs flex-1 truncate">{t.task_name}</span>
+                                                <span className="text-gray-200 text-sm flex-1 truncate">{t.task_name}</span>
                                                 {t.pipeline_step && (
                                                     <span
                                                         className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
@@ -2564,7 +2555,7 @@ const fetchShotVersions = async () => {
                                                 )}
                                                 <div
                                                     onClick={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); }}
-                                                    className="text-gray-600 hover:text-red-400 text-xs cursor-pointer flex-shrink-0"
+                                                    className="text-gray-600 hover:text-red-400 text-sm cursor-pointer flex-shrink-0"
                                                 >✕</div>
                                             </div>
                                         );
@@ -2576,16 +2567,16 @@ const fetchShotVersions = async () => {
                                                 onChange={e => { setTaskSearchQuery(e.target.value); setTaskSearchOpen(true); }}
                                                 onFocus={() => setTaskSearchOpen(true)}
                                                 onBlur={() => setTimeout(() => setTaskSearchOpen(false), 200)}
-                                                placeholder="Search task..."
-                                                className="h-8 px-2.5 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 placeholder:text-gray-600 w-full transition-colors"
+                                                placeholder="ค้นหา task..."
+                                                className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 w-full transition-all"
                                             />
                                             {taskSearchOpen && (
-                                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                                                <div className="absolute z-50 top-full mt-1 w-full bg-[#0d1117] border border-blue-500/30 rounded-lg shadow-xl max-h-44 overflow-y-auto">
                                                     <div
                                                         onMouseDown={() => { setCreateVersionForm(p => ({ ...p, task_id: null, task: '' })); setTaskSearchQuery(''); setTaskSearchOpen(false); }}
                                                         className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-white/5"
                                                     >
-                                                        <span className="text-xs text-gray-500 italic">— No task —</span>
+                                                        <span className="text-xs text-gray-500 italic">— ไม่ระบุ task —</span>
                                                     </div>
                                                     {tasks
                                                         .filter(t =>
@@ -2624,7 +2615,7 @@ const fetchShotVersions = async () => {
                                                         t.task_name.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
                                                         (t.pipeline_step?.step_name || '').toLowerCase().includes(taskSearchQuery.toLowerCase())
                                                     ).length === 0 && taskSearchQuery && (
-                                                            <p className="px-3 py-2 text-xs text-gray-500">No tasks found</p>
+                                                            <p className="px-3 py-2 text-xs text-gray-500">ไม่พบ task ที่ตรงกัน</p>
                                                         )}
                                                 </div>
                                             )}
@@ -2635,59 +2626,64 @@ const fetchShotVersions = async () => {
                                 {/* Link + Project — read-only */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Link</label>
-                                        <input
-                                            type="text"
-                                            value={shotData?.shotCode || ''}
-                                            readOnly
-                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
-                                        />
+                                        <label className="text-xs text-gray-400 font-medium uppercase tracking-wider">Link</label>
+                                        <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center gap-2 select-none">
+                                            <span className="text-blue-300 font-medium truncate">{shotData?.shotCode}</span>
+                                            <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 whitespace-nowrap">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
+                                                auto-linked
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Project</label>
+                                        <label className="text-xs text-gray-400 font-medium uppercase tracking-wider">Project</label>
                                         <input
                                             type="text"
                                             readOnly
                                             value={projectData?.projectName || ''}
-                                            className="w-full h-8 px-2.5 bg-white/2 border border-white/5 rounded-lg text-gray-600 text-xs cursor-default"
+                                            className="w-full h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm cursor-default"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Description */}
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium uppercase tracking-wider">Description</label>
+                                    <label className="text-xs text-gray-400 font-medium">Description</label>
                                     <textarea
+                                        placeholder="คำอธิบายเพิ่มเติมเกี่ยวกับเวอร์ชันนี้ (ไม่บังคับ)"
+
                                         value={createVersionForm.description}
                                         onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
                                         rows={2}
-                                        className="w-full px-2.5 py-2 bg-white/4 border border-white/8 rounded-lg text-gray-200 text-xs focus:outline-none focus:border-blue-500/50 resize-none transition-colors"
+                                        className="w-full px-3 py-2 bg-white/4  border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none transition-all"
                                     />
                                 </div>
 
                             </div>
 
                             {/* Footer — Cancel ซ้าย, Create ขวา */}
-                            <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/6 flex-shrink-0">
+                            <div className="px-6 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-between items-center gap-3 ">
                                 <button
                                     onClick={() => resetVersionForm()}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg flex items-center text-xs text-gray-400 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 transition-all disabled:opacity-40"
-
+                                    className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded-lg disabled:opacity-50 transition-all flex items-center"
                                 >
                                     Cancel
                                 </button>
+
                                 <button
                                     onClick={handleCreateVersion}
                                     disabled={isCreatingVersion}
-                                    className="px-4 h-8 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-600 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                                    className="px-5 h-9 bg-gradient-to-r from-[#1e88e5] to-[#1565c0] hover:from-[#1976d2] hover:to-[#0d47a1] text-sm rounded-lg text-white shadow-lg shadow-blue-500/30 transition-all font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isCreatingVersion ? (
                                         <>
-                                            <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Creating…</span>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>Creating...</span>
                                         </>
-                                    ) : 'Create Version'}
+                                    ) : (
+                                        'Create Version'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2794,16 +2790,31 @@ const fetchShotVersions = async () => {
                                 </button>
 
                                 <button
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.stopPropagation();
-                                        handleDeleteNote(deleteNoteConfirm.noteId);
-                                        alert('ลบสำเร็จแล้ว');
-                                        setDeleteNoteConfirm(null);
-                                        fetchNotes();
+                                        setIsDeletingNote(true);
+                                        try {
+                                            await handleDeleteNote(deleteNoteConfirm.noteId);
+
+                                            setDeleteNoteConfirm(null);
+                                            fetchNotes();
+                                        } catch (error) {
+                                            // handle error if needed
+                                        } finally {
+                                            setIsDeletingNote(false);
+                                        }
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingNote}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600 disabled:opacity-50"
                                 >
-                                    Delete Note
+                                    {isDeletingNote ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Note'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2854,6 +2865,7 @@ const fetchShotVersions = async () => {
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
+                                        setIsDeletingVersion(true);
                                         try {
                                             const res = await axios.delete(
                                                 `${ENDPOINTS.DELETE_SHOT_VERSION}/${deleteVersionConfirm.versionId}`,
@@ -2878,11 +2890,21 @@ const fetchShotVersions = async () => {
                                             setDeleteVersionConfirm(null);
                                         } catch {
                                             alert('ไม่สามารถลบได้');
+                                        } finally {
+                                            setIsDeletingVersion(false);
                                         }
                                     }}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                                    disabled={isDeletingVersion}
+                                    className="px-4 py-2 rounded-lg text-white transition-colors font-medium bg-gradient-to-r from-red-800 to-red-800 hover:from-red-700 hover:to-red-600 disabled:opacity-50"
                                 >
-                                    Delete Version
+                                    {isDeletingVersion ? (
+                                        <div className="flex items-center gap-2">
+                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        'Delete Version'
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -2907,20 +2929,20 @@ const fetchShotVersions = async () => {
                 onTabChange={setRightPanelActiveTab}
                 onUpdateVersion={updateVersion}
                 onAddVersionSuccess={async () => {
-    if (selectedTask) await fetchTaskVersions(selectedTask.id);
-    // re-fetch shot versions เพื่ออัพเดท thumbnail
-    await fetchShotVersions();
-}}
-onDeleteVersionSuccess={async (newThumb) => {
-    if (selectedTask) await fetchTaskVersions(selectedTask.id);
-    await fetchShotVersions();
-    if (newThumb !== undefined) {
-        const url = newThumb || '';
-        setShotData(prev => prev ? { ...prev, thumbnail: url } : prev);
-        const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-        localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
-    }
-}}
+                    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+                    // re-fetch shot versions เพื่ออัพเดท thumbnail
+                    await fetchShotVersions();
+                }}
+                onDeleteVersionSuccess={async (newThumb) => {
+                    if (selectedTask) await fetchTaskVersions(selectedTask.id);
+                    await fetchShotVersions();
+                    if (newThumb !== undefined) {
+                        const url = newThumb || '';
+                        setShotData(prev => prev ? { ...prev, thumbnail: url } : prev);
+                        const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
+                        localStorage.setItem('selectedShot', JSON.stringify({ ...stored, file_url: url, thumbnail: url }));
+                    }
+                }}
             />
 
 

@@ -39,6 +39,7 @@ interface Asset {
     description: string;
     status: StatusType;
     file_url: string;
+    type?: string;
 }
 
 
@@ -550,27 +551,16 @@ export default function Project_Assets() {
         if (!editingField && !showStatusMenu) {
             const asset = assetData[categoryIndex].assets[assetIndex];
 
-            const selectedAssetData = {
+            // เก็บแค่ id และ projectId context เท่านั้น
+            localStorage.setItem("selectedAsset", JSON.stringify({
                 id: asset.id,
-                asset_name: asset.asset_name,
-                description: asset.description,
-                status: asset.status,
-                file_url: asset.file_url || "",
-                sequence: assetData[categoryIndex].category
-            };
+                type: asset.type || '',                              // ← asset type
+                sequence: assetData[categoryIndex].category || '',   // ← category = type จริงๆ แต่เก็บไว้ fallback
+            }));
 
-            localStorage.setItem(
-                "selectedAsset",
-                JSON.stringify(selectedAssetData)
-            );
-
-            console.log('✅ Selected asset:', selectedAssetData);
-
-            setSelectedAsset({ categoryIndex, assetIndex });
             navigate('/Project_Assets/Others_Asset');
         }
     };
-
     const handleFieldClick = (field: string, categoryIndex: number, assetIndex: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (field === 'status') {
