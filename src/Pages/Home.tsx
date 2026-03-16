@@ -778,15 +778,12 @@ export default function Home() {
       {/* Header */}
       <div className="px-8 pt-8 pb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-               style={{ background: 'linear-gradient(135deg, #4f8ef7, #7c3aed)' }}>
-            ✦
-          </div>
+          
           <h2 className="text-xl font-semibold text-white tracking-tight">
             New Project
           </h2>
         </div>
-        <p className="text-sm text-gray-500 ml-11">Fill in the details to get started</p>
+        <p className="text-sm text-gray-500">Fill in the details to get started</p>
       </div>
 
       {/* Divider */}
