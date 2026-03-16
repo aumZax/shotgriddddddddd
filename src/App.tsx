@@ -31,7 +31,7 @@ import Project_Files from "./Pages/Project/Project_Files";
 
 import Profile from "./Pages/Profile";
 
-import { Search, ChevronDown, ChevronRight, FolderClosed, Box, Film, LayoutDashboard, List, CheckSquare, GitBranch, Users } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderClosed, Box, Film, LayoutDashboard, List, CheckSquare, GitBranch, Users } from 'lucide-react';
 
 interface Project {
   projectId: number;
