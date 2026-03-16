@@ -345,7 +345,7 @@ function MainLayout() {
           </div>
 
           <div className="flex items-center gap-6 text-sm">
-            <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group" to="/Inbox">
+            {/* <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group" to="/Inbox">
               Inbox
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
@@ -356,7 +356,7 @@ function MainLayout() {
             <Link className="hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group" to="/media">
               Media
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
-            </Link>
+            </Link> */}
 
             {/* Projects Dropdown */}
             <div className="relative" ref={projectsRef}>
@@ -501,7 +501,7 @@ function MainLayout() {
               )}
             </div>
 
-            <Link className="hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/people">
+            {/* <Link className="hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/people">
               People
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
             </Link>
@@ -509,7 +509,7 @@ function MainLayout() {
               <span>Apps</span>
               <ChevronDown className="w-5 h-5" />
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
