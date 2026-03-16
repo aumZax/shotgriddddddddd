@@ -319,10 +319,6 @@ export default function Others_Shot() {
     }, [showCreateShot_Note, shotId, projectId]);
 
     useEffect(() => {
-        fetchShotDetail();
-    }, [shotId]);
-
-    useEffect(() => {
         const fetchPeople = async () => {
             try {
                 const response = await fetch(ENDPOINTS.GETALLPEOPLE);
@@ -353,14 +349,10 @@ export default function Others_Shot() {
     }, [versionContextMenu]);
 
     useEffect(() => {
-        fetchShotVersions();
-    }, [shotData?.id]);
-
-    useEffect(() => {
-        if (activeTab === 'Versions') {
+        if (activeTab === 'Versions' && shotId) {
             fetchShotVersions();
         }
-    }, [activeTab, shotData?.id]);
+    }, [activeTab, shotId]);
 
     useEffect(() => {
         if (deleteNoteConfirm) {
@@ -412,6 +404,18 @@ export default function Others_Shot() {
             return () => clearTimeout(t);
         }
     }, [selectedTask]);
+
+    useEffect(() => {
+        if (!shotId) return;
+
+        const fetchAll = async () => {
+            await fetchShotDetail();
+            
+            await fetchShotVersions();
+        };
+
+        fetchAll();
+    }, [shotId]);
 
     useEffect(() => {
         if (activeTab === 'Notes') {
@@ -521,42 +525,32 @@ export default function Others_Shot() {
         if (!shotId) return;
         setIsLoadingShotVersions(true);
         try {
-            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { entityType: 'shot', entityId: shotId });
+            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { 
+                entityType: 'shot', 
+                entityId: shotId 
+            });
             const data = res.data;
+            
             if (Array.isArray(data) && data.length > 0) {
                 setShotVersions(data);
-                setIsThumbnailLocked(data.length >= 1);
+                setIsThumbnailLocked(true);
 
-                // ✅ เพิ่มส่วนนี้: sync thumbnail จาก version ล่าสุด
+                // ✅ sync thumbnail จาก version ล่าสุด
                 const latestThumb = data[0]?.file_url;
                 if (latestThumb) {
                     setShotData(prev => ({ ...prev, thumbnail: latestThumb }));
-
                 }
             } else {
                 setShotVersions([]);
                 setIsThumbnailLocked(false);
-
-                // ✅ เช็ค thumbnail จาก localStorage ก่อน
-                const stored = JSON.parse(localStorage.getItem('selectedShot') || '{}');
-                const existingThumb = stored.file_url || stored.thumbnail || '';
-
-                if (!existingThumb) {
-                    setShotData(prev => ({ ...prev, thumbnail: '' }));
-                    localStorage.setItem('selectedShot', JSON.stringify({
-                        ...stored,
-                        thumbnail: '',
-                        file_url: ''
-                    }));
-                }
-                // ถ้ามี existingThumb อยู่แล้ว → ไม่ต้องทำอะไร ปล่อยให้ state เดิมอยู่
+                // ❌ ลบ block เช็ค localStorage และ clear thumbnail ออกทั้งหมด
+                // ให้ fetchShotDetail จัดการ thumbnail เองเมื่อไม่มี version
             }
         } finally {
             setIsLoadingShotVersions(false);
         }
     };
 
-    // ✅ helper: filter versions array แล้ว sync isThumbnailLocked ด้วยเสมอ
     const removeVersionFromState = (versionId: number) => {
         setShotVersions(prev => {
             const updated = prev.filter(v => v.id !== versionId);
@@ -1581,7 +1575,7 @@ export default function Others_Shot() {
                                         <span>📁</span>
                                         Sequence
                                     </label>
-                                    <p className="text-white font-semibold px-2 py-1.5">{shotData.sequence}</p>
+                                    <p className="text-white font-semibold px-2 py-1.5 break-words">{shotData.sequence}</p>
                                 </div>
 
                                 {/* Status */}

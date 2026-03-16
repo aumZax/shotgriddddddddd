@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar_Project from "../../../components/Navbar_Project";
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
-import { Check, Eye, Image, Upload, X, LoaderCircle } from 'lucide-react';
+import { Check, Eye, Image, Upload, X, LoaderCircle, ChevronDown } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
@@ -68,7 +69,7 @@ interface AssetData {
     description: string;
     status: StatusType;
     thumbnail: string;
-    sequence: string;   // ← sequence name สำหรับ Asset Info
+    sequence: string;
     type: string;
     tags?: string[];
     dueDate?: string;
@@ -134,6 +135,11 @@ const assetFieldMap: Record<keyof AssetData, string | null> = {
     description: "description",
     dueDate: "due_date"
 };
+
+const type_assets = [
+    "Character", "Environment", "Prop", "FX", "Graphic",
+    "Matte Painting", "Vehicle", "Weapon", "Model", "Theme", "Zone", "Part"
+];
 
 const getSelectedAsset = (): AssetData | null => {
     try {
@@ -286,9 +292,7 @@ export default function Others_Asset() {
     const [isDeletingVersion, setIsDeletingVersion] = useState(false);
 
     //============================================================================================================================================//
-    useEffect(() => {
-        fetchAssetVersions();
-    }, [AssetID]);
+
 
     useEffect(() => {
         if (activeTab === 'Versions') {
@@ -327,11 +331,10 @@ export default function Others_Asset() {
     }, [activeTab, AssetID]);
 
 
-    // useEffect ใหม่ — fetch asset จาก API ด้วย AssetID
     useEffect(() => {
         if (!AssetID) return;
 
-        const fetchAssetData = async () => {
+        const fetchAll = async () => {
             try {
                 const res = await axios.post(ENDPOINTS.PROJECT_ASSET_DETAIL, {
                     assetId: AssetID
@@ -345,8 +348,8 @@ export default function Others_Asset() {
                         description: row.asset_description || '',
                         status: row.asset_status || 'wtg',
                         thumbnail: row.asset_thumbnail || '',
-                        sequence: row.sequence_name || '',   // ← sequence name จาก JOIN
-                        type: row.asset_type || '',          // ← type จาก project_assets.type
+                        sequence: row.sequence_name || '',
+                        type: row.asset_type || '',
                         shotCode: row.shot_name || ''
                     });
                 }
@@ -354,12 +357,13 @@ export default function Others_Asset() {
                 console.error('Failed to fetch asset data:', err);
                 const fallback = getSelectedAsset();
                 if (fallback) setAssetData(fallback);
-            } finally {
             }
+
+            await fetchAssetVersions();
         };
 
-        fetchAssetData();
-    }, [AssetID]); // ← ดึงจาก API ทุกครั้งที่ AssetID เปลี่ยน
+        fetchAll();
+    }, [AssetID]);
 
     useEffect(() => {
         if (assetData?.asset_name) {
@@ -981,34 +985,26 @@ export default function Others_Asset() {
         if (!AssetID) return;
         setIsLoadingAssetVersions(true);
         try {
-            const res = await axios.post(`${ENDPOINTS.GET_ASSET_VERSION}`, { entityType: 'asset', entityId: AssetID });
+            const res = await axios.post(`${ENDPOINTS.GET_ASSET_VERSION}`, {
+                entityType: 'asset',
+                entityId: AssetID
+            });
             const data = res.data;
+
             if (Array.isArray(data) && data.length > 0) {
                 setAssetVersions(data);
-                setIsThumbnailLocked(data.length >= 1);
+                setIsThumbnailLocked(true);
 
-                // ✅ sync thumbnail จาก version ล่าสุด
+                // ✅ sync thumbnail จาก version ล่าสุดเท่านั้น ไม่ clear ถ้าไม่มี
                 const latestThumb = data[0]?.file_url;
                 if (latestThumb) {
                     setAssetData(prev => prev ? { ...prev, thumbnail: latestThumb } : null);
-
                 }
+                // ❌ ลบ block else ที่ clear thumbnail ออก
             } else {
                 setAssetVersions([]);
                 setIsThumbnailLocked(false);
-
-                // ✅ เช็ค thumbnail จาก localStorage ก่อน ไม่ clear ถ้ามีรูปอยู่แล้ว
-                const stored = JSON.parse(localStorage.getItem('selectedAsset') || '{}');
-                const existingThumb = stored.file_url || stored.thumbnail || '';
-
-                if (!existingThumb) {
-                    setAssetData(prev => prev ? { ...prev, thumbnail: '' } : null);
-                    localStorage.setItem('selectedAsset', JSON.stringify({
-                        ...stored,
-                        thumbnail: '',
-                        file_url: ''
-                    }));
-                }
+                // ❌ ไม่ clear thumbnail เลย ให้ fetchAssetData จัดการเอง
             }
         } finally {
             setIsLoadingAssetVersions(false);
@@ -1569,7 +1565,8 @@ export default function Others_Asset() {
                                             )}
                                             <span className="text-sm">{statusConfig[assetData.status].label}</span>
                                         </div>
-                                        <span className="text-xs">▼</span>
+                                        <ChevronDown className="w-5" />
+
                                     </button>
 
                                     {showStatusMenu && (
@@ -1605,14 +1602,46 @@ export default function Others_Asset() {
 
                                 {/* Type Name */}
                                 {/* Type */}
-                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 relative">
                                     <label className="text-gray-400 text-xs font-medium block mb-1.5 flex items-center gap-1.5">
                                         <span>📁</span>
                                         Type
                                     </label>
-                                    <p className="text-white font-semibold px-2 py-1.5 text-sm">
-                                        {assetData.type || '-'}
-                                    </p>
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingField(editingField === 'type' ? null : 'type');
+                                        }}
+                                        className="cursor-pointer w-full h-12 flex items-center justify-between px-2 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors rounded-xl"
+                                    >
+                                        <span className="text-xs text-purple-300 font-medium">
+                                            {assetData.type || 'No type'}
+                                        </span>
+                                        <ChevronDown className="text-purple-400 w-5" />
+                                    </div>
+
+                                    {editingField === 'type' && (
+                                        <div className="absolute left-0 mt-1 w-full z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl max-h-52 overflow-y-auto">
+
+                                            {type_assets.map(t => (
+                                                <div
+                                                    key={t}
+                                                    onClick={() => {
+                                                        updateAssetField('type', t);
+                                                        setEditingField(null);
+                                                    }}
+                                                    className={`px-3 py-2 text-xs cursor-pointer transition-colors flex items-center justify-between
+                        ${assetData.type === t
+                                                            ? 'bg-purple-500/20 text-purple-300'
+                                                            : 'text-gray-200 hover:bg-gray-700'
+                                                        } last:rounded-b-lg`}
+                                                >
+                                                    <span>{t}</span>
+                                                    {assetData.type === t && <span className="text-purple-400">✓</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Description - ใช้ 3 คอลัมน์ */}

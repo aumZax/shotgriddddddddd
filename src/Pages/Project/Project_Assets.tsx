@@ -231,6 +231,8 @@ export default function Project_Assets() {
     } | null>(null);
 
 
+
+
     useEffect(() => {
         const closeMenu = () => setContextMenu(null);
 
@@ -260,6 +262,7 @@ export default function Project_Assets() {
         fetchSequences();
         fetchAllProjectShots();
     }, []);
+
 
     useEffect(() => {
         const closeDropdown = (e: MouseEvent) => {
@@ -554,7 +557,7 @@ export default function Project_Assets() {
             // เก็บแค่ id และ projectId context เท่านั้น
             localStorage.setItem("selectedAsset", JSON.stringify({
                 id: asset.id,
-        
+
             }));
 
             navigate('/Project_Assets/Others_Asset');
@@ -1260,30 +1263,59 @@ export default function Project_Assets() {
                                                                         </div>
 
                                                                         {/* Type */}
+                                                                        {/* Type */}
                                                                         <div
-                                                                            className="w-44 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4"
+                                                                            className="w-44 flex-shrink-0 px-2 py-1 border-r border-gray-700/50 pr-4 relative"
                                                                             onClick={(e) => e.stopPropagation()}
                                                                         >
-                                                                            <select
-                                                                                value={asset.status ? category.category : ''}
-                                                                                onChange={async (e) => {
-                                                                                    const newType = e.target.value;
-                                                                                    await axios.post(ENDPOINTS.UPDATEASSET, {
-                                                                                        assetId: asset.id,
-                                                                                        field: 'type',
-                                                                                        value: newType
-                                                                                    });
-                                                                                    fetchAssets();
+                                                                            <div
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingField(
+                                                                                        editingField?.field === 'type' &&
+                                                                                            editingField?.categoryIndex === categoryIndex &&
+                                                                                            editingField?.assetIndex === assetIndex
+                                                                                            ? null
+                                                                                            : { field: 'type', categoryIndex, assetIndex }
+                                                                                    );
                                                                                 }}
-                                                                                className="w-full bg-purple-500/10 border border-purple-500/20 rounded-md px-2 py-1 text-xs text-purple-300 font-medium cursor-pointer focus:outline-none focus:border-purple-400 hover:bg-purple-500/20 transition-colors"
+                                                                                className="w-full flex items-center justify-between px-2 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors"
                                                                             >
-                                                                                <option value="No Type" className="bg-gray-800 text-gray-400">No type</option>
-                                                                                {type_assets.map(t => (
-                                                                                    <option key={t} value={t} className="bg-gray-800 text-gray-200">
-                                                                                        {t}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </select>
+                                                                                <span className="text-xs text-purple-300 font-medium truncate">
+                                                                                    {category.category || 'No type'}
+                                                                                </span>
+                                                                                <span className="text-purple-400 text-xs ml-1">▾</span>
+                                                                            </div>
+
+                                                                            {editingField?.field === 'type' &&
+                                                                                editingField?.categoryIndex === categoryIndex &&
+                                                                                editingField?.assetIndex === assetIndex && (
+                                                                                    <div className="absolute left-0 top-full mt-1 w-48 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-2xl max-h-52 overflow-y-auto">
+
+                                                                                        {type_assets.map(t => (
+                                                                                            <div
+                                                                                                key={t}
+                                                                                                onClick={async () => {
+                                                                                                    await axios.post(ENDPOINTS.UPDATEASSET, {
+                                                                                                        assetId: asset.id,
+                                                                                                        field: 'type',
+                                                                                                        value: t
+                                                                                                    });
+                                                                                                    setEditingField(null);
+                                                                                                    fetchAssets();
+                                                                                                }}
+                                                                                                className={`px-3 py-2 text-xs cursor-pointer transition-colors flex items-center justify-between
+                                                                                                          ${category.category === t
+                                                                                                        ? 'bg-purple-500/20 text-purple-300'
+                                                                                                        : 'text-gray-200 hover:bg-gray-700'
+                                                                                                    } last:rounded-b-lg`}
+                                                                                            >
+                                                                                                <span>{t}</span>
+                                                                                                {category.category === t && <span className="text-purple-400">✓</span>}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
                                                                         </div>
 
                                                                         {/* Status */}

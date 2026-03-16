@@ -16,19 +16,19 @@
 // // Sequence
 // 🔵['ip']
 
-// 🟡 Pending Group (รอดำเนินการ/พักชั่วคราว)
+// ⚫ Pending Group (รอดำเนินการ/พักชั่วคราว)
 // javascript// Shot
-// 🟡['wtg', 'hld', 'nef']
+// ⚫['wtg', 'hld', 'nef']
 
 // // Asset
-// 🟡['wtg', 'hld', 'pndng']
+// ⚫['wtg', 'hld', 'pndng']
 
 // // Sequence
 // 🟡['wtg']
 
-// ⚫ Excluded (ไม่นับรวม)
+// 🟡 Excluded (ไม่นับรวม)
 // javascript// Shot
-// ⚫['omt', 'na', 'vnd']
+// 🟡['omt', 'na', 'vnd']
 
 // // Asset
 // [] // ไม่มี
