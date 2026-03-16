@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
-import { Check, Eye, Image, Upload, User, X, LoaderCircle } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X, LoaderCircle, ChevronDown } from 'lucide-react';
 import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
@@ -331,13 +331,13 @@ export default function Others_Sequence() {
         fetchSequenceDetail();
     }, [sequenceId]);
 
-useEffect(() => {
-    if (!sequenceId) {
-        navigate("/Project_Sequence");
-        return;
-    }
-    fetchSequenceInfo();
-}, [sequenceId]);
+    useEffect(() => {
+        if (!sequenceId) {
+            navigate("/Project_Sequence");
+            return;
+        }
+        fetchSequenceInfo();
+    }, [sequenceId]);
 
     //============================================================================================================================================//
 
@@ -739,13 +739,13 @@ useEffect(() => {
     };
 
     const updateSequence = (payload: any) => {
-    return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: SequenceData.id, ...payload })
-    }).catch(console.error);
-    // ลบ .then(...localStorage...) ออกทั้งหมด
-};
+        return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: SequenceData.id, ...payload })
+        }).catch(console.error);
+        // ลบ .then(...localStorage...) ออกทั้งหมด
+    };
 
     const fetchTaskVersions = async (taskId: number) => {
         setIsLoadingVersions(true);
@@ -958,31 +958,31 @@ useEffect(() => {
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     const fetchSequenceInfo = async () => {
-    if (!sequenceId) {
-        navigate("/Project_Sequence");
-        return;
-    }
-    try {
-        const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, { sequenceId });
-        const rawData = res.data;
-        if (!rawData.length) return;
+        if (!sequenceId) {
+            navigate("/Project_Sequence");
+            return;
+        }
+        try {
+            const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, { sequenceId });
+            const rawData = res.data;
+            if (!rawData.length) return;
 
-        const row = rawData[0];
-        setSequenceData({
-            id: row.sequence_id,
-            shotCode: "",
-            sequence: row.sequence_name,
-            status: (row.sequence_status || "wtg") as StatusType,
-            tags: [],
-            thumbnail: row.sequence_thumbnail || "",
-            description: row.sequence_description || "",
-            dueDate: row.sequence_created_at || ""
-        });
-        setThumbnailLoading(!!row.sequence_thumbnail);
-    } catch (err) {
-        console.error("fetchSequenceInfo error:", err);
-    }
-};
+            const row = rawData[0];
+            setSequenceData({
+                id: row.sequence_id,
+                shotCode: "",
+                sequence: row.sequence_name,
+                status: (row.sequence_status || "wtg") as StatusType,
+                tags: [],
+                thumbnail: row.sequence_thumbnail || "",
+                description: row.sequence_description || "",
+                dueDate: row.sequence_created_at || ""
+            });
+            setThumbnailLoading(!!row.sequence_thumbnail);
+        } catch (err) {
+            console.error("fetchSequenceInfo error:", err);
+        }
+    };
 
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1120,7 +1120,7 @@ useEffect(() => {
                                                                 if (res.ok) {
                                                                     setSequenceData(prev => ({ ...prev, thumbnail: data.file.fileUrl }));
 
-                                                                 
+
                                                                 } else {
                                                                     alert("Upload failed: " + data.error);
                                                                 }
@@ -1161,7 +1161,7 @@ useEffect(() => {
                                                     if (res.ok) {
                                                         setSequenceData(prev => ({ ...prev, thumbnail: data.file.fileUrl }));
 
-                                                        
+
                                                     }
                                                 } catch (err) {
                                                     console.error("❌ Upload error:", err);
@@ -1227,7 +1227,8 @@ useEffect(() => {
                                             )}
                                             <span className="text-sm">{statusConfig[SequenceData.status].label}</span>
                                         </div>
-                                        <span className="text-xs">▼</span>
+                                        <ChevronDown className="w-5" />
+
                                     </button>
 
                                     {showStatusMenu && (
@@ -1537,7 +1538,7 @@ useEffect(() => {
             )}
 
 
-{/* Create Note Modal */}
+            {/* Create Note Modal */}
             {showCreateAsset_Note && (
                 <>
                     <div

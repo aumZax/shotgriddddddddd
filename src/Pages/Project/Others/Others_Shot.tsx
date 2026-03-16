@@ -4,7 +4,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
-import { Check, Eye, Image, Plus, Upload, X, LoaderCircle } from 'lucide-react';
+import { Check, Eye, Image, Plus, Upload, X, LoaderCircle, ChevronDown } from 'lucide-react';
 import ENDPOINTS from '../../../config';
 import axios from 'axios';
 import TaskTab from "../../../components/TaskTab";
@@ -410,7 +410,7 @@ export default function Others_Shot() {
 
         const fetchAll = async () => {
             await fetchShotDetail();
-            
+
             await fetchShotVersions();
         };
 
@@ -525,12 +525,12 @@ export default function Others_Shot() {
         if (!shotId) return;
         setIsLoadingShotVersions(true);
         try {
-            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, { 
-                entityType: 'shot', 
-                entityId: shotId 
+            const res = await axios.post(`${ENDPOINTS.GET_SHOT_VERSION}`, {
+                entityType: 'shot',
+                entityId: shotId
             });
             const data = res.data;
-            
+
             if (Array.isArray(data) && data.length > 0) {
                 setShotVersions(data);
                 setIsThumbnailLocked(true);
@@ -1597,7 +1597,8 @@ export default function Others_Shot() {
                                             )}
                                             <span className="text-sm">{statusConfig[shotData.status].label}</span>
                                         </div>
-                                        <span className="text-xs">▼</span>
+                                        <ChevronDown className="w-5" />
+
                                     </button>
 
                                     {showStatusMenu && (

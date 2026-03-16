@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { Eye, Film, Check, X, ChevronDown, Layers } from 'lucide-react';
+import { Eye, Film, Check, X, ChevronDown, Layers, Pencil } from 'lucide-react';
 import ENDPOINTS from '../config';
 import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
@@ -407,17 +407,25 @@ const VersionTab: React.FC<VersionTabProps> = ({
                                                     className="flex-1 px-2 py-1 bg-gray-800 border border-blue-500 rounded text-blue-400 text-sm font-medium outline-none disabled:opacity-50"
                                                 />
                                             ) : (
-                                                <div
-                                                    className={mock ? 'cursor-default' : 'cursor-pointer'}
-                                                    onClick={() => startEdit(version.id, 'version_name', version.version_name || '')}
-                                                >
-                                                    <p className="text-blue-400 hover:text-blue-300 font-medium text-sm truncate max-w-[160px]">
-                                                        {version.version_name || `Version ${version.version_number}`}
-                                                    </p>
-                                                    <p className="text-gray-500 text-xs">
-                                                        v{version.version_number}
-                                                        {version.task_name && ` · ${version.task_name}`}
-                                                    </p>
+                                                <div className="flex items-center gap-2 group">
+                                                    <div className={mock ? 'cursor-default' : ''}>
+                                                        <p className="text-blue-400 font-medium text-sm truncate max-w-[160px]">
+                                                            {version.version_name || `Version ${version.version_number}`}
+                                                        </p>
+                                                        <p className="text-gray-500 text-xs">
+                                                            v{version.version_number}
+                                                            {version.task_name && ` · ${version.task_name}`}
+                                                        </p>
+                                                    </div>
+                                                    {!mock && (
+                                                        <div
+                                                            className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
+                                                            title="แก้ไขชื่อ"
+                                                            onClick={() => startEdit(version.id, 'version_name', version.version_name || '')}
+                                                        >
+                                                            <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

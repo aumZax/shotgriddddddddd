@@ -667,17 +667,17 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
                                                     {task.task_name}
                                                 </span>
 
-                                                <button
+                                                <div
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setEditingTaskId(task.id);
                                                         setEditingTaskName(task.task_name);
                                                     }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
+                                                    className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 transition-all bg-gradient-to-r from-gray-800 to-gray-800 border hover:from-gray-700 hover:to-gray-700 rounded-xl flex-shrink-0"
                                                     title="แก้ไขชื่อ"
                                                 >
                                                     <Pencil className="w-4 h-4 text-gray-400 hover:text-blue-400" />
-                                                </button>
+                                                </div>
                                             </>
                                         )}
                                     </div>
