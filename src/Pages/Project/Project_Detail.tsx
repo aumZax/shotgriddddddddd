@@ -306,11 +306,6 @@ export default function Project_Detail() {
             "sequenceData",
             JSON.stringify({
                 sequenceId: seq.id,
-                sequenceName: seq.sequence_name,
-                description: seq.description,
-                status: seq.status,
-                thumbnail: seq.file_url,
-                createdAt: seq.created_at,
                 projectId
             })
         );
