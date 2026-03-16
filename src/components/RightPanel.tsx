@@ -1555,7 +1555,7 @@ const handleDeleteVersion = async (versionId: number) => {
 
                             {/* Type */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Type</label>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Type <span className="text-red-400">*</span></label>
                                 <select
                                     value={addNoteForm.type}
                                     onChange={(e) => setAddNoteForm(f => ({ ...f, type: e.target.value as 'Client' | 'Internal' }))}
@@ -1608,7 +1608,7 @@ const handleDeleteVersion = async (versionId: number) => {
 
                             {/* Message */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Message</label>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Message <span className="text-red-400">*</span></label>
                                 <textarea
                                     placeholder="Write your note here..."
                                     value={addNoteForm.body}

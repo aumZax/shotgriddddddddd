@@ -214,7 +214,6 @@ export default function Others_Asset() {
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [subject, setSubject] = useState(assetData?.asset_name ? `Note on ${assetData.asset_name}` : "");
     const [loadingTasks, setLoadingTasks] = useState(false);
-    const [isLoadingAsset, setIsLoadingAsset] = useState(true);
 
 
     const [showAddShot, setShowAddShot] = useState(false);
@@ -333,7 +332,6 @@ export default function Others_Asset() {
         if (!AssetID) return;
 
         const fetchAssetData = async () => {
-            setIsLoadingAsset(true);
             try {
                 const res = await axios.post(ENDPOINTS.PROJECT_ASSET_DETAIL, {
                     assetId: AssetID
@@ -357,7 +355,6 @@ export default function Others_Asset() {
                 const fallback = getSelectedAsset();
                 if (fallback) setAssetData(fallback);
             } finally {
-                setIsLoadingAsset(false);
             }
         };
 
