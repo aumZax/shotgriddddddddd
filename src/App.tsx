@@ -515,14 +515,7 @@ function MainLayout() {
 
         {/* RIGHT */}
         <div className="flex items-center gap-4">
-          <div className="text-xl cursor-pointer hover:scale-110 transition-transform duration-300 hidden md:inline-block">
-            <Search className="w-8 h-8 rounded-full object-cover cursor-pointer hover:shadow-lg hover:shadow-blue-500/30" />
-          </div>
-          <div className="relative">
-            <input type="text" placeholder="Search..."
-              className="w-40 md:w-56 lg:w-64 h-8 border border-gray-700 rounded-full pl-2 pr-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800/50 text-gray-300 placeholder-gray-500 backdrop-blur-sm transition-all duration-300"
-            />
-          </div>
+         
 
           {/* Profile with Dropdown */}
           <div className="relative" ref={dropdownRef}>
