@@ -360,7 +360,7 @@ export default function Project_Detail() {
                 <div className="mb-6 bg-gradient-to-br from-gray-800 via-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl">
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 lg:min-h-auto">
                         {/* Left: Thumbnail */}
-                        <div className="lg:col-span-2 relative h-72 lg:h-72 overflow-hidden bg-gray-900/50">
+                        <div className="lg:col-span-2 relative h-80 lg:h-80 overflow-hidden bg-gray-900/50">
                             {projectThumbnail ? (
                                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                                     {/* Decorative corners */}
@@ -399,7 +399,7 @@ export default function Project_Detail() {
                                 </div>
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
-                                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg border border-gray-600/30">
+                                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg border border-gray-600/30">
                                         <Image className="w-12 h-12 text-gray-500" />
                                     </div>
                                     <p className="text-gray-400 text-sm font-medium">No Thumbnail</p>
