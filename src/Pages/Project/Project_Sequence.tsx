@@ -576,22 +576,16 @@ export default function Project_Sequence() {
 
     // เปิดหน้า Sequence อื่น ๆ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleOpenSequence = (sequence: any) => {
-        localStorage.setItem(
-            "sequenceData",
-            JSON.stringify({
-                sequenceId: sequence.dbId,
-                sequenceName: sequence.id,
-                description: sequence.description,
-                status: sequence.status,
-                thumbnail: sequence.thumbnail,
-                createdAt: sequence.createdAt, // 👈 เพิ่ม
-                projectId
-            })
-        );
-
-        navigate("/Project_Sequence/Others_Sequence");
-    };
+const handleOpenSequence = (sequence: any) => {
+    localStorage.setItem(
+        "sequenceData",
+        JSON.stringify({
+            sequenceId: sequence.dbId,
+            projectId
+        })
+    );
+    navigate("/Project_Sequence/Others_Sequence");
+};
 
     // เมนูคลิกขวา ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

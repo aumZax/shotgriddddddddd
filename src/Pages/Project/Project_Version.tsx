@@ -754,55 +754,26 @@ export default function Project_Version() {
                                                             <td className="px-2 py-4">
                                                                 {group.entity_type !== "unassigned" ? (
                                                                     <span
-                                                                        onClick={async (e) => {
-                                                                            e.stopPropagation();
-                                                                            if (group.entity_type === "shot") {
-                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                                const res = await axios.post(ENDPOINTS.SHOTLIST, { projectId });
-                                                                                let foundShot = null;
-                                                                                for (const g of res.data) {
-                                                                                    const shot = g.shots?.find((s: any) => s.id === group.entity_id);
-                                                                                    if (shot) { foundShot = { ...shot, sequence: g.category, assets: shot.assets || [] }; break; }
-                                                                                }
-                                                                                if (foundShot) {
-                                                                                    localStorage.setItem("selectedShot", JSON.stringify({
-                                                                                        id: foundShot.id, shot_name: foundShot.shot_name,
-                                                                                        description: foundShot.description, status: foundShot.status,
-                                                                                        thumbnail: foundShot.thumbnail || foundShot.file_url || "",
-                                                                                        sequence: foundShot.sequence, assets: foundShot.assets,
-                                                                                    }));
-                                                                                    navigate("/Project_Shot/Others_Shot");
-                                                                                }
-                                                                            } else if (group.entity_type === "asset") {
-                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                                const res = await axios.post(ENDPOINTS.ASSETLIST, { projectId });
-                                                                                let foundAsset = null;
-                                                                                for (const g of res.data) {
-                                                                                    const asset = g.assets?.find((a: any) => a.id === group.entity_id);
-                                                                                    if (asset) { foundAsset = { ...asset, category: g.category }; break; }
-                                                                                }
-                                                                                if (foundAsset) {
-                                                                                    localStorage.setItem("selectedAsset", JSON.stringify({
-                                                                                        id: foundAsset.id, asset_name: foundAsset.asset_name,
-                                                                                        description: foundAsset.description, status: foundAsset.status,
-                                                                                        file_url: foundAsset.file_url || "", sequence: foundAsset.category,
-                                                                                    }));
-                                                                                    navigate("/Project_Assets/Others_Asset");
-                                                                                }
-                                                                            } else if (group.entity_type === "sequence") {
-                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                                const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, { projectId });
-                                                                                const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
-                                                                                if (sequence) {
-                                                                                    localStorage.setItem("sequenceData", JSON.stringify({
-                                                                                        sequenceId: sequence.id, sequenceName: sequence.sequence_name,
-                                                                                        description: sequence.description, status: sequence.status || "wtg",
-                                                                                        thumbnail: sequence.file_url || "", createdAt: sequence.created_at, projectId,
-                                                                                    }));
-                                                                                    navigate("/Project_Sequence/Others_Sequence");
-                                                                                }
-                                                                            }
-                                                                        }}
+                                                                        onClick={(e) => {
+    e.stopPropagation();
+    if (group.entity_type === "shot") {
+        localStorage.setItem("selectedShot", JSON.stringify({
+            id: group.entity_id
+        }));
+        navigate("/Project_Shot/Others_Shot");
+    } else if (group.entity_type === "asset") {
+        localStorage.setItem("selectedAsset", JSON.stringify({
+            id: group.entity_id
+        }));
+        navigate("/Project_Assets/Others_Asset");
+    } else if (group.entity_type === "sequence") {
+        localStorage.setItem("sequenceData", JSON.stringify({
+            sequenceId: group.entity_id,
+            projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+        }));
+        navigate("/Project_Sequence/Others_Sequence");
+    }
+}}
                                                                         className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"
                                                                     >
                                                                         {group.entity_name}

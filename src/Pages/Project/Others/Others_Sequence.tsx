@@ -331,34 +331,13 @@ export default function Others_Sequence() {
         fetchSequenceDetail();
     }, [sequenceId]);
 
-    useEffect(() => {
-        const stored = localStorage.getItem("sequenceData");
-
-        if (!stored) {
-            console.warn("sequenceData not found");
-            navigate("/Project_Sequence");
-            return;
-        }
-
-        const seq = JSON.parse(stored);
-
-        setSequenceData({
-            id: seq.sequenceId,
-            shotCode: "",
-            sequence: seq.sequenceName,
-            status: seq.status,
-            tags: [],
-            thumbnail: seq.thumbnail,
-            description: seq.description || "",
-            dueDate: seq.createdAt
-        });
-        // ถ้ามี thumbnail ให้ set loading เป็น false เมื่อโหลดเสร็จ
-        if (seq.thumbnail) {
-            setThumbnailLoading(true);
-        } else {
-            setThumbnailLoading(false);
-        }
-    }, []);
+useEffect(() => {
+    if (!sequenceId) {
+        navigate("/Project_Sequence");
+        return;
+    }
+    fetchSequenceInfo();
+}, [sequenceId]);
 
     //============================================================================================================================================//
 
@@ -760,28 +739,13 @@ export default function Others_Sequence() {
     };
 
     const updateSequence = (payload: any) => {
-        return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: SequenceData.id,
-                ...payload
-            })
-        })
-            .then(() => {
-                const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
-
-                const updated = {
-                    ...stored,
-                    sequenceName: payload.sequence_name ?? stored.sequenceName,
-                    description: payload.description ?? stored.description,
-                    status: payload.status ?? stored.status
-                };
-
-                localStorage.setItem("sequenceData", JSON.stringify(updated));
-            })
-            .catch(console.error);
-    };
+    return fetch(ENDPOINTS.UPDATE_SEQUENCE, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: SequenceData.id, ...payload })
+    }).catch(console.error);
+    // ลบ .then(...localStorage...) ออกทั้งหมด
+};
 
     const fetchTaskVersions = async (taskId: number) => {
         setIsLoadingVersions(true);
@@ -993,6 +957,36 @@ export default function Others_Sequence() {
 
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    const fetchSequenceInfo = async () => {
+    if (!sequenceId) {
+        navigate("/Project_Sequence");
+        return;
+    }
+    try {
+        const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCE_DETAIL, { sequenceId });
+        const rawData = res.data;
+        if (!rawData.length) return;
+
+        const row = rawData[0];
+        setSequenceData({
+            id: row.sequence_id,
+            shotCode: "",
+            sequence: row.sequence_name,
+            status: (row.sequence_status || "wtg") as StatusType,
+            tags: [],
+            thumbnail: row.sequence_thumbnail || "",
+            description: row.sequence_description || "",
+            dueDate: row.sequence_created_at || ""
+        });
+        setThumbnailLoading(!!row.sequence_thumbnail);
+    } catch (err) {
+        console.error("fetchSequenceInfo error:", err);
+    }
+};
+
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
@@ -1126,9 +1120,7 @@ export default function Others_Sequence() {
                                                                 if (res.ok) {
                                                                     setSequenceData(prev => ({ ...prev, thumbnail: data.file.fileUrl }));
 
-                                                                    const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
-                                                                    const updated = { ...stored, thumbnail: data.file.fileUrl };
-                                                                    localStorage.setItem("sequenceData", JSON.stringify(updated));
+                                                                 
                                                                 } else {
                                                                     alert("Upload failed: " + data.error);
                                                                 }
@@ -1169,9 +1161,7 @@ export default function Others_Sequence() {
                                                     if (res.ok) {
                                                         setSequenceData(prev => ({ ...prev, thumbnail: data.file.fileUrl }));
 
-                                                        const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
-                                                        const updated = { ...stored, thumbnail: data.file.fileUrl };
-                                                        localStorage.setItem("sequenceData", JSON.stringify(updated));
+                                                        
                                                     }
                                                 } catch (err) {
                                                     console.error("❌ Upload error:", err);

@@ -288,121 +288,36 @@ function EntitySection({ group }: { group: EntityGroup }) {
                   <p
                     className="text-sm font-semibold leading-snug truncate max-w-[110px] text-slate-50 hover:text-blue-400 underline decoration-slate-100 hover:decoration-blue-400 underline-offset-2 transition-colors cursor-pointer"
                     title={group.entity_name}
-                    onClick={async (e) => {
-                      e.stopPropagation();
+                    onClick={() => {
+                      // set projectId และ projectData ก่อน (Others_* ต้องการ)
+                      localStorage.setItem("projectId", JSON.stringify(group.project_id));
+                      localStorage.setItem("projectData", JSON.stringify({
+                        projectId: group.project_id,
+                        projectName: group.project_name ?? "",
+                        thumbnail: "",
+                        createdBy: "",
+                        createdAt: new Date().toISOString(),
+                        fetchedAt: new Date().toISOString(),
+                        projectInfo: null,
+                        projectDetails: null,
+                      }));
 
                       if (group.type === 'sequence') {
-                        try {
-                          const res = await fetch(ENDPOINTS.PROJECT_SEQUENCES, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ projectId: group.project_id }),
-                          });
-                          const data = await res.json();
-                          const sequence = data.find((seq: any) => seq.id === group.entity_id);
-                          if (sequence) {
-                            localStorage.setItem("sequenceData", JSON.stringify({
-                              sequenceId: sequence.id,
-                              sequenceName: sequence.sequence_name,
-                              description: sequence.description,
-                              status: sequence.status || 'wtg',
-                              thumbnail: sequence.file_url || '',
-                              createdAt: sequence.created_at,
-                              projectId: group.project_id,
-                            }));
-                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
-                            localStorage.setItem("projectData", JSON.stringify({
-                              projectId: group.project_id,
-                              projectName: group.project_name,
-                              thumbnail: "",
-                              createdBy: "",
-                              createdAt: new Date().toISOString(),
-                              fetchedAt: new Date().toISOString(),
-                              projectInfo: null,
-                              projectDetails: null,
-                            }));
-                            navigate("/Project_Sequence/Others_Sequence");
-                          }
-                        } catch (err) { console.error("Failed to fetch sequence:", err); }
-
+                        localStorage.setItem("sequenceData", JSON.stringify({
+                          sequenceId: group.entity_id,
+                          projectId: group.project_id
+                        }));
+                        navigate("/Project_Sequence/Others_Sequence");
                       } else if (group.type === 'shot') {
-                        try {
-                          const res = await fetch(ENDPOINTS.SHOTLIST, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ projectId: group.project_id }),
-                          });
-                          const data = await res.json();
-                          let foundShot = null;
-                          for (const grp of data) {
-                            const shot = grp.shots?.find((s: any) => s.id === group.entity_id);
-                            if (shot) {
-                              foundShot = { ...shot, sequence: grp.category, sequenceDetail: shot.sequence || null, assets: shot.assets || [] };
-                              break;
-                            }
-                          }
-                          if (foundShot) {
-                            localStorage.setItem("selectedShot", JSON.stringify({
-                              id: foundShot.id,
-                              shot_name: foundShot.shot_name,
-                              description: foundShot.description,
-                              status: foundShot.status,
-                              thumbnail: foundShot.thumbnail || foundShot.file_url || "",
-                              sequence: foundShot.sequence,
-                              sequenceDetail: foundShot.sequenceDetail,
-                              assets: foundShot.assets,
-                            }));
-                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
-                            localStorage.setItem("projectData", JSON.stringify({
-                              projectId: group.project_id,
-                              projectName: group.project_name,
-                              thumbnail: "",
-                              createdBy: "",
-                              createdAt: new Date().toISOString(),
-                              fetchedAt: new Date().toISOString(),
-                              projectInfo: null,
-                              projectDetails: null,
-                            }));
-                            navigate("/Project_Shot/Others_Shot");
-                          } else { alert("ไม่พบข้อมูล Shot"); }
-                        } catch (err) { console.error("Failed to fetch shot:", err); alert("ไม่สามารถโหลดข้อมูล Shot ได้"); }
-
+                        localStorage.setItem("selectedShot", JSON.stringify({
+                          id: group.entity_id
+                        }));
+                        navigate("/Project_Shot/Others_Shot");
                       } else if (group.type === 'asset') {
-                        try {
-                          const res = await fetch(ENDPOINTS.ASSETLIST, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ projectId: group.project_id }),
-                          });
-                          const data = await res.json();
-                          let foundAsset = null;
-                          for (const grp of data) {
-                            const asset = grp.assets?.find((a: any) => a.id === group.entity_id);
-                            if (asset) { foundAsset = { ...asset, category: grp.category }; break; }
-                          }
-                          if (foundAsset) {
-                            localStorage.setItem("selectedAsset", JSON.stringify({
-                              id: foundAsset.id,
-                              asset_name: foundAsset.asset_name,
-                              description: foundAsset.description,
-                              status: foundAsset.status,
-                              file_url: foundAsset.file_url || "",
-                              sequence: foundAsset.category,
-                            }));
-                            localStorage.setItem("projectId", JSON.stringify(group.project_id));
-                            localStorage.setItem("projectData", JSON.stringify({
-                              projectId: group.project_id,
-                              projectName: group.project_name,
-                              thumbnail: "",
-                              createdBy: "",
-                              createdAt: new Date().toISOString(),
-                              fetchedAt: new Date().toISOString(),
-                              projectInfo: null,
-                              projectDetails: null,
-                            }));
-                            navigate('/Project_Assets/Others_Asset');
-                          } else { alert("ไม่พบข้อมูล Asset"); }
-                        } catch (err) { console.error("Failed to fetch asset:", err); alert("ไม่สามารถโหลดข้อมูล Asset ได้"); }
+                        localStorage.setItem("selectedAsset", JSON.stringify({
+                          id: group.entity_id
+                        }));
+                        navigate("/Project_Assets/Others_Asset");
                       }
                     }}
                   >

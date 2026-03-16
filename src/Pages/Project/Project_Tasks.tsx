@@ -1261,7 +1261,7 @@ export default function Project_Tasks() {
                                 ) : fetchError ? (
                                     <tr>
                                         <td colSpan={10} className="px-4 py-16">
-                                            <ErrorLoadingState entityName="tasks"/>
+                                            <ErrorLoadingState entityName="tasks" />
                                         </td>
                                     </tr>
                                 ) : taskGroups.length === 0 ? (
@@ -1426,117 +1426,23 @@ export default function Project_Tasks() {
                                                                         e.stopPropagation();
 
                                                                         if (group.entity_type === 'sequence') {
-                                                                            try {
-                                                                                const res = await axios.post(ENDPOINTS.PROJECT_SEQUENCES, {
-                                                                                    projectId: JSON.parse(localStorage.getItem("projectId") || "null")
-                                                                                });
-
-                                                                                const sequence = res.data.find((seq: any) => seq.id === group.entity_id);
-
-                                                                                if (sequence) {
-                                                                                    localStorage.setItem(
-                                                                                        "sequenceData",
-                                                                                        JSON.stringify({
-                                                                                            sequenceId: sequence.id,
-                                                                                            sequenceName: sequence.sequence_name,
-                                                                                            description: sequence.description,
-                                                                                            status: sequence.status || 'wtg',
-                                                                                            thumbnail: sequence.file_url || '',
-                                                                                            createdAt: sequence.created_at,
-                                                                                            projectId: JSON.parse(localStorage.getItem("projectId") || "null")
-                                                                                        })
-                                                                                    );
-                                                                                    navigate("/Project_Sequence/Others_Sequence");
-                                                                                }
-                                                                            } catch (err) {
-                                                                                console.error("Failed to fetch sequence:", err);
-                                                                            }
+                                                                            localStorage.setItem("sequenceData", JSON.stringify({
+                                                                                sequenceId: group.entity_id,
+                                                                                projectId: JSON.parse(localStorage.getItem("projectId") || "null")
+                                                                            }));
+                                                                            navigate("/Project_Sequence/Others_Sequence");
                                                                         }
-                                                                        // ⭐ เพิ่มการจัดการสำหรับ shot
-                                                                        // ⭐ เพิ่มการจัดการสำหรับ shot
                                                                         else if (group.entity_type === 'shot') {
-                                                                            try {
-                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                                const res = await axios.post(ENDPOINTS.SHOTLIST, { projectId });
-
-                                                                                // ค้นหา shot ที่ตรงกับ entity_id
-                                                                                let foundShot = null;
-                                                                                for (const group of res.data) {
-                                                                                    const shot = group.shots?.find((s: any) => s.id === task.entity_id);
-                                                                                    if (shot) {
-                                                                                        foundShot = {
-                                                                                            ...shot,
-                                                                                            sequence: group.category,
-                                                                                            sequenceDetail: shot.sequence || null,
-                                                                                            assets: shot.assets || []
-                                                                                        };
-                                                                                        break;
-                                                                                    }
-                                                                                }
-
-                                                                                if (foundShot) {
-                                                                                    localStorage.setItem(
-                                                                                        "selectedShot",
-                                                                                        JSON.stringify({
-                                                                                            id: foundShot.id,
-                                                                                            shot_name: foundShot.shot_name,
-                                                                                            description: foundShot.description,
-                                                                                            status: foundShot.status,
-                                                                                            // ⭐ แก้ไขตรงนี้ - ลองใช้ทั้ง thumbnail และ file_url
-                                                                                            thumbnail: foundShot.thumbnail || foundShot.file_url || "",
-                                                                                            sequence: foundShot.sequence,
-                                                                                            sequenceDetail: foundShot.sequenceDetail,
-                                                                                            assets: foundShot.assets
-                                                                                        })
-                                                                                    );
-                                                                                    navigate("/Project_Shot/Others_Shot");
-                                                                                } else {
-                                                                                    alert("ไม่พบข้อมูล Shot");
-                                                                                }
-                                                                            } catch (err) {
-                                                                                console.error("Failed to fetch shot:", err);
-                                                                                alert("ไม่สามารถโหลดข้อมูล Shot ได้");
-                                                                            }
+                                                                            localStorage.setItem("selectedShot", JSON.stringify({
+                                                                                id: task.entity_id
+                                                                            }));
+                                                                            navigate("/Project_Shot/Others_Shot");
                                                                         }
-                                                                        // ⭐ เพิ่มการจัดการสำหรับ asset
                                                                         else if (group.entity_type === 'asset') {
-                                                                            try {
-                                                                                const projectId = JSON.parse(localStorage.getItem("projectId") || "null");
-                                                                                const res = await axios.post(ENDPOINTS.ASSETLIST, { projectId });
-
-                                                                                // ค้นหา asset ที่ตรงกับ entity_id
-                                                                                let foundAsset = null;
-                                                                                for (const group of res.data) {
-                                                                                    const asset = group.assets?.find((a: any) => a.id === task.entity_id);
-                                                                                    if (asset) {
-                                                                                        foundAsset = {
-                                                                                            ...asset,
-                                                                                            category: group.category
-                                                                                        };
-                                                                                        break;
-                                                                                    }
-                                                                                }
-
-                                                                                if (foundAsset) {
-                                                                                    localStorage.setItem(
-                                                                                        "selectedAsset",
-                                                                                        JSON.stringify({
-                                                                                            id: foundAsset.id,
-                                                                                            asset_name: foundAsset.asset_name,
-                                                                                            description: foundAsset.description,
-                                                                                            status: foundAsset.status,
-                                                                                            file_url: foundAsset.file_url || "",
-                                                                                            sequence: foundAsset.category
-                                                                                        })
-                                                                                    );
-                                                                                    navigate('/Project_Assets/Others_Asset');
-                                                                                } else {
-                                                                                    alert("ไม่พบข้อมูล Asset");
-                                                                                }
-                                                                            } catch (err) {
-                                                                                console.error("Failed to fetch asset:", err);
-                                                                                alert("ไม่สามารถโหลดข้อมูล Asset ได้");
-                                                                            }
+                                                                            localStorage.setItem("selectedAsset", JSON.stringify({
+                                                                                id: task.entity_id
+                                                                            }));
+                                                                            navigate('/Project_Assets/Others_Asset');
                                                                         }
                                                                     }}
                                                                     className="text-gray-300 hover:text-blue-400 underline decoration-gray-400/30 hover:decoration-blue-400 underline-offset-3 transition-colors font-medium cursor-pointer"

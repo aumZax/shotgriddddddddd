@@ -554,8 +554,7 @@ export default function Project_Assets() {
             // เก็บแค่ id และ projectId context เท่านั้น
             localStorage.setItem("selectedAsset", JSON.stringify({
                 id: asset.id,
-                type: asset.type || '',                              // ← asset type
-                sequence: assetData[categoryIndex].category || '',   // ← category = type จริงๆ แต่เก็บไว้ fallback
+        
             }));
 
             navigate('/Project_Assets/Others_Asset');
