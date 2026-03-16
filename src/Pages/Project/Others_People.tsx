@@ -286,7 +286,7 @@ export default function Others_People() {
                 <button
                   onClick={() => setShowCreatePerson(true)}
                   disabled={!canManage}
-                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
+                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 rounded-2xl ${canManage ? "bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
                 >
                   <Plus className="w-4 h-4" /> Add Person
                 </button>
@@ -300,7 +300,7 @@ export default function Others_People() {
                 <button
                   onClick={() => setShowAddViewer(true)}
                   disabled={!canManage}
-                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-700 hover:to-emerald-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
+                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 rounded-2xl ${canManage ? "bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-700 hover:to-emerald-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
                 >
                   <Plus className="w-4 h-4" /> Add Viewer
                 </button>
