@@ -2267,6 +2267,18 @@ export default function Others_Asset() {
                                 </div>
                             </div>
 
+                            {/* Description */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-gray-400 font-medium">Description</label>
+                                <textarea
+                                    placeholder="คำอธิบายเพิ่มเติมเกี่ยวกับเวอร์ชันนี้ (ไม่บังคับ)"
+                                    value={createVersionForm.description}
+                                    onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
+                                    rows={2}
+                                    className="w-full px-3 py-2 bbg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none transition-all"
+                                />
+                            </div>
+
                             {/* Version Name */}
                             <div className="space-y-1">
                                 <label className="text-xs text-gray-400 font-medium">
@@ -2451,17 +2463,7 @@ export default function Others_Asset() {
                                 </div>
                             </div>
 
-                            {/* Description */}
-                            <div className="space-y-1">
-                                <label className="text-xs text-gray-400 font-medium">Description</label>
-                                <textarea
-                                    placeholder="คำอธิบายเพิ่มเติมเกี่ยวกับเวอร์ชันนี้ (ไม่บังคับ)"
-                                    value={createVersionForm.description}
-                                    onChange={e => setCreateVersionForm(p => ({ ...p, description: e.target.value }))}
-                                    rows={2}
-                                    className="w-full px-3 py-2 bbg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none transition-all"
-                                />
-                            </div>
+
 
                         </div>
 

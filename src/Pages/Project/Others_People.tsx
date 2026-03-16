@@ -286,7 +286,7 @@ export default function Others_People() {
                 <button
                   onClick={() => setShowCreatePerson(true)}
                   disabled={!canManage}
-                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-700 text-gray-500 cursor-not-allowed"}`}
+                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
                 >
                   <Plus className="w-4 h-4" /> Add Person
                 </button>
@@ -300,7 +300,7 @@ export default function Others_People() {
                 <button
                   onClick={() => setShowAddViewer(true)}
                   disabled={!canManage}
-                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-700 text-gray-500 cursor-not-allowed"}`}
+                  className={`px-4 py-1.5 text-sm rounded flex items-center gap-1.5 ${canManage ? "bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-700 hover:to-emerald-700 text-white" : "bg-gradient-to-r from-gray-700 to-gray-700 text-gray-500 cursor-not-allowed"}`}
                 >
                   <Plus className="w-4 h-4" /> Add Viewer
                 </button>
@@ -510,8 +510,8 @@ export default function Others_People() {
               <p className="font-semibold text-gray-100 truncate">"{deleteConfirm.peopleEmail}"</p>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 font-medium">Cancel</button>
-              <button disabled={!canEditPerm} onClick={() => handleDeletePerson(deleteConfirm.peopleId)} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium">Delete</button>
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 text-gray-200 font-medium">Cancel</button>
+              <button disabled={!canEditPerm} onClick={() => handleDeletePerson(deleteConfirm.peopleId)} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white font-medium">Delete</button>
             </div>
           </div>
         </div>
@@ -534,8 +534,8 @@ export default function Others_People() {
               <p className="text-sm text-gray-400">{deleteViewerConfirm.email}</p>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteViewerConfirm(null)} className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 font-medium">Cancel</button>
-              <button onClick={() => handleDeleteViewer(deleteViewerConfirm)} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium">Remove</button>
+              <button onClick={() => setDeleteViewerConfirm(null)} className="px-4 py-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 text-gray-200 font-medium">Cancel</button>
+              <button onClick={() => handleDeleteViewer(deleteViewerConfirm)} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white font-medium">Remove</button>
             </div>
           </div>
         </div>
@@ -714,13 +714,13 @@ function AddViewerModal({
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-gray-700 flex justify-end gap-3">
-          <button onClick={onClose} disabled={submitting} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-lg transition-colors">
+          <button onClick={onClose} disabled={submitting} className="px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 text-gray-200 text-sm rounded-lg transition-colors">
             Cancel
           </button>
           <button
             onClick={handleAdd}
             disabled={!selected || submitting}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-700 hover:to-emerald-700 text-white text-sm rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? (
               <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Adding...</>
@@ -862,8 +862,8 @@ function CreatePersonModal({
         <div className="px-5 py-3 border-t border-gray-600 flex justify-between items-center">
           <button className="text-sm text-blue-400 hover:underline">Open Bulk Import</button>
           <div className="flex gap-2">
-            <button onClick={onClose} disabled={isSubmitting} className="px-4 h-9 bg-[#4a4a4a] hover:bg-[#555] text-gray-200 text-sm rounded disabled:opacity-50">Cancel</button>
-            <button onClick={submit} disabled={isSubmitting} className="px-4 h-9 bg-[#00a8e1] hover:bg-[#0096c7] text-white text-sm rounded disabled:opacity-50">
+            <button onClick={onClose} disabled={isSubmitting} className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 text-gray-200 text-sm rounded disabled:opacity-50">Cancel</button>
+            <button onClick={submit} disabled={isSubmitting} className="px-4 h-9 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white text-sm rounded disabled:opacity-50">
               {isSubmitting ? "Adding..." : "Add Person"}
             </button>
           </div>
