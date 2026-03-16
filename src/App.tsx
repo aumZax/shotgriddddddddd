@@ -54,7 +54,7 @@ const PROJECT_PAGES = [
   { label: "Tasks", path: "/Project_Tasks", icon: CheckSquare },
   { label: "Version", path: "/Project_Version", icon: GitBranch },
   { label: "People", path: "/Others_People", icon: Users },
-  
+
 ];
 
 
@@ -501,11 +501,15 @@ function MainLayout() {
               )}
             </div>
 
-            {/* <Link className="hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap" to="/people">
+            {/* People Link */}
+            <div onClick={() => {
+              navigate("/Others_People", { state: { fromMainNav: true, source: "header-people-button" } });
+            }} className="cursor-pointer hidden md:inline-block hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap">
               People
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
-            </Link>
-            <Link to="/apps" className="hidden lg:flex items-center gap-1 hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap">
+            </div>
+
+            {/* <Link to="/apps" className="hidden lg:flex items-center gap-1 hover:text-blue-400 text-xl text-gray-300 font-medium transition-all duration-300 hover:scale-105 relative group whitespace-nowrap">
               <span>Apps</span>
               <ChevronDown className="w-5 h-5" />
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
@@ -515,7 +519,7 @@ function MainLayout() {
 
         {/* RIGHT */}
         <div className="flex items-center gap-4">
-         
+
 
           {/* Profile with Dropdown */}
           <div className="relative" ref={dropdownRef}>

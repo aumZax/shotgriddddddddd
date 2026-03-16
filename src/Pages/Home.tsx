@@ -765,146 +765,144 @@ export default function Home() {
                 </div>
             </header>
 
-          {showModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
-    <div
-      className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
-      style={{
-        background: 'linear-gradient(160deg, #1a1d2e 0%, #141620 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      {/* Header */}
-      <div className="px-8 pt-8 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          
-          <h2 className="text-xl font-semibold text-white tracking-tight">
-            New Project
-          </h2>
-        </div>
-        <p className="text-sm text-gray-500">Fill in the details to get started</p>
-      </div>
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
+                    <div
+                        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+                        style={{
+                            background: 'linear-gradient(160deg, #1a1d2e 0%, #141620 100%)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                    >
+                        {/* Header */}
+                        <div className="px-8 pt-8 pb-6">
+                            <div className="flex items-center gap-3 mb-1">
 
-      {/* Divider */}
-      <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)' }} />
+                                <h2 className="text-xl font-semibold text-white tracking-tight">
+                                    New Project
+                                </h2>
+                            </div>
+                            <p className="text-sm text-gray-500">Fill in the details to get started</p>
+                        </div>
 
-      {/* Body */}
-      <div className="px-8 py-6 space-y-5">
-        {error && (
-          <div className="flex items-center gap-2 p-3 rounded-xl text-sm text-red-300"
-               style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
-            <span>⚠</span> {error}
-          </div>
-        )}
+                        {/* Divider */}
+                        <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)' }} />
 
-        {/* Project Name */}
-        <div>
-          <label className="block text-xs font-medium text-gray-400 mb-2 tracking-wide uppercase">
-            Project Name
-          </label>
-          <input
-            type="text"
-            placeholder="My awesome project..."
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            maxLength={40}
-            className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 outline-none transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.09)',
-            }}
-            onFocus={e => {
-              e.currentTarget.style.border = '1px solid rgba(79,142,247,0.6)';
-              e.currentTarget.style.background = 'rgba(79,142,247,0.06)';
-            }}
-            onBlur={e => {
-              e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            }}
-          />
-          <div className="text-right text-xs text-gray-700 mt-1">{projectName.length}/40</div>
-        </div>
+                        {/* Body */}
+                        <div className="px-8 py-6 space-y-5">
+                            {error && (
+                                <div className="flex items-center gap-2 p-3 rounded-xl text-sm text-red-300"
+                                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                                    <span>⚠</span> {error}
+                                </div>
+                            )}
 
-        {/* Description */}
-        <div>
-          <label className="block text-xs font-medium text-gray-400 mb-2 tracking-wide uppercase">
-            Description
-            <span className="normal-case text-gray-600 font-normal ml-1.5">(optional)</span>
-          </label>
-          <textarea
-            placeholder="Describe what this project is about..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={200}
-            rows={3}
-            className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 outline-none resize-none transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.09)',
-            }}
-            onFocus={e => {
-              e.currentTarget.style.border = '1px solid rgba(79,142,247,0.6)';
-              e.currentTarget.style.background = 'rgba(79,142,247,0.06)';
-            }}
-            onBlur={e => {
-              e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            }}
-          />
-          <div className="text-right text-xs text-gray-700 mt-1">{description.length}/200</div>
-        </div>
-      </div>
+                            {/* Project Name */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-2 tracking-wide uppercase">
+                                    Project Name
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="My awesome project..."
+                                    value={projectName}
+                                    onChange={(e) => setProjectName(e.target.value)}
+                                    maxLength={40}
+                                    className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 outline-none transition-all"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.09)',
+                                    }}
+                                    onFocus={e => {
+                                        e.currentTarget.style.border = '1px solid rgba(79,142,247,0.6)';
+                                        e.currentTarget.style.background = 'rgba(79,142,247,0.06)';
+                                    }}
+                                    onBlur={e => {
+                                        e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    }}
+                                />
+                                <div className="text-right text-xs text-gray-700 mt-1">{projectName.length}/40</div>
+                            </div>
 
-      {/* Divider */}
-      <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)' }} />
+                            {/* Description */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-2 tracking-wide uppercase">
+                                    Description
+                                    <span className="normal-case text-gray-600 font-normal ml-1.5">(optional)</span>
+                                </label>
+                                <textarea
+                                    placeholder="Describe what this project is about..."
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    maxLength={200}
+                                    rows={3}
+                                    className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 outline-none resize-none transition-all"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.09)',
+                                    }}
+                                    onFocus={e => {
+                                        e.currentTarget.style.border = '1px solid rgba(79,142,247,0.6)';
+                                        e.currentTarget.style.background = 'rgba(79,142,247,0.06)';
+                                    }}
+                                    onBlur={e => {
+                                        e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    }}
+                                />
+                                <div className="text-right text-xs text-gray-700 mt-1">{description.length}/200</div>
+                            </div>
+                        </div>
 
-      {/* Footer */}
-      <div className="px-8 py-5 flex items-center justify-between gap-3">
-        <button
-          onClick={() => {
-            setShowModal(false);
-            setProjectName('');
-            setDescription('');
-            setError('');
-          }}
-          className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-400 transition-all"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-        >
-          Cancel
-        </button>
+                        {/* Divider */}
+                        <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)' }} />
 
-        <button
-          onClick={handleCreateProject}
-          disabled={loading || !projectName}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            background: 'linear-gradient(135deg, #1a6ef5, #5b3cf5)',
-            boxShadow: projectName && !loading ? '0 0 20px rgba(79,142,247,0.3)' : 'none',
-          }}
-          onMouseEnter={e => { if (projectName && !loading) e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
-                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-              </svg>
-              Creating...
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5">
-              Create Project <span className="opacity-70">→</span>
-            </span>
-          )}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                        {/* Footer */}
+                        <div className="px-8 py-5 flex items-center justify-between gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setProjectName('');
+                                    setDescription('');
+                                    setError('');
+                                }}
+                                className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-400 transition-all"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleCreateProject}
+                                disabled={loading || !projectName}
+                                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1a6ef5, #5b3cf5)',
+                                    boxShadow: projectName && !loading ? '0 0 20px rgba(79,142,247,0.3)' : 'none',
+                                }}
+                                onMouseEnter={e => { if (projectName && !loading) e.currentTarget.style.opacity = '0.88'; }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                            >
+                                {loading ? (
+                                    <span className="flex items-center gap-2">
+
+                                        <LoaderCircle className="animate-spin w-4 h-4" />
+                                        Creating...
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5">
+                                        Create Project <span className="opacity-70">→</span>
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="h-22"></div>
 
             <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-8 px-4 md:px-6 lg:px-2">

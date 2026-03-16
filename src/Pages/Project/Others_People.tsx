@@ -5,6 +5,7 @@ import Navbar_Project from "../../components/Navbar_Project";
 import ENDPOINTS from "../../config";
 import axios from "axios";
 import PixelLoadingSkeleton from "../../components/PixelLoadingSkeleton";
+import { useLocation } from "react-router-dom";
 
 /* ================= Types ================= */
 interface Person {
@@ -27,7 +28,7 @@ interface UserData {
 }
 
 interface ProjectViewer {
-  id: number;     
+  id: number;
   user_id: number;
   project_id: number;
   added_at: string;
@@ -41,6 +42,8 @@ type MainTab = "team" | "viewers";
 /* ================= Main Component ================= */
 export default function Others_People() {
 
+  const location = useLocation();
+  const fromMainNav = location.state?.fromMainNav === true;
   const [projectName, setProjectName] = useState("");
   const [projectId, setProjectId] = useState<number | null>(null);
   const [permission, setPermission] = useState<string | null>(null);
@@ -66,9 +69,9 @@ export default function Others_People() {
   const [columnWidths] = useState<number[]>([48, 220, 220, 260, 160, 200]);
   const now = new Date();
   const timeString = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: true });
-  
 
-  
+
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("projectData");
@@ -230,16 +233,25 @@ export default function Others_People() {
   /* ═══════════ Render ═══════════ */
   return (
     <div className="h-screen flex flex-col text-gray-200 bg-gray-900">
-      <div className="pt-14">
-        <Navbar_Project activeTab="other" />
-      </div>
+      {!fromMainNav && (
+        <div>
+          <div className="pt-14">
+            <Navbar_Project activeTab="other" />
+          </div>
+          <div className="pt-10"></div>
+        </div>
+
+      )}
+
+      {fromMainNav && (
+        <div className="pt-14"></div>
+      )}
 
       {/* ── Header ── */}
       <header className="w-full px-6 py-4 bg-gray-900 border-b border-gray-700">
         <div className="flex items-center gap-3 mb-3">
           <Users className="w-6 h-6 text-blue-400" />
           <h2 className="text-xl text-gray-200 font-normal">People</h2>
-          <span className="text-sm text-gray-400">{availableSeats}/{totalSeats} seats available</span>
           <span className="text-gray-600">|</span>
           <span className="text-sm text-gray-400">{usedSeats} in use</span>
         </div>
@@ -250,8 +262,8 @@ export default function Others_People() {
             <button
               onClick={() => setActiveTab("team")}
               className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border-b-2 transition-all bg-gradient-to-r from-gray-700 to-gray-700 ${activeTab === "team"
-                  ? "border-blue-500 text-blue-400 bg-gray-800"
-                  : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                ? "border-blue-500 text-blue-400 bg-gray-800"
+                : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
                 }`}
             >
               <User className="w-4 h-4" />
@@ -261,19 +273,22 @@ export default function Others_People() {
               </span>
             </button>
 
-            <button
-              onClick={() => setActiveTab("viewers")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border-b-2 transition-all bg-gradient-to-r from-gray-700 to-gray-700 ${activeTab === "viewers"
+            {!fromMainNav && (
+              <button
+                onClick={() => setActiveTab("viewers")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border-b-2 transition-all bg-gradient-to-r from-gray-700 to-gray-700 ${activeTab === "viewers"
                   ? "border-emerald-500 text-emerald-400 bg-gray-800"
                   : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-                }`}
-            >
-              <Eye className="w-4 h-4" />
-              Project Viewers
-              <span className={`px-2 py-0.5 rounded-full text-xs  ${activeTab === "viewers" ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-700 text-gray-400"}`}>
-                {viewers.length}
-              </span>
-            </button>
+                  }`}
+              >
+                <Eye className="w-4 h-4" />
+                Project Viewers
+                <span className={`px-2 py-0.5 rounded-full text-xs  ${activeTab === "viewers" ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-700 text-gray-400"}`}>
+                  {viewers.length}
+                </span>
+              </button>
+            )}
+
           </div>
 
           {/* Add button — changes per tab */}
@@ -316,7 +331,7 @@ export default function Others_People() {
         {/* ══ Tab: Team Members ══ */}
         {activeTab === "team" && (
           <div className="h-full overflow-x-auto overflow-y-auto">
-            {loadingPeople ? <PixelLoadingSkeleton/> : people.length === 0 ? (
+            {loadingPeople ? <PixelLoadingSkeleton /> : people.length === 0 ? (
               <div className="text-center text-gray-400 py-10">No team members yet. Click "Add Person" to get started.</div>
             ) : (
               <table className="border-collapse table-fixed" style={{ width: columnWidths.reduce((a, b) => a + b, 0) }}>
