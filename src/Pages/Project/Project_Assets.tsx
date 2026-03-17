@@ -195,6 +195,7 @@ export default function Project_Assets() {
         "Games - Large Prop",
         "Games - Medium Prop",
         "Games - Small Prop",
+        "Kantana VFX - Character Asset",
     ];
 
     const type_assets = [
@@ -769,6 +770,7 @@ export default function Project_Assets() {
                 else if (newAssetTaskTemplate === "Games - Large Prop") typeNum = 5;
                 else if (newAssetTaskTemplate === "Games - Medium Prop") typeNum = 6;
                 else if (newAssetTaskTemplate === "Games - Small Prop") typeNum = 7;
+                else if (newAssetTaskTemplate === "Kantana VFX - Character Asset") typeNum = 8;
 
                 if (typeNum !== null) {
                     await axios.post(ENDPOINTS.CREATE_TASK_ASSET, {
@@ -1542,7 +1544,7 @@ export default function Project_Assets() {
                                     value={newAssetName}
                                     onChange={(e) => setNewAssetName(e.target.value)}
                                     placeholder="Enter asset name"
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all" />
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all" />
                             </div>
 
                             {/* Description */}
@@ -1555,7 +1557,7 @@ export default function Project_Assets() {
                                     value={newAssetDescription}
                                     onChange={(e) => setNewAssetDescription(e.target.value)}
                                     placeholder="Short description of this asset"
-                                    className="w-full h-10 px-4 w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
                             </div>
 
@@ -1573,7 +1575,7 @@ export default function Project_Assets() {
                                     }}
                                     onFocus={() => setShowTemplateDropdown(true)}
                                     placeholder="Type to search templates..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
 
                                 {showTemplateDropdown && filteredTemplates.length > 0 && (
@@ -1604,7 +1606,7 @@ export default function Project_Assets() {
                                     }}
                                     onFocus={() => setShowAssetTypeDropdown(true)}
                                     placeholder="Type to search asset types..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
 
                                 {showAssetTypeDropdown && filteredAssetTypes.length > 0 && (

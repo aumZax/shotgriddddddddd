@@ -169,7 +169,8 @@ export default function ProjectShot() {
         "Animation - Shot",
         "Film VFX - Comp Only Shot",
         "Film VFX - Full CG Shot w/ Character",
-        "Film VFX - Full CG Shot w/o Character"
+        "Film VFX - Full CG Shot w/o Character",
+        "Kantana_VFX"
     ];
 
     const getProjectData = () => {
@@ -771,6 +772,7 @@ export default function ProjectShot() {
                 else if (taskTemplate === "Film VFX - Comp Only Shot") typeNum = 1;
                 else if (taskTemplate === "Film VFX - Full CG Shot w/ Character") typeNum = 2;
                 else if (taskTemplate === "Film VFX - Full CG Shot w/o Character") typeNum = 3;
+                else if (taskTemplate === "Kantana_VFX") typeNum = 4;
 
                 if (typeNum !== null) {
                     await axios.post(ENDPOINTS.CREATE_TASK_SHOT, {
@@ -1378,7 +1380,7 @@ export default function ProjectShot() {
                                     value={shotName}
                                     onChange={(e) => setShotName(e.target.value)}
                                     placeholder="Enter shot name..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
                             </div>
 
@@ -1392,7 +1394,7 @@ export default function ProjectShot() {
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="Enter description..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
                             </div>
 
@@ -1410,7 +1412,7 @@ export default function ProjectShot() {
                                     }}
                                     onFocus={() => setShowTemplateDropdown(true)}
                                     placeholder="Type to search templates..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
 
                                 {showTemplateDropdown && filteredTemplates.length > 0 && (
@@ -1438,7 +1440,7 @@ export default function ProjectShot() {
                                     onChange={(e) => handleSequenceInputChange(e.target.value)}
                                     onFocus={() => setShowSequenceDropdown(true)}
                                     placeholder="Type to search sequence..."
-                                    className="w-full h-10 px-4  bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4  bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
 
                                 {showSequenceDropdown && filteredSequences.length > 0 && (

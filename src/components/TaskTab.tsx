@@ -78,9 +78,12 @@ interface TasksTabProps {
     tasks: Task[];
     onTaskClick: (task: Task) => void;
     loadingTasks?: boolean; // ⭐ เพิ่ม
+    onTaskDeleted?: (taskId: number) => void; // ← เพิ่ม
+    selectedTaskId?: number | null;  // ← เพิ่ม
+    onClosePanel?: () => void;       // ← เพิ่ม
 }
 
-const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabProps) => {
+const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks, onTaskDeleted, selectedTaskId, onClosePanel }: TasksTabProps) => {
     const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
     // Task Name Editing
@@ -153,6 +156,11 @@ const TaskTab = ({ tasks: initialTasks, onTaskClick, loadingTasks }: TasksTabPro
             setTasks(prev => prev.filter(t => t.id !== taskId));
             setTaskDeleteConfirm(null);
             setTaskContextMenu(null);
+            onTaskDeleted?.(taskId);
+            // ถ้า task ที่ลบเป็น task ที่เปิด panel อยู่ → ปิด panel
+            if (selectedTaskId === taskId) {
+                onClosePanel?.();
+            }
         } catch (err) {
             console.error('Delete task failed:', err);
             alert('ไม่สามารถลบ Task ได้');

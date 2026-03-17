@@ -1199,7 +1199,7 @@ const handleOpenSequence = (sequence: any) => {
                                     value={newSequenceName}
                                     onChange={(e) => setNewSequenceName(e.target.value)}
                                     placeholder="Enter sequence name..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
                             </div>
 
@@ -1213,7 +1213,7 @@ const handleOpenSequence = (sequence: any) => {
                                     value={newSequenceDesc}
                                     onChange={(e) => setNewSequenceDesc(e.target.value)}
                                     placeholder="Add a description..."
-                                    className="w-full h-10 px-4 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
+                                    className="w-full h-10 px-4 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
                                 />
                             </div>
 

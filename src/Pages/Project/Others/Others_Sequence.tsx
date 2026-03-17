@@ -4,7 +4,7 @@ import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
 import { Check, Eye, Image, Upload, User, X, LoaderCircle, ChevronDown } from 'lucide-react';
-import TaskTab from "../../../components/TaskTab";
+// import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
 import ShotSequenceTab from '../../../components/Shot_SequenceTab';
@@ -116,7 +116,6 @@ export default function Others_Sequence() {
     const [showPreview, setShowPreview] = useState(false);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showCreateSequence_Task, setShowCreateSequence_Task] = useState(false);
-    const [showCreateSequence_Note, setShowCreateSequence_Note] = useState(false);
     const stored = JSON.parse(localStorage.getItem("sequenceData") || "{}");
     const sequenceId = stored.sequenceId;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
@@ -133,7 +132,7 @@ export default function Others_Sequence() {
     const [notes, setNotes] = useState<Note[]>([]);
     const [uploading, setUploading] = useState(false);
     const [allPeople, setAllPeople] = useState<Person[]>([]);
-    const [showCreateAsset_Note, setShowCreateAsset_Note] = useState(false);
+    const [showCreateSequence_Note, setShowCreateSequence_Note] = useState(false);
     const [, setSelectedFile] = useState<File | null>(null);
     const [selectedPeople, setSelectedPeople] = useState<Person[]>([]);
     const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
@@ -597,7 +596,7 @@ export default function Others_Sequence() {
             console.log('✅ Note created successfully:', result);
 
             // 3. Success
-            setShowCreateAsset_Note(false);
+            setShowCreateSequence_Note(false);
 
             // Reset form
             setSelectedFile(null);
@@ -686,7 +685,6 @@ export default function Others_Sequence() {
             });
             setShowCreateSequence_Task(false);
 
-            alert("สร้างงานสำเร็จ!");
 
         } catch (err: any) {
             console.error("Create task error:", err);
@@ -831,14 +829,14 @@ export default function Others_Sequence() {
                     </div>
                 );
 
-            case 'Tasks':
-                return (
-                    <TaskTab
-                        tasks={tasks}
-                        loadingTasks={loadingTasks} // ⭐ เพิ่ม
-                        onTaskClick={(task: Task) => setSelectedTask(task)}
-                    />
-                );
+            // case 'Tasks':
+            //     return (
+            //         <TaskTab
+            //             tasks={tasks}
+            //             loadingTasks={loadingTasks} // ⭐ เพิ่ม
+            //             onTaskClick={(task: Task) => setSelectedTask(task)}
+            //         />
+            //     );
 
             case 'Shots':
                 return (
@@ -1312,7 +1310,7 @@ export default function Others_Sequence() {
 
                         {/* Tabs */}
                         <nav className="flex items-center gap-2 border-t border-gray-700/50 pt-4 mt-4 overflow-x-auto pb-1">
-                            {['Sequence Info', 'Tasks', 'Shots', 'Assets', 'Notes'].map((tab) => (
+                            {['Sequence Info', 'Shots', 'Assets', 'Notes'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -1349,7 +1347,7 @@ export default function Others_Sequence() {
 
                                 {activeTab === 'Notes' && (
                                     <button
-                                        onClick={() => setShowCreateAsset_Note(true)}
+                                        onClick={() => setShowCreateSequence_Note(true)}
                                         className="px-3 py-1.5  text-white text-xs font-medium rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
 
                                     >
@@ -1518,32 +1516,14 @@ export default function Others_Sequence() {
                 </div>
             )}
 
+
+
             {/* Create Note Modal */}
             {showCreateSequence_Note && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateSequence_Note(false)} />
-                    <div className="relative w-full max-w-2xl bg-[#4a4a4a] rounded shadow-2xl">
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-t flex items-center justify-between">
-                            <h2 className="text-lg text-gray-200 font-normal">
-                                Create a new Note <span className="text-gray-400 text-sm font-normal">- Global Form</span>
-                            </h2>
-                            <button onClick={() => setShowCreateSequence_Note(false)} className="text-gray-400 hover:text-white text-xl">⚙️</button>
-                        </div>
-                        <div className="px-6 py-3 bg-[#3a3a3a] rounded-b flex justify-end items-center gap-3">
-                            <button onClick={() => setShowCreateSequence_Note(false)} className="px-4 h-9 bg-[#5a5a5a] hover:bg-[#6a6a6a] text-white text-sm rounded flex items-center justify-center">Cancel</button>
-                            <button className="px-4 h-9 bg-[#2d7a9e] hover:bg-[#3a8db5] text-white text-sm rounded flex items-center justify-center">Create Note</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-
-            {/* Create Note Modal */}
-            {showCreateAsset_Note && (
                 <>
                     <div
                         className="fixed inset-0 z-40 bg-black/60"
-                        onClick={() => setShowCreateAsset_Note(false)}
+                        onClick={() => setShowCreateSequence_Note(false)}
                     />
 
                     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -1584,7 +1564,7 @@ export default function Others_Sequence() {
                                         <span className="text-xs text-blue-300/60">- Global Form</span>
                                     </div>
                                     <div
-                                        onClick={() => setShowCreateAsset_Note(false)}
+                                        onClick={() => setShowCreateSequence_Note(false)}
                                         onMouseDown={(e) => e.stopPropagation()}
                                         className="text-gray-400 hover:text-white text-xl leading-none transition-colors cursor-pointer"
                                     >
@@ -1595,19 +1575,18 @@ export default function Others_Sequence() {
 
                             <div className="px-5 py-4 space-y-3">
                                 <div className="space-y-1.5">
-                                    <label className="flex items-center justify-between text-xs font-medium text-gray-300">
-                                        <span>
-                                            Links <span className="text-xs text-green-300 font-normal">auto</span>
-                                        </span>
-                                        <span className="text-[11px] text-gray-400">already selected</span>
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Links
                                     </label>
-                                    <input
-                                        disabled
-                                        type="text"
-                                        defaultValue={SequenceData?.sequence || ''}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
-                                    />
-                                    <p className="text-[11px] text-green-200">Auto-selected based on the current sequence.</p>
+                                    <div className="flex items-center gap-2 h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm">
+                                        <span className="truncate text-gray-400">
+                                        (Shot: {SequenceData?.sequence|| 'N/A'})
+                                        </span>
+                                        <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex-shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                                            auto
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -1788,7 +1767,7 @@ export default function Others_Sequence() {
 
                             <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
                                 <button
-                                    onClick={() => setShowCreateAsset_Note(false)}
+                                    onClick={() => setShowCreateSequence_Note(false)}
                                     className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
                                 >
                                     Cancel
@@ -2075,7 +2054,7 @@ export default function Others_Sequence() {
                                     value={createShotForm.shot_name}
                                     onChange={(e) => setCreateShotForm(p => ({ ...p, shot_name: e.target.value }))}
                                     autoFocus
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600"
                                 />
                             </div>
 
@@ -2093,7 +2072,7 @@ export default function Others_Sequence() {
 
                             <div className="grid grid-cols-[130px_1fr] gap-4 items-center">
                                 <label className="text-sm text-gray-300 text-right">Project</label>
-                                <div className="h-9 px-3 bg-[#0a1018]/60 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
+                                <div className="h-9 px-3 bg-white/4 border border-blue-500/10 rounded-lg text-gray-500 text-sm flex items-center select-none">
                                     {projectData?.projectName || 'Unknown Project'}
                                 </div>
                             </div>
@@ -2105,7 +2084,7 @@ export default function Others_Sequence() {
                                     value={createShotForm.description}
                                     onChange={(e) => setCreateShotForm(p => ({ ...p, description: e.target.value }))}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none"
+                                    className="px-3 py-2 bg-white/4 border border-blue-500/30 rounded-lg text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-600 resize-none"
                                 />
                             </div>
                         </div>

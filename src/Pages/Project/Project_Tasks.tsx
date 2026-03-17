@@ -203,7 +203,7 @@ export default function Project_Tasks() {
     // เพิ่ม state สำหรับ form
     const [createTaskForm, setCreateTaskForm] = useState({
         task_name: '',
-        entity_type: '',
+        entity_type: 'shot',
         entity_id: '',
         status: 'wtg',
         start_date: '',
@@ -293,7 +293,7 @@ export default function Project_Tasks() {
             }
 
             if (!createTaskForm.task_name.trim()) {
-                alert("กรุณากระบุชื่องาน");
+                alert("กรุณากระบุ Task Name");
                 return;
             }
 
@@ -329,7 +329,6 @@ export default function Project_Tasks() {
                     'asset': 1,
                     'shot': 2,
                     'sequence': 3,
-                    'unassigned': 4
                 };
 
                 const orderA = order[a.entity_type] || 999;
@@ -704,7 +703,6 @@ export default function Project_Tasks() {
                         'asset': 1,
                         'shot': 2,
                         'sequence': 3,
-                        'unassigned': 4
                     };
 
                     const orderA = order[a.entity_type] || 999;
@@ -1091,7 +1089,6 @@ export default function Project_Tasks() {
                                             { value: 'shot', label: 'Shot' },
                                             { value: 'asset', label: 'Asset' },
                                             { value: 'sequence', label: 'Sequence' },
-                                            { value: 'unassigned', label: 'Unassigned' },
                                         ].map(opt => (
                                             <button
                                                 key={opt.value}
@@ -1303,14 +1300,10 @@ export default function Project_Tasks() {
                                                             {/* Entity Info */}
                                                             <div className="flex items-center gap-2.5 flex-1">
                                                                 {/* ⭐ แก้ไขส่วนนี้ - จัดการกรณี unassigned */}
-                                                                <div className={`w-7 h-7 rounded flex items-center justify-center ${group.entity_type === 'unassigned'
-                                                                    ? 'bg-yellow-600/80'
-                                                                    : 'bg-indigo-600/80'
-                                                                    }`}>
+                                                                <div className="w-7 h-7 rounded flex items-center justify-center bg-indigo-600/80">
                                                                     <span className="text-white font-semibold text-xs">
-                                                                        {group.entity_type === 'unassigned'
-                                                                            ? '?'
-                                                                            : group.entity_name?.[0]?.toUpperCase()
+                                                                        {
+                                                                            group.entity_name?.[0]?.toUpperCase()
                                                                         }
                                                                     </span>
                                                                 </div>
@@ -1417,10 +1410,7 @@ export default function Project_Tasks() {
                                                         {/* ⭐ Entity Name */}
                                                         {/* ⭐ Entity Name */}
                                                         <td className="px-4 py-4">
-                                                            {/* ⭐ เช็คว่าเป็น unassigned หรือไม่ */}
-                                                            {group.entity_type === 'unassigned' ? (
-                                                                <span className="text-gray-600 italic text-sm">ไม่ได้กำหนด</span>
-                                                            ) : task.entity_type ? (
+                                                            {task.entity_type ? (
                                                                 <span
                                                                     onClick={async (e) => {
                                                                         e.stopPropagation();
@@ -1480,15 +1470,7 @@ export default function Project_Tasks() {
                                                                                 return;
                                                                             }
 
-                                                                            // ⭐ ปรับปรุงการจัดการ unassigned - รีเซ็ต availablePipelineSteps ก่อน
-                                                                            if (!entityType || entityType === 'unassigned') {
-                                                                                setAvailablePipelineSteps([]); // ⭐ เคลียร์ก่อน
-                                                                                fetchPipelineStepsByType('shot');
-                                                                                fetchPipelineStepsByType('asset');
-                                                                            } else {
-                                                                                setAvailablePipelineSteps([]); // ⭐ เคลียร์ก่อน
-                                                                                fetchPipelineStepsByType(entityType as 'asset' | 'shot');
-                                                                            }
+
 
                                                                             setEditingPipelineTaskId(task.id);
                                                                             setSelectedPipelineStepId(task.pipeline_step?.id || null);
@@ -2356,7 +2338,7 @@ export default function Project_Tasks() {
                                     placeholder="Enter task name"
                                     value={createTaskForm.task_name}
                                     onChange={(e) => handleFormChange('task_name', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
                                 />
                             </div>
 
@@ -2368,9 +2350,8 @@ export default function Project_Tasks() {
                                 <select
                                     value={createTaskForm.entity_type}
                                     onChange={(e) => handleFormChange('entity_type', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
                                 >
-                                    <option value="">-- ไม่เชื่อมโยง --</option>
                                     <option value="asset">Asset</option>
                                     <option value="shot">Shot</option>
                                     <option value="sequence">Sequence</option>
@@ -2386,7 +2367,7 @@ export default function Project_Tasks() {
                                     <select
                                         value={createTaskForm.entity_id}
                                         onChange={(e) => handleFormChange('entity_id', e.target.value)}
-                                        className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                                        className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
                                     >
                                         <option value="">-- เลือก {createTaskForm.entity_type} --</option>
                                         {getEntityOptions().length === 0 ? (
@@ -2415,7 +2396,7 @@ export default function Project_Tasks() {
                                     type="date"
                                     value={createTaskForm.start_date}
                                     onChange={(e) => handleFormChange('start_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -2428,7 +2409,7 @@ export default function Project_Tasks() {
                                     type="date"
                                     value={createTaskForm.due_date}
                                     onChange={(e) => handleFormChange('due_date', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
+                                    className="h-9 px-3 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 [color-scheme:dark]"
                                 />
                             </div>
 
@@ -2442,23 +2423,11 @@ export default function Project_Tasks() {
                                     value={createTaskForm.description}
                                     onChange={(e) => handleFormChange('description', e.target.value)}
                                     rows={3}
-                                    className="px-3 py-2 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
+                                    className="px-3 py-2 bg-white/4 border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500 resize-none"
                                 />
                             </div>
 
-                            {/* File URL */}
-                            <div className="grid grid-cols-[140px_1fr] gap-4 items-center">
-                                <label className="text-sm text-gray-300 text-right">
-                                    File URL:
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="https://example.com/image.jpg"
-                                    value={createTaskForm.file_url}
-                                    onChange={(e) => handleFormChange('file_url', e.target.value)}
-                                    className="h-9 px-3 bg-[#0a1018] border border-blue-500/30 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500 placeholder:text-gray-500"
-                                />
-                            </div>
+
                         </div>
 
                         {/* Footer */}
@@ -2467,7 +2436,7 @@ export default function Project_Tasks() {
                             <button
                                 onClick={closeModal}
                                 disabled={isCreatingTask}
-                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white text-sm rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>

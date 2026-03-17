@@ -1066,7 +1066,6 @@ export default function Others_Asset() {
             });
             setShowCreateAsset_Task(false);
 
-            alert("สร้างงานสำเร็จ!");
 
         } catch (err: any) {
             console.error("Create task error:", err);
@@ -1116,6 +1115,14 @@ export default function Others_Asset() {
                         loadingTasks={loadingTasks} // ⭐ เพิ่ม
 
                         onTaskClick={(task: Task) => setSelectedTask(task)}
+                        onTaskDeleted={(taskId: number) => {
+                            setTasks(prev => prev.filter(t => t.id !== taskId));
+                        }}
+                        selectedTaskId={selectedTask?.id ?? null}
+                        onClosePanel={() => {
+                            setIsPanelOpen(false);
+                            setTimeout(() => setSelectedTask(null), 300);
+                        }}
                     />
                 );
 
@@ -1933,14 +1940,17 @@ export default function Others_Asset() {
 
                             <div className="px-5 py-4 space-y-3">
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-xs font-medium text-gray-300">Links</label>
-                                        <span className="text-[10px] text-green-300 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                    <label className="block text-xs font-medium text-gray-300">
+                                        Links
+                                    </label>
+                                    <div className="flex items-center gap-2 h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm">
+                                        <span className="truncate text-gray-400">
+                                            (Shot: {assetData?.asset_name || 'N/A'})
+                                        </span>
+                                        <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex-shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
                                             auto
                                         </span>
-                                    </div>
-                                    <div className="h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm flex items-center justify-between">
-                                        <span className="truncate">Auto-linked to: <span className="font-medium">{assetData?.asset_name || ''}</span></span>
                                     </div>
                                 </div>
 

@@ -1061,7 +1061,6 @@ export default function Others_Shot() {
             });
             setShowCreateShot_Task(false);
 
-            alert("สร้างงานสำเร็จ!");
 
         } catch (err: any) {
             console.error("Create task error:", err);
@@ -1196,6 +1195,15 @@ export default function Others_Shot() {
                         loadingTasks={loadingTasks} // ⭐ เพิ่ม
 
                         onTaskClick={(task: Task) => setSelectedTask(task)}
+                        onTaskDeleted={(taskId: number) => {
+                            setTasks(prev => prev.filter(t => t.id !== taskId));
+
+                        }}
+                        selectedTaskId={selectedTask?.id ?? null}
+                        onClosePanel={() => {
+                            setIsPanelOpen(false);
+                            setTimeout(() => setSelectedTask(null), 300);
+                        }}
                     />
                 );
 
@@ -2123,15 +2131,15 @@ export default function Others_Shot() {
                                     <label className="block text-xs font-medium text-gray-300">
                                         Links
                                     </label>
-                                    <input
-                                        readOnly
-                                        type="text"
-                                        value={`auto (เลือกให้แล้ว)`}
-                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all"
-                                    />
-                                    <p className="text-[10px] text-gray-500">
-                                        ลิงก์จะถูกเลือกให้โดยอัตโนมัติ (Shot: {shotData?.shotCode || 'N/A'})
-                                    </p>
+                                    <div className="flex items-center gap-2 h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm">
+                                        <span className="truncate text-gray-400">
+                                            (Shot: {shotData?.shotCode || 'N/A'})
+                                        </span>
+                                        <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex-shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                                            auto
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -2452,7 +2460,7 @@ export default function Others_Shot() {
                                 </div>
 
 
-                                 {/* Description */}
+                                {/* Description */}
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-400 font-medium">Description</label>
                                     <textarea
@@ -2481,7 +2489,7 @@ export default function Others_Shot() {
 
                                 </div>
 
-                                
+
 
                                 {/* Uploaded By */}
                                 <div className="space-y-1">
@@ -2541,7 +2549,7 @@ export default function Others_Shot() {
                                     </div>
                                 </div>
 
-                                
+
 
                                 {/* Task */}
                                 <div className="space-y-1">
@@ -2659,7 +2667,7 @@ export default function Others_Shot() {
                                     </div>
                                 </div>
 
-                               
+
 
                             </div>
 
