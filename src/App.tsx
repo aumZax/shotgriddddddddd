@@ -82,6 +82,7 @@ function MainLayout() {
     u.username.toLowerCase().includes(userSearch.toLowerCase())
   );
 
+  
 
   const [authUser] = useState<{ email: string; imageURL: string; id?: number }>(() => {
     try {

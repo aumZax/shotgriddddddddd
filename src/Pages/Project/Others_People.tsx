@@ -47,9 +47,13 @@ export default function Others_People() {
   const [projectName, setProjectName] = useState("");
   const [projectId, setProjectId] = useState<number | null>(null);
   const [permission, setPermission] = useState<string | null>(null);
+
+
 const canManage = fromMainNav || ["Admin", "Producer", "Owner"].includes(permission || "");
 const canEdit = fromMainNav || ["Admin", "Producer", "Supervisor", "Owner"].includes(permission || "");
 const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "");
+
+
   const [activeTab, setActiveTab] = useState<MainTab>("team");
   const [people, setPeople] = useState<Person[]>([]);
   const [loadingPeople, setLoadingPeople] = useState(true);
