@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
-import { Check, Eye, Image, Upload, User, X, LoaderCircle, ChevronDown, Plus } from 'lucide-react';
+import { Check, Eye, Image, Upload, X, LoaderCircle, ChevronDown, Plus } from 'lucide-react';
 import RightPanelNote from "../../../components/RightPanelNote";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
@@ -119,7 +119,6 @@ export default function Others_Sequence() {
     const sequenceId = stored.sequenceId;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
-    const [rightPanelTab, setRightPanelTab] = useState('notes');
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);

@@ -13,7 +13,7 @@ import NoteTab from "../../../components/NoteTab";
 import RightPanel from "../../../components/RightPanel";
 import VersionTab from "../../../components/VersionTab";
 import ShotAssetTab from "../../../components/Shot_AssetTab";
-
+import RightPanelNote from "../../../components/RightPanelNote";
 
 //============================================================================================================================================//
 
@@ -200,7 +200,9 @@ export default function Others_Asset() {
     const [loadingModalTasks, setLoadingModalTasks] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
     // `setSelectedNote` is intentionally unused for now (kept for future use)
-    const [selectedNote, _setSelectedNote] = useState<Note | null>(null);
+    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+    const [isNotePanelOpen, setIsNotePanelOpen] = useState(false);
+
     const AssetID = JSON.parse(localStorage.getItem("selectedAsset") || "{}").id;
     const projectData = JSON.parse(localStorage.getItem("projectData") || "null");
     const projectId = projectData?.projectId;
@@ -1142,7 +1144,9 @@ export default function Others_Asset() {
                             });
                         }}
                         onNoteClick={(note: Note) => {
-                            console.log('note clicked:', note); // หรือลบทิ้งเลยถ้าไม่ใช้
+                            setSelectedNote(note);
+                            setIsNotePanelOpen(false);
+                            setTimeout(() => setIsNotePanelOpen(true), 10);
                         }}
                     />
                 );
@@ -2850,6 +2854,21 @@ export default function Others_Asset() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {selectedNote && (
+                <RightPanelNote
+                    selectedNote={selectedNote}
+                    isPanelOpen={isNotePanelOpen}
+                    rightPanelWidth={rightPanelWidth}
+                    entityName={assetData?.asset_name ?? ''}
+                    entityLabel="Asset"
+                    onClose={() => {
+                        setIsNotePanelOpen(false);
+                        setTimeout(() => setSelectedNote(null), 300);
+                    }}
+                    onResize={handleMouseDown}
+                />
             )}
 
         </div>

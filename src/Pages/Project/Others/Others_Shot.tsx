@@ -13,6 +13,7 @@ import Asset_ShotTab from '../../../components/Asset_ShotTab';
 import RightPanel from "../../../components/RightPanel";
 import { useNavigate } from 'react-router-dom';
 import VersionTab from '../../../components/VersionTab';
+import RightPanelNote from "../../../components/RightPanelNote";
 
 
 //============================================================================================================================================//
@@ -204,6 +205,8 @@ export default function Others_Shot() {
     const [shotVersions, setShotVersions] = useState<any[]>([]);
     const [isLoadingShotVersions, setIsLoadingShotVersions] = useState(false);
     const [,] = useState<Version | null>(null);
+    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+    const [isNotePanelOpen, setIsNotePanelOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -1223,7 +1226,9 @@ export default function Others_Shot() {
                             });
                         }}
                         onNoteClick={(note: Note) => {
-                            console.log('note clicked:', note); // หรือลบทิ้งเลยถ้าไม่ใช้
+                            setSelectedNote(note);
+                            setIsNotePanelOpen(false);
+                            setTimeout(() => setIsNotePanelOpen(true), 10);
                         }}
                     />
                 );
@@ -2954,6 +2959,21 @@ export default function Others_Shot() {
                     }
                 }}
             />
+
+            {selectedNote && (
+                <RightPanelNote
+                    selectedNote={selectedNote}
+                    isPanelOpen={isNotePanelOpen}
+                    rightPanelWidth={rightPanelWidth}
+                    entityName={shotData.shotCode}
+                    entityLabel="Shot"
+                    onClose={() => {
+                        setIsNotePanelOpen(false);
+                        setTimeout(() => setSelectedNote(null), 300);
+                    }}
+                    onResize={handleMouseDown}
+                />
+            )}
 
 
         </div>
