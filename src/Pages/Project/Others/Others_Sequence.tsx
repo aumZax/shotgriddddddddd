@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
 import { useNavigate } from 'react-router-dom';
 import ENDPOINTS from "../../../config";
-import { Check, Eye, Image, Upload, User, X, LoaderCircle, ChevronDown } from 'lucide-react';
+import { Check, Eye, Image, Upload, User, X, LoaderCircle, ChevronDown, Plus } from 'lucide-react';
 // import TaskTab from "../../../components/TaskTab";
 import NoteTab from '../../../components/NoteTab';
 import axios from 'axios';
@@ -1566,7 +1566,7 @@ export default function Others_Sequence() {
                                     <div
                                         onClick={() => setShowCreateSequence_Note(false)}
                                         onMouseDown={(e) => e.stopPropagation()}
-                                        className="text-gray-400 hover:text-white text-xl leading-none transition-colors cursor-pointer"
+                                        className="cursor-pointer text-gray-400 hover:text-white text-xl leading-none transition-colors"
                                     >
                                         ×
                                     </div>
@@ -1574,13 +1574,14 @@ export default function Others_Sequence() {
                             </div>
 
                             <div className="px-5 py-4 space-y-3">
+                                {/* Links */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         Links
                                     </label>
                                     <div className="flex items-center gap-2 h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm">
                                         <span className="truncate text-gray-400">
-                                        (Shot: {SequenceData?.sequence|| 'N/A'})
+                                            (Sequence: {SequenceData?.sequence || 'N/A'})
                                         </span>
                                         <span className="ml-auto text-[10px] text-green-400/80 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 flex-shrink-0">
                                             <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
@@ -1589,42 +1590,36 @@ export default function Others_Sequence() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1.5">
+                                {/* Tasks */}
+                                {/* <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         📄 Tasks
                                     </label>
-                                    <div className="p-3 bg-[#0a1018] border border-blue-500/30 rounded-lg">
+                                    <div className="p-3 bg-white/4 border border-blue-500/30 rounded-lg max-h-36 overflow-y-auto">
                                         <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                                             {(['All', 'ART', 'MDL', 'RIG', 'TXT'] as FilterType[]).map((t) => (
-                                                <label key={t} className="flex items-center gap-1.5 cursor-pointer">
+                                                <label key={t} className="flex items-center gap-2 cursor-pointer group">
                                                     <input
                                                         type="checkbox"
                                                         checked={checked[t]}
                                                         onChange={() => handletaskChange(t)}
                                                         className="w-3.5 h-3.5 rounded border-blue-500/30 bg-[#0a1018] text-blue-500 focus:ring-2 focus:ring-blue-500/60"
                                                     />
-                                                    <span className="text-xs text-gray-300">{t}</span>
+                                                    <span className="text-xs text-gray-300 group-hover:text-white transition-colors">{t}</span>
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
 
+                                {/* Attach files */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         Attach files
                                     </label>
 
                                     <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-blue-500/30 bg-[#0a1018] text-blue-200 text-sm cursor-pointer hover:bg-blue-500/10 transition-all">
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
-                                        </svg>
+                                        <Plus className="w-4 h-4" />
                                         Upload file
                                         <input
                                             type="file"
@@ -1644,19 +1639,19 @@ export default function Others_Sequence() {
                                                     <span className="truncate text-blue-100">
                                                         {file.name}
                                                     </span>
-                                                    <button
-                                                        type="button"
+                                                    <div
                                                         onClick={() => removetaskFile(index)}
-                                                        className="text-blue-300 hover:text-red-400"
+                                                        className="cursor-pointer text-blue-300 hover:text-red-400"
                                                     >
                                                         ✕
-                                                    </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </div>
 
+                                {/* To */}
                                 <div className="space-y-1.5 relative">
                                     <label className="block text-xs font-medium text-gray-300">
                                         To
@@ -1669,13 +1664,12 @@ export default function Others_Sequence() {
                                                 className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-200 rounded"
                                             >
                                                 {person.name}
-                                                <button
-                                                    type="button"
+                                                <div
                                                     onClick={() => removePerson(person.id)}
-                                                    className="text-blue-300 hover:text-red-400"
+                                                    className="cursor-pointer text-blue-300 hover:text-red-400"
                                                 >
                                                     ✕
-                                                </button>
+                                                </div>
                                             </span>
                                         ))}
                                     </div>
@@ -1689,7 +1683,7 @@ export default function Others_Sequence() {
                                         }}
                                         onFocus={() => setOpen(true)}
                                         onBlur={() => setTimeout(() => setOpen(false), 200)}
-                                        className="w-full h-8 px-3 bg-[#0a1018] border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                                        className="w-full h-8 px-3 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                                         placeholder={loading ? "Loading..." : "Add people..."}
                                         disabled={loading}
                                     />
@@ -1716,6 +1710,7 @@ export default function Others_Sequence() {
                                     )}
                                 </div>
 
+                                {/* Subject */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         Subject <span className="text-red-400">*</span>
@@ -1724,24 +1719,25 @@ export default function Others_Sequence() {
                                         type="text"
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
-                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all ${subject.trim() ? 'border-blue-500/30' : 'border-red-500/50'}`}
+                                        className={`w-full h-8 px-3 bg-white/4 border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all ${subject.trim() === '' ? 'border-red-500/50' : 'border-blue-500/30'
+                                            }`}
                                     />
                                 </div>
 
+                                {/* Type */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         Type <span className="text-red-400">*</span>
                                     </label>
-
                                     <select
                                         value={type ?? ''}
                                         onChange={(e) => setType(e.target.value as NoteType)}
-                                        className={`w-full h-8 px-3 bg-[#0a1018] border rounded-lg text-sm transition-all
-                                        ${type === null
+                                        className={`w-full h-8 px-3 bg-white/4 border rounded-lg text-sm transition-all
+                                ${type === null
                                                 ? 'border-blue-500/30 text-gray-400'
                                                 : 'border-blue-500/30 text-blue-50'}
-                                            focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
-                                        `}
+                                focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400
+                            `}
                                     >
                                         <option value="" disabled hidden>
                                             — Please select —
@@ -1751,6 +1747,7 @@ export default function Others_Sequence() {
                                     </select>
                                 </div>
 
+                                {/* Message */}
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-medium text-gray-300">
                                         Message <span className="text-red-400">*</span>
@@ -1760,7 +1757,7 @@ export default function Others_Sequence() {
                                         onChange={(e) => setBody(e.target.value)}
                                         placeholder="Write your note here..."
                                         rows={3}
-                                        className={`w-full px-3 py-2 bg-[#0a1018] border rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none ${body.trim() ? 'border-blue-500/30' : 'border-blue-500/30'}`}
+                                        className="w-full px-3 py-2 bg-white/4 border border-blue-500/30 rounded-lg text-blue-50 text-sm placeholder-blue-400/40 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:border-blue-400 transition-all resize-none"
                                     />
                                 </div>
                             </div>
@@ -1768,13 +1765,13 @@ export default function Others_Sequence() {
                             <div className="px-5 py-3 bg-gradient-to-r from-[#0a1018] to-[#0d1420] border-t border-blue-500/30 flex justify-end items-center gap-2">
                                 <button
                                     onClick={() => setShowCreateSequence_Note(false)}
-                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium"
+                                    className="px-4 h-8 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-xs rounded-lg text-gray-200 transition-all font-medium flex items-center"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
-                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 h-8 bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-xs rounded-lg text-white shadow-lg shadow-blue-500/20 transition-all flex items-center font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handleCreateNote}
                                     disabled={uploading || !isNoteFormValid}
                                 >

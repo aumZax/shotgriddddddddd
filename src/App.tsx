@@ -1,4 +1,4 @@
-import { Routes, Route, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Link, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 
@@ -57,6 +57,18 @@ const PROJECT_PAGES = [
 
 ];
 
+// เพิ่มตรงนี้ก่อน MainLayout
+function ProtectedRoute() {
+  const token = localStorage.getItem("token");
+  const location = useLocation();
+
+  if (!token) {
+    // เคลียร์ history state ไม่ให้ย้อนกลับมาได้
+    return <Navigate to="/" replace state={{ from: location }} />;
+  }
+
+  return <MainLayout />;
+}
 
 function MainLayout() {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +124,10 @@ function MainLayout() {
 
   useEffect(() => { fetchProjects(); }, []);
 
-  const handleLogout = () => { localStorage.clear(); navigate("/"); };
+ const handleLogout = () => { 
+  localStorage.clear(); 
+  navigate("/", { replace: true }); // replace ทับ history ไม่ให้กด Back กลับมาได้
+};
 
   const fetchProjects = async () => {
     try {
@@ -573,7 +588,7 @@ export default function App() {
       </Route>
 
       {/* Routes ที่มี Header */}
-      <Route element={<MainLayout />}>
+ <Route element={<ProtectedRoute />}>
         <Route path="/Home" element={<Home />} />
         <Route path="/Inbox" element={<Inbox />} />
 
