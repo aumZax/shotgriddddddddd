@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useState } from 'react';
 import { Image, Paperclip, Send, Trash2, User, X } from 'lucide-react';
 import ENDPOINTS from '../config';
@@ -9,7 +11,8 @@ interface Note {
     type_id: number;
     subject: string;
     body: string;
-    file_url?: string;
+    file_url?: string;        // legacy single
+    file_urls?: string[];     // multi-file
     author: string;
     status: string;
     visibility: string;
@@ -23,7 +26,8 @@ interface NoteReply {
     note_id: number;
     author: string;
     body: string;
-    file_url?: string;
+    file_url?: string;        // legacy single
+    file_urls?: string[];     // multi-file
     created_at: string;
 }
 
@@ -37,6 +41,8 @@ interface RightPanelNoteProps {
     onResize: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
+// ── helpers ────────────────────────────────────────────────────────────────────
+
 const formatDateThai = (dateString: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleString('th-TH', {
@@ -49,6 +55,178 @@ const visBadge = (v: string) =>
     v === 'Client'
         ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
         : 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+
+const isImage = (url?: string) => !!url?.match(/\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i);
+const isVid   = (url?: string) => !!url?.match(/\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i);
+
+/** normalise file_url / file_urls → always string[]
+ *  Handles:
+ *    - string[]  already parsed array
+ *    - "a||b||c" GROUP_CONCAT with || separator (from backend)
+ *    - "a,b,c"   GROUP_CONCAT with , separator
+ *    - JSON string "[\"a\",\"b\"]"
+ *    - single string
+ *    - null / undefined
+ */
+const normaliseUrls = (file_url?: string | null, file_urls?: string[] | string | null): string[] => {
+    // 1. try file_urls first
+    if (file_urls != null) {
+        if (Array.isArray(file_urls)) {
+            const r = file_urls.filter(Boolean);
+            if (r.length > 0) return r;
+        }
+        if (typeof file_urls === 'string' && file_urls.trim()) {
+            const s = file_urls.trim();
+            // JSON array
+            try {
+                const parsed = JSON.parse(s);
+                if (Array.isArray(parsed)) return parsed.filter(Boolean);
+            } catch { /* not JSON */ }
+            // || separator (backend GROUP_CONCAT)
+            if (s.includes('||')) return s.split('||').map(u => u.trim()).filter(Boolean);
+            // , separator
+            if (s.includes(',')) return s.split(',').map(u => u.trim()).filter(Boolean);
+            // single url
+            return [s];
+        }
+    }
+    // 2. fallback to legacy file_url
+    if (file_url && typeof file_url === 'string' && file_url.trim()) return [file_url.trim()];
+    return [];
+};
+
+// ── FileGrid: renders 1-N files without changing the surrounding UI ────────────
+interface FileGridProps {
+    urls: string[];
+    maxThumbHeight?: string; // tailwind class, e.g. 'max-h-56'
+}
+
+const FileGrid: React.FC<FileGridProps> = ({ urls, maxThumbHeight = 'max-h-56' }) => {
+    // safety: ensure urls is always a real array
+    const safeUrls = Array.isArray(urls) ? urls.filter(Boolean) : [];
+    if (safeUrls.length === 0) return null;
+    // shadow the prop so the rest of the component uses safeUrls
+    urls = safeUrls;
+
+    // single file → existing behaviour (centred, full width)
+    if (urls.length === 1) {
+        const url = urls[0];
+        const full = ENDPOINTS.image_url + url;
+        if (isVid(url)) {
+            return (
+                <video
+                    src={full}
+                    className={`${maxThumbHeight} rounded-lg object-contain`}
+                    controls
+                />
+            );
+        }
+        if (isImage(url)) {
+            return (
+                <img
+                    src={full}
+                    alt=""
+                    className={`${maxThumbHeight} rounded-lg object-contain`}
+                />
+            );
+        }
+        return (
+            <a
+                href={full}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 text-sm transition-all"
+            >
+                <Paperclip className="w-4 h-4" />
+                ดูไฟล์แนบ
+            </a>
+        );
+    }
+
+    // multiple files → grid layout
+    // images/videos: 2-col responsive grid; other files: list
+    const mediaUrls = urls.filter(u => isImage(u) || isVid(u));
+    const otherUrls = urls.filter(u => !isImage(u) && !isVid(u));
+
+    return (
+        <div className="w-full space-y-2">
+            {mediaUrls.length > 0 && (
+                <div className={`grid gap-1.5 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {mediaUrls.map((url, i) => {
+                        const full = ENDPOINTS.image_url + url;
+                        return isVid(url) ? (
+                            <video
+                                key={i}
+                                src={full}
+                                controls
+                                className="w-full max-h-40 rounded-lg object-cover bg-black"
+                            />
+                        ) : (
+                            <img
+                                key={i}
+                                src={full}
+                                alt=""
+                                className="w-full max-h-40 rounded-lg object-cover"
+                            />
+                        );
+                    })}
+                </div>
+            )}
+            {otherUrls.length > 0 && (
+                <div className="flex flex-col gap-1">
+                    {otherUrls.map((url, i) => (
+                        <a
+                            key={i}
+                            href={ENDPOINTS.image_url + url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 text-sm transition-all"
+                        >
+                            <Paperclip className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate">{url.split('/').pop()}</span>
+                        </a>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ── ReplyFilePreviewBar ────────────────────────────────────────────────────────
+interface ReplyFilePreviewBarProps {
+    files: File[];
+    previews: string[];
+    onRemove: (index: number) => void;
+}
+
+const ReplyFilePreviewBar: React.FC<ReplyFilePreviewBarProps> = ({ files, previews, onRemove }) => {
+    if (files.length === 0) return null;
+    return (
+        <div className="flex flex-wrap gap-2 px-1">
+            {files.map((file, i) => (
+                <div
+                    key={i}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700 max-w-[180px]"
+                >
+                    {previews[i] ? (
+                        <img src={previews[i]} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    ) : (
+                        <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    )}
+                    <span className="text-xs text-slate-300 truncate flex-1">{file.name}</span>
+                    <button
+                        onClick={() => onRemove(i)}
+                        className="text-red-200 bg-gradient-to-br from-red-500 to-red-500 hover:from-red-600 hover:to-red-600 rounded-2xl flex-shrink-0"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 const RightPanelNote: React.FC<RightPanelNoteProps> = ({
     selectedNote,
@@ -66,8 +244,8 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
     const [loadingReplies, setLoadingReplies] = useState(false);
 
     const [replyBody, setReplyBody] = useState('');
-    const [replyFile, setReplyFile] = useState<File | null>(null);
-    const [replyFilePreview, setReplyFilePreview] = useState('');
+    const [replyFiles, setReplyFiles]       = useState<File[]>([]);
+    const [replyPreviews, setReplyPreviews] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: number } | null>(null);
@@ -94,62 +272,95 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
     useEffect(() => {
         if (selectedNote?.id) fetchReplies();
         setReplyBody('');
-        setReplyFile(null);
-        setReplyFilePreview('');
+        setReplyFiles([]);
+        setReplyPreviews([]);
     }, [selectedNote?.id]);
 
-    // scroll to bottom เมื่อ replies เพิ่ม
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [replies]);
 
+    // ── file picker helpers ────────────────────────────────────
+    const addFiles = (incoming: FileList | null) => {
+        if (!incoming) return;
+        const arr = Array.from(incoming);
+        const previews = arr.map(f =>
+            f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
+        );
+        setReplyFiles(prev => [...prev, ...arr]);
+        setReplyPreviews(prev => [...prev, ...previews]);
+    };
+
+    const removeFile = (index: number) => {
+        setReplyFiles(prev => prev.filter((_, i) => i !== index));
+        setReplyPreviews(prev => {
+            if (prev[index]) URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
+    };
+
     // ── submit reply ───────────────────────────────────────────
-    const handleSubmit = async () => {
-        if (!replyBody.trim() || submitting) return;
-        setSubmitting(true);
-        try {
-            let fileUrl: string | null = null;
+const handleSubmit = async () => {
+    if (!replyBody.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+        let fileUrls: string[] = [];
 
-            if (replyFile) {
-                const formData = new FormData();
-                formData.append('file', replyFile);
-                formData.append('fileName', replyFile.name);
-                formData.append('type', 'note');
+        if (replyFiles.length > 0) {
+            // สร้าง formData เดียว ใส่ไฟล์ทั้งหมด
+            const formData = new FormData();
+            replyFiles.forEach(file => formData.append('file', file)); 
 
-                // upload ผ่าน shot endpoint (ปรับตาม entity_type ได้)
+            let uploadEndpoint = '';
+            if (entityLabel === 'Sequence') {
+                formData.append('sequenceId', String(selectedNote.type_id));
+                uploadEndpoint = ENDPOINTS.UPLOAD_SEQUENCE;
+            } else if (entityLabel === 'Shot') {
                 formData.append('shotId', String(selectedNote.type_id));
-                const uploadRes = await fetch(ENDPOINTS.UPLOAD_SHOT, {
-                    method: 'POST',
-                    body: formData,
-                });
-                const uploadData = await uploadRes.json();
-                fileUrl = uploadData?.files?.[0]?.fileUrl ?? uploadData?.file?.fileUrl ?? null;
+                uploadEndpoint = ENDPOINTS.UPLOAD_SHOT;
+            } else if (entityLabel === 'Asset') {
+                formData.append('assetId', String(selectedNote.type_id));
+                uploadEndpoint = ENDPOINTS.UPLOAD_ASSET;
             }
 
-            const res = await fetch(ENDPOINTS.CREATE_NOTE_COMMENT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    noteId: selectedNote.id,
-                    author: currentUser,
-                    body: replyBody.trim(),
-                    fileUrl,
-                }),
-            });
-
-            if (!res.ok) throw new Error('Create reply failed');
-            const newReply = await res.json();
-            setReplies(prev => [...prev, newReply]);
-            setReplyBody('');
-            setReplyFile(null);
-            setReplyFilePreview('');
-        } catch (err) {
-            console.error('submit reply error:', err);
-            alert('ไม่สามารถส่ง reply ได้');
-        } finally {
-            setSubmitting(false);
+            if (uploadEndpoint) {
+                const uploadRes = await fetch(uploadEndpoint, { method: 'POST', body: formData });
+                if (!uploadRes.ok) {
+                    const errText = await uploadRes.text();
+                    throw new Error(`Upload failed: ${errText.slice(0, 200)}`);
+                }
+                const uploadData = await uploadRes.json();
+                // รองรับทั้ง { files: [...] } และ { file: {...} }
+                fileUrls = uploadData?.files?.map((f: { fileUrl: string }) => f.fileUrl).filter(Boolean)
+                    ?? (uploadData?.file?.fileUrl ? [uploadData.file.fileUrl] : []);
+            }
         }
-    };
+
+        const res = await fetch(ENDPOINTS.CREATE_NOTE_COMMENT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                noteId: selectedNote.id,
+                author: currentUser,
+                body: replyBody.trim(),
+                fileUrl:  fileUrls[0] ?? null,
+                fileUrls: fileUrls.length > 0 ? fileUrls : undefined,
+            }),
+        });
+
+        if (!res.ok) throw new Error('Create reply failed');
+        const newReply = await res.json();
+        setReplies(prev => [...prev, newReply]);
+        setReplyBody('');
+        setReplyFiles([]);
+        setReplyPreviews([]);
+    } catch (err) {
+        console.error('submit reply error:', err);
+        alert('ไม่สามารถส่ง reply ได้');
+    } finally {
+        setSubmitting(false);
+    }
+};
 
     // ── delete reply ───────────────────────────────────────────
     const handleDeleteReply = async (replyId: number) => {
@@ -165,8 +376,8 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
         }
     };
 
-    const isImage = (url?: string) => !!url?.match(/\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i);
-    const isVid = (url?: string) => !!url?.match(/\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i);
+    // normalised urls for the main note
+    const noteUrls = normaliseUrls(selectedNote.file_url, selectedNote.file_urls);
 
     return (
         <>
@@ -190,7 +401,6 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
 
                     {/* ── Header ── */}
                     <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/60 shadow-xl flex-shrink-0">
-                        {/* Breadcrumb + close */}
                         <div className="flex items-start justify-between px-5 py-4 gap-3">
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs text-slate-400 mb-1">
@@ -222,43 +432,12 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
 
                         {/* ═══ MAIN NOTE CARD ═══ */}
                         <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-blue-500/30 shadow-lg overflow-hidden">
-                            {/* thumbnail */}
-                            {selectedNote.file_url && (
+                            {/* thumbnail / file area */}
+                            {noteUrls.length > 0 ? (
                                 <div className="w-full bg-slate-950 flex items-center justify-center p-3">
-                                    {isVid(selectedNote.file_url) ? (
-                                        <video
-                                            src={ENDPOINTS.image_url + selectedNote.file_url}
-                                            className="max-h-56 rounded-lg object-contain"
-                                            controls
-                                        />
-                                    ) : isImage(selectedNote.file_url) ? (
-                                        <img
-                                            src={ENDPOINTS.image_url + selectedNote.file_url}
-                                            alt=""
-                                            className="max-h-56 rounded-lg object-contain"
-                                        />
-                                    ) : (
-                                        <a
-                                            href={ENDPOINTS.image_url + selectedNote.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 text-sm transition-all"
-                                        >
-                                            <Paperclip className="w-4 h-4" />
-                                            ดูไฟล์แนบ
-                                        </a>
-                                    )}
+                                    <FileGrid urls={noteUrls} maxThumbHeight="max-h-56" />
                                 </div>
-                            )}
-
-                            {!selectedNote.file_url && (
-                                <div className="flex items-center justify-center py-8 bg-slate-950/40">
-                                    <div className="flex flex-col items-center gap-2 text-slate-600">
-                                        <Image className="w-10 h-10" />
-                                        <p className="text-xs">ไม่มีไฟล์แนบ</p>
-                                    </div>
-                                </div>
-                            )}
+                            ) : null}
 
                             {/* body */}
                             <div className="p-4">
@@ -299,67 +478,45 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {replies.map(reply => (
-                                    <div
-                                        key={reply.id}
-                                        className="group flex gap-3 items-start"
-                                    >
-                                        {/* avatar */}
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5 shadow-md">
-                                            {reply.author?.[0]?.toUpperCase() ?? '?'}
-                                        </div>
+                                {replies.map(reply => {
+                                    const replyUrls = normaliseUrls(reply.file_url, reply.file_urls);
+                                    return (
+                                        <div key={reply.id} className="group flex gap-3 items-start">
+                                            {/* avatar */}
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5 shadow-md">
+                                                {reply.author?.[0]?.toUpperCase() ?? '?'}
+                                            </div>
 
-                                        {/* bubble */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                                    <p className="text-xs font-semibold text-slate-300">{reply.author}</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-[10px] text-slate-600">{formatDateThai(reply.created_at)}</p>
-                                                        <button
-                                                            onClick={() => setDeleteConfirm({ id: reply.id })}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-500/20"
-                                                            title="ลบ"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">
-                                                    {reply.body}
-                                                </p>
-                                                {/* reply file */}
-                                                {reply.file_url && (
-                                                    <div className="mt-2">
-                                                        {isImage(reply.file_url) ? (
-                                                            <img
-                                                                src={ENDPOINTS.image_url + reply.file_url}
-                                                                alt=""
-                                                                className="max-h-40 rounded-lg object-contain border border-slate-700"
-                                                            />
-                                                        ) : isVid(reply.file_url) ? (
-                                                            <video
-                                                                src={ENDPOINTS.image_url + reply.file_url}
-                                                                controls
-                                                                className="max-h-40 rounded-lg w-full"
-                                                            />
-                                                        ) : (
-                                                            <a
-                                                                href={ENDPOINTS.image_url + reply.file_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 mt-1"
+                                            {/* bubble */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                                        <p className="text-xs font-semibold text-slate-300">{reply.author}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-slate-600">{formatDateThai(reply.created_at)}</p>
+                                                            <button
+                                                                onClick={() => setDeleteConfirm({ id: reply.id })}
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-500/20 bg-gradient-to-br from-red-500 to-red-500 hover:from-red-600 hover:to-red-600"
+                                                                title="ลบ"
                                                             >
-                                                                <Paperclip className="w-3.5 h-3.5" />
-                                                                ดูไฟล์แนบ
-                                                            </a>
-                                                        )}
+                                                                <Trash2 className="w-3.5 h-3.5 text-red-200" />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                    <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">
+                                                        {reply.body}
+                                                    </p>
+                                                    {/* reply files */}
+                                                    {replyUrls.length > 0 && (
+                                                        <div className="mt-2">
+                                                            <FileGrid urls={replyUrls} maxThumbHeight="max-h-40" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 <div ref={bottomRef} />
                             </div>
                         )}
@@ -367,23 +524,12 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
 
                     {/* ── Reply Input (fixed bottom) ── */}
                     <div className="flex-shrink-0 border-t border-slate-700/60 bg-slate-900/90 backdrop-blur-sm px-4 py-3 space-y-2">
-                        {/* file preview */}
-                        {replyFile && (
-                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700">
-                                {replyFilePreview ? (
-                                    <img src={replyFilePreview} className="w-8 h-8 rounded object-cover flex-shrink-0" />
-                                ) : (
-                                    <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                                )}
-                                <span className="text-xs text-slate-300 truncate flex-1">{replyFile.name}</span>
-                                <button
-                                    onClick={() => { setReplyFile(null); setReplyFilePreview(''); }}
-                                    className="text-slate-500 hover:text-red-400 flex-shrink-0"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
+                        {/* file previews (multi) */}
+                        <ReplyFilePreviewBar
+                            files={replyFiles}
+                            previews={replyPreviews}
+                            onRemove={removeFile}
+                        />
 
                         {/* input row */}
                         <div className="flex items-end gap-2">
@@ -409,20 +555,16 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
                                     style={{ minHeight: '24px' }}
                                 />
 
-                                {/* attach file */}
+                                {/* attach files (multiple) */}
                                 <label className="flex-shrink-0 cursor-pointer text-slate-500 hover:text-blue-400 transition-colors mb-0.5">
                                     <Paperclip className="w-4 h-4" />
                                     <input
                                         type="file"
                                         accept="image/*,video/*,.pdf,.doc,.docx"
+                                        multiple
                                         className="hidden"
                                         onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            setReplyFile(file);
-                                            setReplyFilePreview(
-                                                file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
-                                            );
+                                            addFiles(e.target.files);
                                             e.target.value = '';
                                         }}
                                     />
@@ -433,12 +575,12 @@ const RightPanelNote: React.FC<RightPanelNoteProps> = ({
                             <button
                                 onClick={handleSubmit}
                                 disabled={!replyBody.trim() || submitting}
-                                className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/20 flex-shrink-0"
+                                className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/20 flex-shrink-0"
                             >
                                 {submitting ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 ) : (
-                                    <Send className="w-4 h-4 text-white" />
+                                    <Send className="w-4 h-4 text-white scale-200" />
                                 )}
                             </button>
                         </div>

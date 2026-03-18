@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search, NotebookText } from 'lucide-react';
+import { FileText, Calendar, Users, Paperclip, Check, X, Plus, Search, NotebookText, Pencil } from 'lucide-react';
 import ENDPOINTS from '../config';
 import PixelLoadingSkeleton from './PixelLoadingSkeleton';
 
@@ -235,6 +235,20 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
     const [notes, setNotes] = useState<Note[]>(initialNotes);
     const [popup, setPopup] = useState<PopupState>({ noteId: null, field: null, anchor: null });
 
+    const [editingNote, setEditingNote] = useState<{ id: number; field: 'subject' | 'body' } | null>(null);
+    const [editingNoteValue, setEditingNoteValue] = useState('');
+
+    const startNoteEdit = (id: number, field: 'subject' | 'body', value: string) => {
+        setEditingNote({ id, field });
+        setEditingNoteValue(value);
+    };
+
+    const saveNoteEdit = () => {
+        if (!editingNote) return;
+        save(editingNote.id, editingNote.field, editingNoteValue);
+        setEditingNote(null);
+    };
+
     useEffect(() => { setNotes(initialNotes); }, [initialNotes]);
 
     const save = useCallback(async (noteId: number, field: keyof Note, value: unknown) => {
@@ -365,9 +379,74 @@ const NotesTab = ({ notes: initialNotes, loadingNotes, onContextMenu, onNoteClic
                                 </td>
 
                                 <td className="px-4 py-4 max-w-xs">
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-medium text-blue-400 truncate">{note.subject}</div>
-                                        <div className="text-xs text-gray-500 whitespace-pre-wrap break-words">{note.body || <span className="italic">—</span>}</div>
+                                    <div className="space-y-2">
+
+                                        {/* Subject */}
+                                        <div className="group flex items-start gap-1.5">
+                                            {editingNote?.id === note.id && editingNote.field === 'subject' ? (
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={editingNoteValue}
+                                                    onChange={e => setEditingNoteValue(e.target.value)}
+                                                    onBlur={saveNoteEdit}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') saveNoteEdit();
+                                                        if (e.key === 'Escape') setEditingNote(null);
+                                                    }}
+                                                    className="flex-1 px-2 py-1 bg-gray-900 border border-blue-500/60 rounded-lg text-blue-400 text-sm font-medium outline-none ring-1 ring-blue-500/20"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <span className="text-sm font-medium text-blue-400 leading-snug flex-1 min-w-0">
+                                                        {note.subject}
+                                                    </span>
+                                                    <div
+                                                        onClick={e => { e.stopPropagation(); startNoteEdit(note.id, 'subject', note.subject); }}
+                                                        className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1 rounded-lg cursor-pointer transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 border border-transparent hover:border-gray-600"
+                                                        title="แก้ไข Subject"
+                                                    >
+                                                        <Pencil className="w-3 h-3 text-gray-500 hover:text-blue-400" />
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Body */}
+                                        <div className="group flex items-start gap-1.5">
+                                            {editingNote?.id === note.id && editingNote.field === 'body' ? (
+                                                <textarea
+                                                    autoFocus
+                                                    value={editingNoteValue}
+                                                    onChange={e => setEditingNoteValue(e.target.value)}
+                                                    onBlur={saveNoteEdit}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Escape') setEditingNote(null);
+                                                        // Shift+Enter = newline, Enter อย่างเดียว = save
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            saveNoteEdit();
+                                                        }
+                                                    }}
+                                                    rows={3}
+                                                    className="flex-1 px-2 py-1.5 bg-gray-900 border border-blue-500/60 rounded-lg text-gray-300 text-xs outline-none ring-1 ring-blue-500/20 resize-none leading-relaxed whitespace-pre-wrap"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <p className="text-xs text-gray-500 whitespace-pre-wrap break-words leading-relaxed flex-1 min-w-0 line-clamp-3">
+                                                        {note.body || <span className="italic text-gray-600">—</span>}
+                                                    </p>
+                                                    <div
+                                                        onClick={e => { e.stopPropagation(); startNoteEdit(note.id, 'body', note.body || ''); }}
+                                                        className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1 rounded-lg cursor-pointer transition-all bg-gradient-to-r from-gray-800 to-gray-800 hover:from-gray-700 hover:to-gray-700 border border-transparent hover:border-gray-600"
+                                                        title="แก้ไข Body"
+                                                    >
+                                                        <Pencil className="w-3 h-3 text-gray-500 hover:text-blue-400" />
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
                                     </div>
                                 </td>
 

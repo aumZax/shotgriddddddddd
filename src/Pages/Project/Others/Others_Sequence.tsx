@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import Navbar_Project from "../../../components/Navbar_Project";
@@ -512,106 +513,107 @@ export default function Others_Sequence() {
 
 
 
-    const handleCreateNote = async () => {
-        if (!subject.trim() || !type || !body.trim()) {
-            alert('Please fill in Subject, Type, and Message before creating a note.');
-            return;
-        }
+const handleCreateNote = async () => {
+    if (!subject.trim() || !type || !body.trim()) {
+        alert('Please fill in Subject, Type, and Message before creating a note.');
+        return;
+    }
 
-        try {
-            setUploading(true);
+    try {
+        setUploading(true);
 
-            let uploadedFileUrl = null;
+        let uploadedFileUrls: string[] = [];
 
-            const fileToUpload = files[0];
+        console.log('📁 Files array:', files);
 
-            console.log('📁 Files array:', files);
-            console.log('📁 File to upload:', fileToUpload);
+        if (files.length > 0) {
+            console.log('📤 Uploading multiple files:', files.length);
 
-            if (fileToUpload) {
-                console.log('📤 Uploading file:', fileToUpload.name);
+            const formData = new FormData();
 
-                const formData = new FormData();
-                formData.append('file', fileToUpload);
-                formData.append("sequenceId", SequenceData?.id.toString() || "");
-                formData.append("fileName", fileToUpload.name);
-                formData.append("type", "note");
-
-                const uploadResponse = await fetch(ENDPOINTS.UPLOAD_SEQUENCE, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                console.log('📥 Upload response status:', uploadResponse.status);
-
-                if (!uploadResponse.ok) {
-                    throw new Error('File upload failed');
-                }
-
-                const uploadData = await uploadResponse.json();
-                console.log('✅ Upload successful:', uploadData);
-                uploadedFileUrl = uploadData.file.fileUrl;
-            } else {
-                console.log('ℹ️ No file selected');
-            }
-
-            const noteData = {
-                projectId: projectId ?? null,
-                noteType: 'sequence',
-                typeId: SequenceData?.id ?? null,
-                subject: subject || '',
-                body: body || '',
-                fileUrl: uploadedFileUrl ?? null,
-                author: currentUser,
-                status: 'opn',
-                visibility: type ?? null,
-                tasks: (selectedTasks && selectedTasks.length > 0) ? selectedTasks : null,
-                assignedPeople: (selectedPeople && selectedPeople.length > 0)
-                    ? selectedPeople.map((person: Person) => person.id)
-                    : null
-            };
-
-            console.log('📝 Creating note with data:', noteData);
-
-            const createResponse = await fetch(ENDPOINTS.CREATE_SEQUENCE_NOTE, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(noteData)
+            files.forEach((file) => {
+                formData.append('files', file); // 🔥 สำคัญ: ต้องเป็น 'files'
             });
 
-            if (!createResponse.ok) {
-                const errorData = await createResponse.json();
-                console.error('Create note error:', errorData);
-                throw new Error('Failed to create note: ' + JSON.stringify(errorData));
+            formData.append("sequenceId", SequenceData?.id.toString() || "");
+            formData.append("type", "note");
+
+            const uploadResponse = await fetch(ENDPOINTS.UPLOAD_SEQUENCE, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('File upload failed');
             }
 
-            const result = await createResponse.json();
-            console.log('✅ Note created successfully:', result);
+            const uploadData = await uploadResponse.json();
+            console.log('✅ Upload successful:', uploadData);
 
-            // 3. Success
-            setShowCreateSequence_Note(false);
-
-            // Reset form
-            setSelectedFile(null);
-            setSelectedPeople([]);
-            setSelectedTasks([]);
-            setFiles([]);
-            setSubject(SequenceData?.sequence ? `Note on ${SequenceData.sequence}` : "");
-            setBody('');
-            setType(null);
-
-            // 4. Refresh notes
-            fetchNotes();
-
-        } catch (error) {
-            console.error('Error creating note:', error);
-            alert('Failed to create note. Please try again.');
-        } finally {
-            setUploading(false);
+            // 🔥 backend จะส่งกลับ files array
+            uploadedFileUrls = uploadData.files.map((f: any) => f.fileUrl);
+        } else {
+            console.log('ℹ️ No file selected');
         }
-    };
+
+        // 👉 เลือกใช้ยังไงก็ได้
+        const noteData = {
+            projectId: projectId ?? null,
+            noteType: 'sequence',
+            typeId: SequenceData?.id ?? null,
+            subject: subject || '',
+            body: body || '',
+            
+            // ✅ option 1: เก็บหลายไฟล์
+            fileUrls: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
+
+            // ✅ option 2 (ถ้ายังใช้ schema เดิม): เอาแค่ไฟล์แรก
+            fileUrl: uploadedFileUrls[0] ?? null,
+
+            author: currentUser,
+            status: 'opn',
+            visibility: type ?? null,
+            tasks: (selectedTasks && selectedTasks.length > 0) ? selectedTasks : null,
+            assignedPeople: (selectedPeople && selectedPeople.length > 0)
+                ? selectedPeople.map((person: Person) => person.id)
+                : null
+        };
+
+        const createResponse = await fetch(ENDPOINTS.CREATE_SEQUENCE_NOTE, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(noteData)
+        });
+
+        if (!createResponse.ok) {
+            throw new Error('Failed to create note');
+        }
+
+        const result = await createResponse.json();
+        console.log('✅ Note created successfully:', result);
+
+        // Reset
+        setShowCreateSequence_Note(false);
+        setSelectedFile(null);
+        setSelectedPeople([]);
+        setSelectedTasks([]);
+        setFiles([]);
+        setSubject(SequenceData?.sequence ? `Note on ${SequenceData.sequence}` : "");
+        setBody('');
+        setType(null);
+
+        fetchNotes();
+
+    } catch (error) {
+        console.error('Error creating note:', error);
+        alert('Failed to create note. Please try again.');
+    } finally {
+        setUploading(false);
+    }
+};
+
 
     const handleDeleteNote = async (noteId: number) => {
         try {

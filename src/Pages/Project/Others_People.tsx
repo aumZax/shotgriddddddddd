@@ -65,14 +65,11 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
   const [viewers, setViewers] = useState<ProjectViewer[]>([]);
   const [loadingViewers, setLoadingViewers] = useState(false);
   const [showAddViewer, setShowAddViewer] = useState(false);
-  const [totalSeats, setTotalSeats] = useState(50);
-  const [usedSeats, setUsedSeats] = useState(0);
+
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; peopleId: string; peopleEmail: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; peopleId: string; peopleEmail: string } | null>(null);
   const [deleteViewerConfirm, setDeleteViewerConfirm] = useState<ProjectViewer | null>(null);
   const [columnWidths] = useState<number[]>([48, 220, 220, 260, 160, 200]);
-  const now = new Date();
-  const timeString = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: true });
 
 
 
@@ -91,7 +88,6 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
 
   useEffect(() => {
     fetchPeople();
-    fetchSeatsInfo();
     getAllUsers();
 
   }, []);
@@ -129,18 +125,11 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
       });
       const data: Person[] = res.data;
       setPeople(data);
-      setUsedSeats(data.length);
-    } catch { setPeople([]); setUsedSeats(0); }
+    } catch { setPeople([]);  }
     finally { setLoadingPeople(false); }
   };
 
-  const fetchSeatsInfo = async () => {
-    try {
-      const res = await fetch(ENDPOINTS.SEATS);
-      const data = await res.json();
-      setTotalSeats(data.total || 50);
-    } catch { setTotalSeats(50); }
-  };
+
 
   const fetchViewers = async () => {
     try {
@@ -232,7 +221,6 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
     document.addEventListener("mouseup", onUp);
   };
 
-  const availableSeats = totalSeats - usedSeats;
 
   /* ═══════════ Render ═══════════ */
   return (
@@ -256,8 +244,6 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
         <div className="flex items-center gap-3 mb-3">
           <Users className="w-6 h-6 text-blue-400" />
           <h2 className="text-xl text-gray-200 font-normal">People</h2>
-          <span className="text-gray-600">|</span>
-          <span className="text-sm text-gray-400">{usedSeats} in use</span>
         </div>
 
         {/* Main Tabs */}
@@ -565,9 +551,7 @@ const canEditPerm = fromMainNav || ["Admin", "Owner"].includes(permission || "")
         <CreatePersonModal
           onClose={() => setShowCreatePerson(false)}
           onCreated={fetchPeople}
-          availableSeats={availableSeats}
-          totalSeats={totalSeats}
-          timeString={timeString}
+          
           showMoreFields={showMoreFields}
           setShowMoreFields={setShowMoreFields}
           defaultProjectName={projectName}
@@ -754,14 +738,12 @@ function AddViewerModal({
 }
 
 function CreatePersonModal({
-  onClose, onCreated, availableSeats, totalSeats, timeString,
+  onClose, onCreated, 
   showMoreFields, setShowMoreFields, defaultProjectName, allUsers,
 }: {
   onClose: () => void;
   onCreated: () => void;
-  availableSeats: number;
-  totalSeats: number;
-  timeString: string;
+ 
   showMoreFields: boolean;
   setShowMoreFields: (v: boolean) => void;
   defaultProjectName: string;
@@ -776,7 +758,11 @@ function CreatePersonModal({
   const [emailSearch, setEmailSearch] = useState("");
   const [showEmailDropdown, setShowEmailDropdown] = useState(false);
 
-  const filteredUsers = allUsers.filter(u => u.email?.toLowerCase().includes(emailSearch.toLowerCase()));
+  const filteredUsers = allUsers.filter(u =>
+    u.email?.toLowerCase().includes(emailSearch.toLowerCase()) ||
+    u.username?.toLowerCase().includes(emailSearch.toLowerCase())
+  );
+
 
   const submit = async () => {
     if (!form.firstName || !form.lastName) { alert("Please enter first and last name"); return; }
@@ -801,39 +787,73 @@ function CreatePersonModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-[#3b3b3b] rounded shadow-xl">
-        <div className="px-5 py-3 border-b border-gray-600 flex items-center justify-between">
-          <h2 className="text-lg text-gray-200 font-normal">Create a new Person <span className="text-gray-400 text-base">- Global Form</span></h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-[#1a1d27] rounded-2xl border border-white/[0.08] shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="px-6 py-5 bg-gradient-to-r from-[#1e3a5f] to-[#1a2f4d] border-b border-blue-500/15 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <p className="text-[15px] font-medium text-slate-100">Add new team member</p>
+              <p className="text-xs text-slate-400/70 mt-0.5">Fill in the details below to invite someone</p>
+            </div>
+          </div>
+          <div onClick={onClose} className="cursor-pointer w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all text-lg leading-none">×</div>
         </div>
 
-        <div className="p-5 space-y-4">
-          {[["First Name", "firstName"], ["Last Name", "lastName"]].map(([label, key]) => (
-            <div key={key} className="grid grid-cols-[140px_1fr] items-center gap-3">
-              <label className="text-sm text-gray-300 text-right">{label}:</label>
-              <input type="text" value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500" placeholder={`Enter ${label.toLowerCase()}`} />
-            </div>
-          ))}
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-3">
-            <label className="text-sm text-gray-300 text-right">Email:</label>
+          {/* Name row */}
+          <div className="grid grid-cols-2 gap-3">
+            {[["First name", "firstName", "e.g. Somchai"], ["Last name", "lastName", "e.g. Jaidee"]].map(([label, key, ph]) => (
+              <div key={key}>
+                <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">
+                  {label} <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={ph}
+                  value={form[key as keyof typeof form]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  className="w-full h-[38px] px-3 bg-white/[0.04] border border-white/10 rounded-lg text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-blue-500/60 transition-colors"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">
+              Email address <span className="text-red-400">*</span>
+            </label>
             <div className="relative">
-              <input type="email" value={emailSearch}
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <input
+                type="email"
+                placeholder="name@studio.com"
+                value={emailSearch}
                 onChange={(e) => { setEmailSearch(e.target.value); setForm({ ...form, email: e.target.value }); setShowEmailDropdown(true); }}
                 onFocus={() => setShowEmailDropdown(true)}
                 onBlur={() => setTimeout(() => setShowEmailDropdown(false), 200)}
-                className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="Search or enter email" />
+                className="w-full h-[38px] pl-9 pr-3 bg-white/[0.04] border border-white/10 rounded-lg text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-blue-500/60 transition-colors"
+              />
               {showEmailDropdown && emailSearch && filteredUsers.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-[#4a4a4a] border border-gray-600 rounded shadow-lg max-h-48 overflow-y-auto">
-                  {filteredUsers.slice(0, 10).map((u, i) => (
-                    <div key={i} onMouseDown={() => { setForm({ ...form, email: u.email }); setEmailSearch(u.email); setShowEmailDropdown(false); }}
-                      className="px-3 py-2 hover:bg-[#555] cursor-pointer text-sm text-gray-200">
-                      <div className="font-medium">{u.email}</div>
-                      <div className="text-xs text-gray-400">{u.username}</div>
+                <div className="absolute z-10 w-full mt-1 bg-[#1a1d27] border border-white/10 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                  {filteredUsers.slice(0, 8).map((u) => (
+                    <div key={u.id} onMouseDown={() => { setForm({ ...form, email: u.email }); setEmailSearch(u.email); setShowEmailDropdown(false); }}
+                      className="px-3 py-2 hover:bg-white/5 cursor-pointer flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 text-xs font-medium flex-shrink-0">
+                        {u.username?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-200">{u.email}</p>
+                        <p className="text-[11px] text-slate-500">{u.username}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -841,51 +861,71 @@ function CreatePersonModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-start gap-3">
-            <label className="text-sm text-gray-300 text-right pt-2">Status:</label>
-            <div>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500">
-                <option>Active</option><option>Inactive</option>
-              </select>
-              <p className="text-xs text-gray-400 mt-1">ที่นั่งคงเหลือ <span className="text-white">{availableSeats}/{totalSeats}</span> (เวลา {timeString})</p>
+          {/* Permission + Group */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Permission", key: "permissionGroup", options: ["Artist", "Supervisor", "Admin", "Producer", "Viewer"] },
+              { label: "Group", key: "groups", options: ["None", "FX", "Modeling", "Animation", "Lighting", "Compositing", "Rigging", "Layout", "Rendering"] },
+            ].map(({ label, key, options }) => (
+              <div key={key}>
+                <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+                <div className="relative">
+                  <select
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    className="w-full h-[38px] pl-3 pr-8 bg-white/[0.04] border border-white/10 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500/60 appearance-none transition-colors cursor-pointer"
+                  >
+                    {options.map(o => <option key={o} className="bg-[#1a1d27]">{o}</option>)}
+                  </select>
+                  <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Status toggle */}
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
+            <div className="flex gap-2">
+              {["Active", "Inactive"].map((s) => (
+                <div
+                  key={s}
+                  onClick={() => setForm({ ...form, status: s })}
+                  className={`flex-1 h-9 rounded-lg border text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    form.status === s
+                      ? s === "Active"
+                        ? "bg-green-500/15 border-green-500/40 text-green-300"
+                        : "bg-red-500/12 border-red-500/30 text-red-300"
+                      : "bg-white/[0.03] border-white/10 text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  <span className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${
+                    form.status === s ? (s === "Active" ? "bg-green-400" : "bg-red-400") : "bg-slate-600"
+                  }`} />
+                  {s}
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-3">
-            <label className="text-sm text-gray-300 text-right">Group:</label>
-            <select value={form.groups} onChange={(e) => setForm({ ...form, groups: e.target.value })} className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500">
-              {["None", "FX", "Modeling", "Animation", "Lighting", "Compositing", "Rigging", "Layout", "Rendering"].map(g => <option key={g}>{g}</option>)}
-            </select>
-          </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-3">
-            <label className="text-sm text-gray-300 text-right">Permission Group:</label>
-            <select value={form.permissionGroup} onChange={(e) => setForm({ ...form, permissionGroup: e.target.value })} className="w-full h-9 px-3 bg-[#4a4a4a] border border-gray-600 rounded text-gray-200 text-sm focus:outline-none focus:border-blue-500">
-              <option>Artist</option><option>Viewer</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-[140px_1fr] items-center gap-3">
-            <label className="text-sm text-gray-300 text-right">Projects:</label>
-            <div className="w-full h-9 px-3 bg-gray-800 border border-gray-600 rounded text-gray-400 text-sm flex items-center">{form.projects || "Project name"}</div>
-          </div>
-
-          <div className="grid grid-cols-[140px_1fr] items-center gap-3">
-            <div />
-            <button onClick={() => setShowMoreFields(!showMoreFields)} className="text-sm text-gray-300 hover:text-gray-100 text-left flex items-center gap-1">
-              More fields {showMoreFields ? "▴" : "▾"}
-            </button>
-          </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-600 flex justify-between items-center">
-          <button className="text-sm text-blue-400 hover:underline">Open Bulk Import</button>
-          <div className="flex gap-2">
-            <button onClick={onClose} disabled={isSubmitting} className="px-4 h-9 bg-gradient-to-r from-gray-700 to-gray-700 hover:from-gray-600 hover:to-gray-600 text-gray-200 text-sm rounded disabled:opacity-50">Cancel</button>
-            <button onClick={submit} disabled={isSubmitting} className="px-4 h-9 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white text-sm rounded disabled:opacity-50">
-              {isSubmitting ? "Adding..." : "Add Person"}
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-between">
+         
+            <button onClick={onClose} disabled={isSubmitting}
+              className="h-9 px-4 rounded-lg bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 flex items-center border border-white/10 text-slate-300 text-sm hover:bg-white/10 transition-all disabled:opacity-50">
+              Cancel
             </button>
-          </div>
+            <button onClick={submit} disabled={isSubmitting}
+              className="h-9 px-5 rounded-lg bg-gradient-to-r from-[#2196F3] to-[#1976D2] hover:from-[#1976D2] hover:to-[#1565C0] text-white text-sm font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20">
+              {isSubmitting ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Adding...</>
+              ) : (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Add Person</>
+              )}
+            </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Edit3, Package, User, File, Clock, FileText, Trash2, Check, Eye } from 'lucide-react';
+import { X, Calendar, Edit3, Package, User, File, Clock, FileText, Trash2, Check, Eye, Pencil } from 'lucide-react';
 import axios from 'axios';
 import ENDPOINTS from '../config';
 import { useNavigate } from 'react-router-dom';
@@ -145,6 +145,30 @@ const RightPanel: React.FC<RightPanelProps> = ({
     const projectData = JSON.parse(localStorage.getItem('projectData') || 'null');
 
     const [noteFiles, setNoteFiles] = React.useState<File[]>([]);
+
+    const [editingNote, setEditingNote] = React.useState<{
+    id: number;
+    field: 'subject' | 'body';
+} | null>(null);
+const [editingNoteValue, setEditingNoteValue] = React.useState('');
+
+const saveNoteEdit = async () => {
+    if (!editingNote) return;
+    const { id, field } = editingNote;
+    const value = editingNoteValue.trim();
+    // optimistic update
+    setTaskNotes(prev => prev.map(n => n.id === id ? { ...n, [field]: value } : n));
+    setEditingNote(null);
+    try {
+        await fetch(`${ENDPOINTS.EDIT_NOTE}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ field, value }),
+        });
+    } catch (err) {
+        console.error('saveNoteEdit failed:', err);
+    }
+};
 
     const projectId = projectData?.projectId;
 
@@ -758,33 +782,121 @@ const handleDeleteVersion = async (versionId: number) => {
                                                         : 'bg-slate-800/40 border-slate-700/40 opacity-70'
                                                         }`}
                                                 >
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                            {/* dot indicator */}
-                                                            {isUnread && (
-                                                                <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0 mt-0.5 animate-pulse" />
-                                                            )}
-                                                            <p className="text-sm font-semibold text-white truncate">{note.subject}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                            {/* read badge */}
-                                                            <span className={`px-2 py-0.5 rounded text-xs font-medium${isUnread
-                                                                ? 'bg-amber-500/20 text-amber-300'
-                                                                : 'bg-sky-500/20 text-sky-300'
-                                                                }`}>
-                                                                {isUnread ? 'unread' : 'read'}
-                                                            </span>
-                                                            {/* visibility badge */}
-                                                            <span className={`px-2 py-0.5 rounded text-xs font-medium
-                                    ${note.visibility === 'Client'
-                                                                    ? 'bg-purple-500/20 text-purple-300'
-                                                                    : 'bg-blue-500/20 text-blue-300'
-                                                                }`}>
-                                                                {note.visibility}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    {note.body && <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap break-words">{note.body}</p>}
+                                                   <div className="flex items-start justify-between gap-2">
+    <div className="flex items-center gap-2 min-w-0 flex-1 group/subject">
+        {isUnread && (
+            <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0 mt-0.5 animate-pulse" />
+        )}
+        {editingNote !== null && editingNote.id === note.id && editingNote.field === 'subject' ? (
+            <input
+                autoFocus
+                type="text"
+                value={editingNoteValue}
+                onChange={e => setEditingNoteValue(e.target.value)}
+                onBlur={saveNoteEdit}
+                onKeyDown={e => {
+                    if (e.key === 'Enter') saveNoteEdit();
+                    if (e.key === 'Escape') setEditingNote(null);
+                }}
+                onClick={e => e.stopPropagation()}
+                className="flex-1 px-2 py-0.5 bg-slate-900 border border-blue-500/60 rounded-lg text-white text-sm font-semibold outline-none ring-1 ring-blue-500/20"
+            />
+        ) : (
+            <>
+                <p className="text-sm font-semibold text-white truncate">{note.subject}</p>
+                <div
+                    onClick={e => {
+                        e.stopPropagation();
+                        setEditingNote({ id: note.id, field: 'subject' });
+                        setEditingNoteValue(note.subject);
+                    }}
+                    className="opacity-0 group-hover/subject:opacity-100 flex-shrink-0 p-1 rounded-lg cursor-pointer transition-all bg-slate-700/60 hover:bg-slate-600/80"
+                    title="แก้ไข Subject"
+                >
+                    <Pencil className="w-3 h-3 text-slate-400 hover:text-blue-400" />
+                </div>
+            </>
+        )}
+    </div>
+    {/* badges เดิมไม่เปลี่ยน */}
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+    {/* Read Status Badge */}
+    <span
+        onClick={e => {
+            e.stopPropagation();
+            const newStatus = isUnread ? 'read' : 'unread';
+            setTaskNotes(prev =>
+                prev.map(n => n.id === note.id ? { ...n, read_status: newStatus } : n)
+            );
+            fetch(`${ENDPOINTS.EDIT_NOTE}/${note.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'read_status', value: newStatus }),
+            }).catch(console.error);
+        }}
+        className={`
+            inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+            cursor-pointer transition-all hover:scale-105 active:scale-95
+            ${isUnread
+                ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30 hover:bg-amber-500/25'
+                : 'bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/30 hover:bg-sky-500/25'
+            }
+        `}
+        title="คลิกเพื่อเปลี่ยนสถานะการอ่าน"
+    >
+        <span className={`w-1.5 h-1.5 rounded-full ${isUnread ? 'bg-amber-400' : 'bg-sky-400'}`} />
+        {isUnread ? 'unread' : 'read'}
+    </span>
+
+    {/* Visibility Badge */}
+    <span className={`
+        inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ring-1
+        ${note.visibility === 'Client'
+            ? 'bg-violet-500/15 text-violet-300 ring-violet-500/30'
+            : 'bg-blue-500/15 text-blue-300 ring-blue-500/30'
+        }
+    `}>
+        <span className={`w-1.5 h-1.5 rounded-full ${note.visibility === 'Client' ? 'bg-violet-400' : 'bg-blue-400'}`} />
+        {note.visibility}
+    </span>
+</div>
+</div>
+
+{/* Body */}
+<div className="group/body flex items-start gap-1.5">
+   {editingNote !== null && editingNote.id === note.id && editingNote.field === 'body' ? (
+        <textarea
+            autoFocus
+            value={editingNoteValue}
+            onChange={e => setEditingNoteValue(e.target.value)}
+            onBlur={saveNoteEdit}
+            onKeyDown={e => {
+                if (e.key === 'Escape') setEditingNote(null);
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNoteEdit(); }
+            }}
+            onClick={e => e.stopPropagation()}
+            rows={3}
+            className="flex-1 px-2 py-1.5 bg-slate-900 border border-blue-500/60 rounded-lg text-slate-300 text-xs outline-none ring-1 ring-blue-500/20 resize-none leading-relaxed"
+        />
+    ) : (
+        <>
+            <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap break-words flex-1 min-w-0">
+                {note.body || <span className="italic text-slate-600">—</span>}
+            </p>
+            <div
+                onClick={e => {
+                    e.stopPropagation();
+                    setEditingNote({ id: note.id, field: 'body' });
+                    setEditingNoteValue(note.body || '');
+                }}
+                className="opacity-0 group-hover/body:opacity-100 flex-shrink-0 p-1 rounded-lg cursor-pointer transition-all bg-slate-700/60 hover:bg-slate-600/80"
+                title="แก้ไข Body"
+            >
+                <Pencil className="w-3 h-3 text-slate-400 hover:text-blue-400" />
+            </div>
+        </>
+    )}
+</div>
                                                     <div className="flex items-center gap-3 text-xs text-slate-500">
                                                         <span>✍️ {note.author}</span>
                                                         {note.assigned_people?.length > 0 && (
