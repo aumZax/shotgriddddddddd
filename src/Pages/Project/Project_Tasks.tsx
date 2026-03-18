@@ -853,34 +853,34 @@ export default function Project_Tasks() {
 
     // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
     // ฟังก์ชันโหลด Pipeline Steps ตาม entity_type
-    const fetchPipelineStepsByType = async (entityType: 'asset' | 'shot') => {
-        const loadingKey = `pipeline-${entityType}`;
-        setLoading(loadingKey, true); // ⭐ เพิ่ม
-        try {
-            const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
-                entityType: entityType
-            });
+    // const fetchPipelineStepsByType = async (entityType: 'asset' | 'shot') => {
+    //     const loadingKey = `pipeline-${entityType}`;
+    //     setLoading(loadingKey, true); // ⭐ เพิ่ม
+    //     try {
+    //         const res = await axios.post(`${ENDPOINTS.PIPELINE_STEPS}`, {
+    //             entityType: entityType
+    //         });
 
-            // ⭐ แก้ไขตรงนี้ - เก็บ entity_type ไว้ใน step object
-            const stepsWithType = res.data.map((step: PipelineStep) => ({
-                ...step,
-                entity_type: entityType // เพิ่ม entity_type เข้าไปใน object
-            }));
+    //         // ⭐ แก้ไขตรงนี้ - เก็บ entity_type ไว้ใน step object
+    //         const stepsWithType = res.data.map((step: PipelineStep) => ({
+    //             ...step,
+    //             entity_type: entityType // เพิ่ม entity_type เข้าไปใน object
+    //         }));
 
-            // ⭐ แทนที่จะรวม ให้ replace ข้อมูลของ type นั้นๆ เลย
-            setAvailablePipelineSteps(prev => {
-                // กรองเอาเฉพาะ steps ที่ไม่ใช่ type ที่กำลังจะอัพเดท
-                const otherTypeSteps = prev.filter(step => step.entity_type !== entityType);
-                // รวมกับ steps ใหม่
-                return [...otherTypeSteps, ...stepsWithType];
-            });
-        } catch (err) {
-            console.error("Failed to fetch pipeline steps:", err);
-        } finally {
-            setLoading(loadingKey, false); // ⭐ เพิ่ม
-        }
+    //         // ⭐ แทนที่จะรวม ให้ replace ข้อมูลของ type นั้นๆ เลย
+    //         setAvailablePipelineSteps(prev => {
+    //             // กรองเอาเฉพาะ steps ที่ไม่ใช่ type ที่กำลังจะอัพเดท
+    //             const otherTypeSteps = prev.filter(step => step.entity_type !== entityType);
+    //             // รวมกับ steps ใหม่
+    //             return [...otherTypeSteps, ...stepsWithType];
+    //         });
+    //     } catch (err) {
+    //         console.error("Failed to fetch pipeline steps:", err);
+    //     } finally {
+    //         setLoading(loadingKey, false); // ⭐ เพิ่ม
+    //     }
 
-    };
+    // };
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Click Outside Dropdown PIPLINE STEP ++++++++++++++++++++++++++++++++++++++++++++++
 
 

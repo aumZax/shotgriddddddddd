@@ -89,6 +89,7 @@ interface RightPanelProps {
     onUpdateVersion?: (versionId: number, field: string, value: any) => Promise<boolean>;
     onAddVersionSuccess?: () => void;
     onDeleteVersionSuccess?: (newThumbnail?: string | null) => void;
+    showVersionsTab?: boolean;
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({
@@ -105,6 +106,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
     onUpdateVersion,
     onAddVersionSuccess,
     onDeleteVersionSuccess,
+     showVersionsTab = true,
 }) => {
     const navigate = useNavigate();
     // ✅ FIX 1: hooks ทั้งหมดต้องอยู่บนสุด ก่อน early return ทุกกรณี
@@ -649,34 +651,37 @@ const handleDeleteVersion = async (versionId: number) => {
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-t border-slate-700/40">
-                            <button
-                                onClick={() => onTabChange('notes')}
-                                className={`flex items-center gap-2.5 px-7 py-4 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'notes'
-                                    ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-slate-800 to-slate-700'
-                                    }`}
-                            >
-                                <Edit3 className="w-4 h-4" />
-                                <span>Notes</span>
-                                {activeTab === 'notes' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 shadow-lg shadow-blue-500/50"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => onTabChange('versions')}
-                                className={`flex items-center gap-2.5 px-7 py-4 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'versions'
-                                    ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-slate-800 to-slate-700'
-                                    }`}
-                            >
-                                <Package className="w-4 h-4" />
-                                <span>Versions</span>
-                                {activeTab === 'versions' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 shadow-lg shadow-blue-500/50"></div>
-                                )}
-                            </button>
-                        </div>
+<div className="flex border-t border-slate-700/40">
+    <button
+        onClick={() => onTabChange('notes')}
+        className={`flex items-center gap-2.5 px-7 py-4 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'notes'
+            ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg'
+            : 'text-slate-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-slate-800 to-slate-700'
+            }`}
+    >
+        <Edit3 className="w-4 h-4" />
+        <span>Notes</span>
+        {activeTab === 'notes' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 shadow-lg shadow-blue-500/50"></div>
+        )}
+    </button>
+
+    {showVersionsTab && (
+        <button
+            onClick={() => onTabChange('versions')}
+            className={`flex items-center gap-2.5 px-7 py-4 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'versions'
+                ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 bg-gradient-to-r from-slate-800 to-slate-700'
+                }`}
+        >
+            <Package className="w-4 h-4" />
+            <span>Versions</span>
+            {activeTab === 'versions' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 shadow-lg shadow-blue-500/50"></div>
+            )}
+        </button>
+    )}
+</div>
                     </div>
 
                     {/* Content Area */}

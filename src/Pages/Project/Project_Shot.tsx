@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown, Image, FolderClosed, Eye, Box, Lock, Film, Check, LoaderCircle } from 'lucide-react';
@@ -102,8 +103,8 @@ interface ShotDetail {
 }
 
 export default function ProjectShot() {
-    const navigate = useNavigate();
 
+    const navigate = useNavigate();
     const [shotData, setShotData] = useState<ShotCategory[]>([]);
     const [isLoadingShots, setIsLoadingShots] = useState(false);
     const [sequences, setSequences] = useState<Sequence[]>([]);
@@ -126,17 +127,29 @@ export default function ProjectShot() {
     const [allShotAssets, setAllShotAssets] = useState<Record<string, AssetDetail[]>>({});
     const [searchText, setSearchText] = useState("");
     const [deleting, setDeleting] = useState(false);
-
-    // States สำหรับ Assets Management
     const [allProjectAssets, setAllProjectAssets] = useState<AssetDetail[]>([]);
     const [shotAssets, setShotAssets] = useState<AssetDetail[]>([]);
     const [shotAssetSearchText, setShotAssetSearchText] = useState('');
     const [showShotAssetDropdown, setShowShotAssetDropdown] = useState(false);
-
-    // ⭐ NEW STATES - เพิ่มใหม่
     const [sequenceSearchInput, setSequenceSearchInput] = useState('');
     const [showSequenceSearchDropdown, setShowSequenceSearchDropdown] = useState(false);
     const [fetchError, setFetchError] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const [expandedShotId, setExpandedShotId] = useState<string | null>(null);
+    const [showExpandedPanel, setShowExpandedPanel] = useState(false);
+    const [shotDetail, setShotDetail] = useState<ShotDetail | null>(null);
+    const [isLoadingShotDetail, setIsLoadingShotDetail] = useState(false);
+
+    const taskTemplates = [
+        "Animation - Shot",
+        "Film VFX - Comp Only Shot",
+        "Film VFX - Full CG Shot w/ Character",
+        "Film VFX - Full CG Shot w/o Character",
+        "Kantana_VFX"
+    ];
+
 
 
     const [contextMenu, setContextMenu] = useState<{
@@ -146,32 +159,78 @@ export default function ProjectShot() {
         shot: Shot;
     } | null>(null);
 
-    const [expandedShotId, setExpandedShotId] = useState<string | null>(null);
-    const [showExpandedPanel, setShowExpandedPanel] = useState(false);
     const [expandedItem, setExpandedItem] = useState<{
         type: "asset" | "sequence";
         id: number;
     } | null>(null);
-
-    const [shotDetail, setShotDetail] = useState<ShotDetail | null>(null);
-    const [isLoadingShotDetail, setIsLoadingShotDetail] = useState(false);
 
     const [deleteConfirm, setDeleteConfirm] = useState<{
         shotId: number;
         shot_name: string;
     } | null>(null);
 
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStart = useRef({ x: 0, y: 0 });
 
-    const taskTemplates = [
-        "Animation - Shot",
-        "Film VFX - Comp Only Shot",
-        "Film VFX - Full CG Shot w/ Character",
-        "Film VFX - Full CG Shot w/o Character",
-        "Kantana_VFX"
-    ];
+    useEffect(() => {
+        if (shotData.length > 0) {
+            shotData.forEach(category => {
+                category.shots.forEach(shot => {
+                    fetchShotAssets(Number(shot.id));
+                });
+            });
+        }
+    }, [shotData.length]);
+
+    useEffect(() => {
+        fetchShots();
+        fetchSequences();
+        fetchAllProjectAssets(); 
+    }, []); 
+
+    useEffect(() => {
+        if (shotDetail?.assets) {
+            setShotAssets(shotDetail.assets);
+        } else {
+            setShotAssets([]);
+        }
+    }, [shotDetail]);
+
+    useEffect(() => {
+        if (expandedShotId) {
+            fetchShotAssets(Number(expandedShotId));
+            fetchAllProjectAssets();
+        }
+    }, [expandedShotId]);
+
+    useEffect(() => {
+        const closeMenu = () => setContextMenu(null);
+
+        if (contextMenu) {
+            document.addEventListener("click", closeMenu);
+            return () => document.removeEventListener("click", closeMenu);
+        }
+    }, [contextMenu]);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging) return;
+            setModalPosition({
+                x: e.clientX - dragStart.current.x,
+                y: e.clientY - dragStart.current.y,
+            });
+        };
+
+        const handleMouseUp = () => setIsDragging(false);
+
+        if (isDragging) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isDragging]);
 
     const getProjectData = () => {
         try {
@@ -194,7 +253,6 @@ export default function ProjectShot() {
     })).filter(category => category.shots.length > 0);
 
 
-    // 1. ดึงข้อมูล Assets ทั้งหมด
     const fetchAllProjectAssets = async () => {
         try {
             const projectData = getProjectData();
@@ -221,7 +279,6 @@ export default function ProjectShot() {
         }
     };
 
-    // แก้ไข fetchShotAssets ให้อัพเดท allShotAssets ด้วย
     const fetchShotAssets = async (shotId: number) => {
         try {
             const res = await fetch(ENDPOINTS.GET_ASSET_SHOT, {
@@ -258,18 +315,6 @@ export default function ProjectShot() {
         }
     };
 
-    // เพิ่มฟังก์ชันนี้เพื่อ refresh assets ของทุก shot ที่แสดงอยู่
-    // const refreshAllVisibleShotAssets = async () => {
-    //     const visibleShotIds = shotData.flatMap(cat =>
-    //         cat.shots.map(shot => Number(shot.id))
-    //     );
-
-    //     for (const shotId of visibleShotIds) {
-    //         await fetchShotAssets(shotId);
-    //     }
-    // };
-
-    // 2. เพิ่ม Asset เข้า Shot
     const handleAddAssetToShot = async (assetId: number) => {
         if (!expandedShotId) return;
 
@@ -288,10 +333,8 @@ export default function ProjectShot() {
                 throw new Error(error.message || "Failed to link asset");
             }
 
-            // ⭐ Refresh assets ของ shot นี้
             await fetchShotAssets(Number(expandedShotId));
 
-            // ปิด dropdown และ reset
             setShowShotAssetDropdown(false);
             setShotAssetSearchText("");
 
@@ -317,7 +360,6 @@ export default function ProjectShot() {
             }
 
             if (result.success && shotDetail) {
-                // ⭐ Refresh assets ของ shot นี้
                 await fetchShotAssets(shotDetail.shot_id);
             }
         } catch (err) {
@@ -326,7 +368,6 @@ export default function ProjectShot() {
         }
     };
 
-    // 4. กรอง Assets ที่ยังไม่ได้เพิ่ม
     const availableAssetsToAddToShot = allProjectAssets.filter(asset => {
         const alreadyAdded = shotAssets.some(sa => sa.id === asset.id);
         const matchesSearch = asset.asset_name.toLowerCase().includes(shotAssetSearchText.toLowerCase());
@@ -348,13 +389,11 @@ export default function ProjectShot() {
                 projectId: projectData.projectId
             });
 
-            // Fetch details for each shot
             const mappedData = await Promise.all(
                 data.map(async (category: ShotCategory) => ({
                     ...category,
                     shots: await Promise.all(
                         category.shots.map(async (shot: any) => {
-                            // Fetch shot detail
                             try {
                                 const detailRes = await axios.post(ENDPOINTS.PROJECT_SHOT_DETAIL, {
                                     shotId: Number(shot.id)
@@ -524,9 +563,7 @@ export default function ProjectShot() {
             } : null;
 
             const assets: AssetDetail[] = rawData
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .filter((row: any) => row.asset_id)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((row: any) => ({
                     id: row.asset_id,
                     asset_name: row.asset_name,
@@ -556,7 +593,6 @@ export default function ProjectShot() {
         }
     };
 
-    // ⭐ NEW FUNCTION 1 - เพิ่มใหม่
     const handleAddSequenceToShot = async (sequenceId: number) => {
         if (!shotDetail) return;
 
@@ -567,10 +603,8 @@ export default function ProjectShot() {
             });
 
             if (response.data.success) {
-                // Refresh ข้อมูล shot detail
                 await fetchShotDetail(String(shotDetail.shot_id));
 
-                // รีเซ็ต input และปิด dropdown
                 setSequenceSearchInput('');
                 setShowSequenceSearchDropdown(false);
 
@@ -580,7 +614,7 @@ export default function ProjectShot() {
 
         } catch (err) {
             console.error("Error adding sequence to shot:", err);
-            alert("Failed to add sequence to shot"); // แสดง error ให้ user เห็น
+            alert("Failed to add sequence to shot"); 
         }
     };
 
@@ -604,8 +638,6 @@ export default function ProjectShot() {
                 fetchSequences();
             }
 
-
-
         } catch (err) {
             console.error("❌ Error removing sequence from shot:", err);
             const error = err as { response?: { data?: { error?: string } }; message?: string };
@@ -614,31 +646,6 @@ export default function ProjectShot() {
             alert("Failed to remove sequence: " + (error.response?.data?.error || error.message || "Unknown error"));
         }
     };
-    // เพิ่ม useEffect นี้
-    useEffect(() => {
-        if (shotData.length > 0) {
-            // Fetch assets สำหรับทุก shot ที่แสดงอยู่
-            shotData.forEach(category => {
-                category.shots.forEach(shot => {
-                    fetchShotAssets(Number(shot.id));
-                });
-            });
-        }
-    }, [shotData.length]); // ⚠️ ระวัง: ใช้แค่ length เพื่อไม่ให้ loop ไม่รู้จบ
-    useEffect(() => {
-        fetchShots();
-        fetchSequences();
-        fetchAllProjectAssets(); // ← เพิ่มบรรทัดนี้
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Sync shotAssets เมื่อ shotDetail เปลี่ยน
-    useEffect(() => {
-        if (shotDetail?.assets) {
-            setShotAssets(shotDetail.assets);
-        } else {
-            setShotAssets([]);
-        }
-    }, [shotDetail]);
 
     const toggleCategory = (category: string) => {
         setExpandedCategories(prev =>
@@ -826,23 +833,6 @@ export default function ProjectShot() {
         });
     };
 
-    useEffect(() => {
-        if (expandedShotId) {
-            fetchShotAssets(Number(expandedShotId));
-            fetchAllProjectAssets(); // ⭐ ดึง assets ทั้งหมด
-            fetchShots(); // ⭐ เพิ่มบรรทัดนี้
-        }
-    }, [expandedShotId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        const closeMenu = () => setContextMenu(null);
-
-        if (contextMenu) {
-            document.addEventListener("click", closeMenu);
-            return () => document.removeEventListener("click", closeMenu);
-        }
-    }, [contextMenu]);
-
     const expandedShot = shotData
         .flatMap(cat => cat.shots)
         .find(shot => shot.id === expandedShotId);
@@ -888,28 +878,6 @@ export default function ProjectShot() {
             y: e.clientY - modalPosition.y,
         };
     };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging) return;
-            setModalPosition({
-                x: e.clientX - dragStart.current.x,
-                y: e.clientY - dragStart.current.y,
-            });
-        };
-
-        const handleMouseUp = () => setIsDragging(false);
-
-        if (isDragging) {
-            window.addEventListener("mousemove", handleMouseMove);
-            window.addEventListener("mouseup", handleMouseUp);
-        }
-
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("mouseup", handleMouseUp);
-        };
-    }, [isDragging]);
 
     const handleModalClose = () => {
         setShowCreateShot(false);

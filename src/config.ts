@@ -149,12 +149,16 @@ const ENDPOINTS = {
   VIDEO_COMMENTS_LIST: `${BASE_URL}/video-comments/list`,
   VIDEO_COMMENTS_UPDATE: `${BASE_URL}/video-comments/update`,
 
-    UPLOAD_AVARTAR: `${BASE_URL}/upload/avatar`,
+  UPLOAD_AVARTAR: `${BASE_URL}/upload/avatar`,
   GETALLVIEWERS: `${BASE_URL}/getallviewers`,
 
   ALL_PROJECT_FILES: `${BASE_URL}/all-project-files`,
   GET_NOTE_TASKS: `${BASE_URL}/get-note-tasks`,
   GET_TASK_NOTES_RIGHTPANEL: `${BASE_URL}/get-task-notes-rightpanel`,
+
+  GET_NOTE_COMMENTS: `${BASE_URL}/note-comments`,
+  CREATE_NOTE_COMMENT: `${BASE_URL}/note-comments/create`,
+  DELETE_NOTE_COMMENT: `${BASE_URL}/note-comments`,
   // เพิ่ม endpoint อื่น ๆ ตามต้องการ
 };
 
