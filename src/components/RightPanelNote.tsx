@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useState } from 'react';
-import { Image, Paperclip, Send, Trash2, User, X } from 'lucide-react';
+import { Paperclip, Send, Trash2, User, X } from 'lucide-react';
 import ENDPOINTS from '../config';
 
 interface Note {

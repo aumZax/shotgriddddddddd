@@ -738,8 +738,7 @@ function AddViewerModal({
 }
 
 function CreatePersonModal({
-  onClose, onCreated, 
-  showMoreFields, setShowMoreFields, defaultProjectName, allUsers,
+  onClose, onCreated, defaultProjectName, allUsers,
 }: {
   onClose: () => void;
   onCreated: () => void;
